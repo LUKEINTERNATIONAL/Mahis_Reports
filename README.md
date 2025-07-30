@@ -1,6 +1,7 @@
 <!-- USING PY DASH FOR THE BUSINESS INTELLIGENCE -->
-
-# Installation steps
+# MaHIS Dash Plotly
+### This serves as an analytical platform for the MaHIS system. It utilizes the plotly web visualization power to produce dashboards and reports for the ministry of health.
+## Installation steps
 ***
 1. Install python 3.11 (recommended) or later versions
 2. Install pip 
