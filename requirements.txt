@@ -1,0 +1,4 @@
+dash
+pandas
+mysql-connector-python
+sshtunnel
