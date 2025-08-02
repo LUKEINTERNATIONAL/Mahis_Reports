@@ -12,9 +12,9 @@ def fetch_and_store_data(query, filename="latest_data_opd.csv"):
     # Fetch data from the database
     df = fetch_data(query)
     # Ensure the directory exists
-    path = "/Users/innocentwowa/Documents/Python Scripts/DashPlotly/data/"
-    os.makedirs(os.path.dirname(f'{path}{filename}'), exist_ok=True)
+    path = os.getcwd()
+    os.makedirs(os.path.dirname(f'{path}/{filename}'), exist_ok=True)
     
     # Store the fetched data in a CSV file
-    store_data(df, f'{path}{filename}')
+    store_data(df, f'{path}/{filename}')
     return df

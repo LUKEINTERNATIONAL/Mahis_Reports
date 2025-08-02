@@ -3,6 +3,7 @@ from sshtunnel import SSHTunnelForwarder, create_logger
 import pandas as pd
 from config import DB_CONFIG_AWS_TEST, SSH_CONFIG_TEST
 import logging
+import os
 import socket
 import pymysql
 logger = create_logger(loglevel=logging.DEBUG)
@@ -15,19 +16,19 @@ logger = create_logger(loglevel=logging.DEBUG)
 
 def fetch_data(query):
     with SSHTunnelForwarder(
-        ('ec2-13-247-36-140.af-south-1.compute.amazonaws.com', 22),
-        ssh_username='ubuntu',
+        (SSH_CONFIG_TEST['ssh_host'], 22),
+        ssh_username=SSH_CONFIG_TEST['ssh_user'],
         ssh_private_key='ssh/dhd-dev-aetc-pub-key.pem',
-        remote_bind_address=('dhd-mahis-mysql-development-db.c7iooimo2e39.af-south-1.rds.amazonaws.com', 3306)
+        remote_bind_address=SSH_CONFIG_TEST['remote_bind_address']
     ) as tunnel:
         print(f"Tunnel is open on local port: {tunnel.local_bind_port}")
         sock = socket.socket()
         sock.settimeout(10)
-        sock.connect(('127.0.0.1', tunnel.local_bind_port))
+        sock.connect((DB_CONFIG_AWS_TEST['host'], tunnel.local_bind_port))
         print("Socket connection succeeded!")
         sock.close()
         conn = pymysql.connect(
-            host='127.0.0.1',
+            host=DB_CONFIG_AWS_TEST['host'],
             port=tunnel.local_bind_port,
             user=DB_CONFIG_AWS_TEST['user'],
             password=DB_CONFIG_AWS_TEST['password'],
@@ -42,11 +43,11 @@ def fetch_data(query):
         conn.close()
         return df
 
-path = "/Users/innocentwowa/Documents/Python Scripts/DashPlotly/"
-def store_data(df, filename=f'{path}data/latest_data_opd.csv'):
+path = os.getcwd()
+def store_data(df, filename=f'{path}/data/latest_data_opd.csv'):
     df.to_csv(filename, index=False)
 
-def load_stored_data(filename=f'{path}data/latest_data_opd.csv'):
+def load_stored_data(filename=f'{path}/data/latest_data_opd.csv'):
     return pd.read_csv(filename)
 
 

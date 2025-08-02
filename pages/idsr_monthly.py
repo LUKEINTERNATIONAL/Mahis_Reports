@@ -3,6 +3,7 @@ from dash import html, dcc, Input, Output, callback
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
+import datetime
 from db_services import load_stored_data
 from visualizations import create_count, create_sum
 
@@ -11,6 +12,29 @@ dash.register_page(__name__, path="/idsr_monthly")
 data = load_stored_data()
 min_date = pd.to_datetime(data['Date']).min()
 max_date = pd.to_datetime(data['Date']).max()
+
+relative_month = ['January', 'February', 'March', 'April', 'May', 'June','July', 'August', 'September', 'October', 'November', 'December',]
+relative_year = [str(year) for year in range(max_date.year, min_date.year - 1, -1)]
+
+def get_month_start_end(month, year):
+    # Validate inputs
+    if month is None or year is None:
+        raise ValueError("Enter Year and Month")
+    if month not in relative_month:
+        raise ValueError(f"Invalid month: {month}. Must be one of {relative_month}")
+    try:
+        year = int(year)  # Ensure year is an integer
+    except (ValueError, TypeError):
+        raise ValueError(f"Invalid year: {year}. Must be a valid integer (e.g., 2023)")
+    
+    month_index = relative_month.index(month) + 1  # Convert to 1-based index
+    start_date = datetime.date(year, month_index, 1)
+    if month_index == 12:  # December
+        end_date = datetime.date(year + 1, 1, 1) - datetime.timedelta(days=1)
+    else:
+        end_date = datetime.date(year, month_index + 1, 1) - datetime.timedelta(days=1)
+    
+    return start_date, end_date
 
 def build_table(filtered):
     return html.Table(className="data-table", children=[
@@ -317,16 +341,28 @@ layout = html.Div(className="container", children=[
     html.Div([
         html.Div(className="filter-container", children=[
             html.Div([
-                html.Label("Date Range"),
-                dcc.DatePickerRange(
-                    id='date-range-picker',
-                    min_date_allowed=min_date,
-                    max_date_allowed=max_date,
-                    initial_visible_month=max_date,
-                    # start_date=max_date - pd.Timedelta(days=1),
-                    start_date=min_date,
-                    end_date=max_date,
-                    display_format='YYYY-MM-DD',
+                html.Label("Year"),
+                dcc.Dropdown(
+                    id='year-filter',
+                    options=[
+                        {'label': period, 'value': period}
+                        for period in relative_year
+                    ],
+                    value=None,
+                    clearable=True
+                )
+            ], className="filter-input"),
+
+            html.Div([
+                html.Label("Month"),
+                dcc.Dropdown(
+                    id='month-filter',
+                    options=[
+                        {'label': period, 'value': period}
+                        for period in relative_month
+                    ],
+                    value=None,
+                    clearable=True
                 )
             ], className="filter-input"),
 
@@ -352,17 +388,22 @@ layout = html.Div(className="container", children=[
 
 @callback(
     Output('idsr-monthly-table-container', 'children'),
-    Input('date-range-picker', 'start_date'),
-    Input('date-range-picker', 'end_date'),
+    Input('year-filter', 'value'),
+    Input('month-filter', 'value'),
     Input('hf-filter', 'value')
 )
-def update_table(start_date, end_date, hf_filter):
+def update_table(year_filter, month_filter, hf_filter):
+    try:
+        start_date, end_date = get_month_start_end(month_filter, year_filter)
+    except ValueError as e:
+        return html.Div(f"{str(e)}")  # Show error in Dash UI
+    
     filtered = data[
         (pd.to_datetime(data['Date']) >= pd.to_datetime(start_date)) &
         (pd.to_datetime(data['Date']) <= pd.to_datetime(end_date))
     ]
     if hf_filter:
         filtered = filtered[filtered['Facility'] == hf_filter]
-
-    return build_table(filtered) 
+    
+    return build_table(filtered)
 

@@ -10,7 +10,7 @@ query = QERY_OPD_TEST
 def main():
     # Fetch data from the database and store it in a CSV file
     df = fetch_and_store_data(query)
-    path = "/Users/innocentwowa/Documents/Python Scripts/DashPlotly"
+    path = os.getcwd()
     # Ensure the directory exists
     os.makedirs(os.path.dirname(f'{path}/data'), exist_ok=True)
     # Load the stored data
