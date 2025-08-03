@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import pandas as pd
 import datetime
 from db_services import load_stored_data
-from visualizations import create_count, create_sum
+from visualizations import create_count, create_count_sets
 
 dash.register_page(__name__, path="/hmis15")
 
@@ -386,6 +386,7 @@ def update_table(year_filter, month_filter, hf_filter):
     ]
     if hf_filter:
         filtered = filtered[filtered['Facility'] == hf_filter]
+    filtered = filtered[filtered['Program']=='OPD Program']
     
     return build_table(filtered)
 

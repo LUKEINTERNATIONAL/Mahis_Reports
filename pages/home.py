@@ -235,11 +235,11 @@ def update_dashboard(urlparams, start_date, end_date, program, hf, age):
 
         
         # Update counts
-        total_count = create_count(filtered_data, 'Encounter', 'REGISTRATION')
-        male_count = create_count(filtered_data, 'Gender', 'M', 'Encounter', 'REGISTRATION')
-        female_count = create_count(filtered_data, 'Gender', 'F', 'Encounter', 'REGISTRATION')
-        over5_count = create_count(filtered_data, 'Age_Group', 'Over 5', 'Encounter', 'REGISTRATION')
-        under5_count = create_count(filtered_data, 'Age_Group', 'Under 5', 'Encounter', 'REGISTRATION')
+        total_count = create_count(filtered_data,'encounter_id', 'Encounter', 'REGISTRATION')
+        male_count = create_count(filtered_data,'encounter_id', 'Gender', 'M', 'Encounter', 'REGISTRATION')
+        female_count = create_count(filtered_data,'encounter_id', 'Gender', 'F', 'Encounter', 'REGISTRATION')
+        over5_count = create_count(filtered_data,'encounter_id', 'Age_Group', 'Over 5', 'Encounter', 'REGISTRATION')
+        under5_count = create_count(filtered_data,'encounter_id', 'Age_Group', 'Under 5', 'Encounter', 'REGISTRATION')
         
         # Update charts
         enrollments_fig = create_column_chart(df=filtered_data, x_col='Program', y_col='person_id',

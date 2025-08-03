@@ -3,15 +3,41 @@ from dash import html, dcc, Input, Output, callback
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
+import datetime
 from isoweek import Week
 from db_services import load_stored_data
-from visualizations import create_count, create_sum
+from visualizations import create_count, create_count_sets
 
 dash.register_page(__name__, path="/idsr_weekly")
 
 data = load_stored_data()
 min_date = pd.to_datetime(data['Date']).min()
 max_date = pd.to_datetime(data['Date']).max()
+
+relative_week = [str(week) for week in range(1, 53)]  # Can extend to 53 if needed
+relative_year = [str(year) for year in range(max_date.year, min_date.year - 1, -1)]
+
+def get_week_start_end(week_num, year):
+    """Returns (start_date, end_date) for a given week number and year"""
+    # Validate inputs
+    if week_num is None or year is None:
+        raise ValueError("Week and year must be specified")
+    
+    try:
+        week_num = int(week_num)
+        year = int(year)
+    except (ValueError, TypeError):
+        raise ValueError("Week and year must be integers")
+    
+    if week_num < 1 or week_num > 53:
+        raise ValueError(f"Week must be between 1-53 (got {week_num})")
+    
+    # Get start (Monday) and end (Sunday) of week
+    week = Week(year, week_num)
+    start_date = week.monday()    # Monday
+    end_date = start_date + datetime.timedelta(days=6)  # Sunday
+    
+    return start_date, end_date
 
 def build_table(filtered):
     return html.Table(className="data-table", children=[
@@ -77,327 +103,631 @@ def build_table(filtered):
         html.Tr(
             [html.Td(html.Strong("1")), 
              html.Td("Adverse Events Following Immunization (AEFI)"), 
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),]),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Adverse Events Following Immunization (AEFI)','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Adverse Events Following Immunization (AEFI)','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Adverse Events Following Immunization (AEFI)','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Adverse Events Following Immunization (AEFI)','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Adverse Events Following Immunization (AEFI)','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Adverse Events Following Immunization (AEFI)','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+            
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Adverse Events Following Immunization (AEFI)','Outcome'],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Under 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Adverse Events Following Immunization (AEFI)','Outcome'],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Over 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Adverse Events Following Immunization (AEFI)','Outcome'],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Adverse Events Following Immunization (AEFI)',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Under 5'),  className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Adverse Events Following Immunization (AEFI)',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Adverse Events Following Immunization (AEFI)',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result'), className="center"),
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Adverse Events Following Immunization (AEFI)',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Under 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Adverse Events Following Immunization (AEFI)',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Adverse Events Following Immunization (AEFI)',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Value',filter_value4='Positive'), className="center"),]),
         html.Tr(
             [html.Td(html.Strong("2")), 
              html.Td("Acute Flaccid Paralysis (AFP)"), 
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),]),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Flaccid Paralysis','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Flaccid Paralysis','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Flaccid Paralysis','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Flaccid Paralysis','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Flaccid Paralysis','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Flaccid Paralysis','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+            
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Flaccid Paralysis','Outcome'],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Under 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Flaccid Paralysis','Outcome'],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Over 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Flaccid Paralysis','Outcome'],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Flaccid Paralysis',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Under 5'),  className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Flaccid Paralysis',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Flaccid Paralysis',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result'), className="center"),
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Flaccid Paralysis',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Under 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Flaccid Paralysis',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Flaccid Paralysis',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',), className="center"),]),
         html.Tr(
             [html.Td(html.Strong("3")), 
              html.Td("Acute Haemorrhagic Fever Syndrome (AHFS)"), 
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),]),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Acute hemorrahgic fever syndrome','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Acute hemorrahgic fever syndrome','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Acute hemorrahgic fever syndrome','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Acute hemorrahgic fever syndrome','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Acute hemorrahgic fever syndrome','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Acute hemorrahgic fever syndrome','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+            
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Acute hemorrahgic fever syndrome','Outcome'],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Under 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Acute hemorrahgic fever syndrome','Outcome'],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Over 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Acute hemorrahgic fever syndrome','Outcome'],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Acute hemorrahgic fever syndrome',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Under 5'),  className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Acute hemorrahgic fever syndrome',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Acute hemorrahgic fever syndrome',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result'), className="center"),
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Acute hemorrahgic fever syndrome',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Under 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Acute hemorrahgic fever syndrome',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Acute hemorrahgic fever syndrome',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',), className="center"),]),
         html.Tr(
             [html.Td(html.Strong("4")), 
              html.Td("Anthrax"), 
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),]),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Anthrax','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Anthrax','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Anthrax','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Anthrax','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Anthrax','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Anthrax','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+            
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Anthrax',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Under 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Anthrax',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Over 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Anthrax',''],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Anthrax',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Under 5'),  className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Anthrax',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Anthrax',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result'), className="center"),
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Anthrax',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Under 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Anthrax',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Anthrax',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',), className="center"),]),
         html.Tr(
             [html.Td(html.Strong("5")), 
              html.Td("Cholera"), 
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),]),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Cholera','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Cholera','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Cholera','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Cholera','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Cholera','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Cholera','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+            
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Cholera',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Under 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Cholera',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Over 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Cholera',''],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Cholera',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Under 5'),  className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Cholera',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Cholera',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result'), className="center"),
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Cholera',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Under 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Cholera',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Cholera',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',), className="center"),]),
         html.Tr(
             [html.Td(html.Strong("6")), 
-             html.Td("Covid-19"), 
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),]),
+             html.Td("COVID-19"), 
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','COVID-19','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','COVID-19','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','COVID-19','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','COVID-19','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','COVID-19','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','COVID-19','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+            
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['COVID-19',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Under 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['COVID-19',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Over 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['COVID-19',''],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['COVID-19',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Under 5'),  className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['COVID-19',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['COVID-19',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result'), className="center"),
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['COVID-19',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Under 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['COVID-19',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['COVID-19',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',), className="center"),]),
         html.Tr(
             [html.Td(html.Strong("7")), 
              html.Td("Diarrhoea With Blood (Bacterial)"), 
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),]),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Diarrhoea With Blood','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Diarrhoea With Blood','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Diarrhoea With Blood','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Diarrhoea With Blood','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Diarrhoea With Blood','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Diarrhoea With Blood','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+            
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Diarrhoea With Blood',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Under 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Diarrhoea With Blood',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Over 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Diarrhoea With Blood',''],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Diarrhoea With Blood',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Under 5'),  className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Diarrhoea With Blood',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Diarrhoea With Blood',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result'), className="center"),
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Diarrhoea With Blood',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Under 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Diarrhoea With Blood',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Diarrhoea With Blood',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',), className="center"),]),
         html.Tr(
             [html.Td(html.Strong("8")), 
              html.Td("Malaria"), 
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),]),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Malaria','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Malaria','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Malaria','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Malaria','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Malaria','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Malaria','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+            
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Malaria',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Under 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Malaria',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Over 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Malaria',''],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Malaria',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Under 5'),  className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Malaria',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Malaria',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result'), className="center"),
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Malaria',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Under 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Malaria',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Malaria',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',), className="center"),]),
         html.Tr(
             [html.Td(html.Strong("9")), 
              html.Td("Maternal Death"), 
-             html.Td("", className="center highlight"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center highlight"),
-             html.Td("", className="center highlight"),
-             html.Td("", className="center highlight"),
-             html.Td("", className="center highlight"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center highlight"),
-             html.Td("", className="center highlight"),
-             html.Td("", className="center highlight"),
-             html.Td("", className="center highlight"),
-             html.Td("", className="center highlight"),
-             html.Td("", className="center highlight"),]),
+             html.Td('', className="center highlight"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Maternal Death','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Maternal Death','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td('', className="center highlight"),
+             html.Td('', className="center highlight"),
+             html.Td('', className="center highlight"),
+            
+             html.Td('', className="center highlight"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Maternal Death',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Over 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Maternal Death',''],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td('', className="center highlight"),
+             html.Td('', className="center highlight"),
+             html.Td('', className="center highlight"),
+             
+             html.Td('', className="center highlight"),
+             html.Td('', className="center highlight"),
+             html.Td('', className="center highlight"),]),
         html.Tr(
             [html.Td(html.Strong("10")), 
              html.Td("Measles"), 
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),]),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Measles','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Measles','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Measles','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Measles','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Measles','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Measles','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+            
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Measles',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Under 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Measles',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Over 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Measles',''],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Measles',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Under 5'),  className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Measles',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Measles',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result'), className="center"),
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Measles',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Under 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Measles',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Measles',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',), className="center"),]),
         html.Tr(
             [html.Td(html.Strong("11")), 
              html.Td("Meningococcal Meningitis"), 
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),]),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Meningococcal Meningitis','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Meningococcal Meningitis','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Meningococcal Meningitis','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Meningococcal Meningitis','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Meningococcal Meningitis','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Meningococcal Meningitis','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+            
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Meningococcal Meningitis',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Under 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Meningococcal Meningitis',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Over 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Meningococcal Meningitis',''],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Meningococcal Meningitis',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Under 5'),  className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Meningococcal Meningitis',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Meningococcal Meningitis',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result'), className="center"),
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Meningococcal Meningitis',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Under 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Meningococcal Meningitis',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Meningococcal Meningitis',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',), className="center"),]),
         html.Tr(
             [html.Td(html.Strong("12")), 
              html.Td("Neonatal Tetanus"), 
-             html.Td("", className="center"),
-             html.Td("", className="center highlight"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center highlight"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center highlight"),
-             html.Td("", className="center"),
-             html.Td("", className="center highlight"),
-             html.Td("", className="center highlight"),
-             html.Td("", className="center highlight"),
-             html.Td("", className="center highlight"),
-             html.Td("", className="center highlight"),
-             html.Td("", className="center highlight"),]),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Neonatal tetanus','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td('', className="center highlight"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Neonatal tetanus','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Neonatal tetanus','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td('', className="center highlight"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Neonatal tetanus','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+            
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Neonatal tetanus',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Under 5'), className="center"), #death outcome not available yet
+             html.Td('', className="center highlight"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Neonatal tetanus',''],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td('', className="center highlight"),
+             html.Td('', className="center highlight"),
+             html.Td('', className="center highlight"),
+             
+             html.Td('', className="center highlight"),
+             html.Td('', className="center highlight"),
+             html.Td('', className="center highlight"),]),
         html.Tr(
             [html.Td(html.Strong("13")), 
              html.Td("Plague"), 
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),]),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Plague','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Plague','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Plague','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Plague','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Plague','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Plague','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+            
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Plague',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Under 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Plague',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Over 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Plague',''],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Plague',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Under 5'),  className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Plague',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Plague',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result'), className="center"),
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Plague',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Under 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Plague',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Plague',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',), className="center"),]),
         html.Tr(
             [html.Td(html.Strong("13")), 
              html.Td("Rabies (Human)"), 
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),]),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Rabies','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Rabies','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Rabies','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Rabies','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Rabies','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Rabies','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+            
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Rabies',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Under 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Rabies',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Over 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Rabies',''],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td('', className="center highlight"),
+             html.Td('', className="center highlight"),
+             html.Td('', className="center highlight"),
+             
+             html.Td('', className="center highlight"),
+             html.Td('', className="center highlight"),
+             html.Td('', className="center highlight"),]),
         html.Tr(
             [html.Td(html.Strong("14")), 
-             html.Td("	Severe Acute Respiratory Infections (SARI)"), 
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),]),
+             html.Td("Severe Acute Respiratory Infections (SARI)"), 
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Severe acute respiratory infection','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Severe acute respiratory infection','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Severe acute respiratory infection','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Severe acute respiratory infection','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Severe acute respiratory infection','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Severe acute respiratory infection','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+            
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Severe acute respiratory infection',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Under 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Severe acute respiratory infection',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Over 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Severe acute respiratory infection',''],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Severe acute respiratory infection',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Under 5'),  className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Severe acute respiratory infection',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Severe acute respiratory infection',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result'), className="center"),
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Severe acute respiratory infection',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Under 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Severe acute respiratory infection',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Severe acute respiratory infection',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',), className="center"),]),
         html.Tr(
             [html.Td(html.Strong("15")), 
              html.Td("Small Pox"), 
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),]),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Small pox','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Small pox','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Small pox','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Small pox','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Small pox','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Small pox','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+            
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Small pox',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Under 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Small pox',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Over 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Small pox',''],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Small pox',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Under 5'),  className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Small pox',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Small pox',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result'), className="center"),
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Small pox',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Under 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Small pox',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Small pox',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',), className="center"),]),
         html.Tr(
             [html.Td(html.Strong("16")), 
              html.Td("Typhoid Fever"), 
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),]),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Typhoid fever','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Typhoid fever','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Typhoid fever','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Typhoid fever','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Typhoid fever','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Typhoid fever','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+            
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Typhoid fever',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Under 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Typhoid fever',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Over 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Typhoid fever',''],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Typhoid fever',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Under 5'),  className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Typhoid fever',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Typhoid fever',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result'), className="center"),
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Typhoid fever',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Under 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Typhoid fever',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Typhoid fever',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',), className="center"),]),
         html.Tr(
             [html.Td(html.Strong("17")), 
              html.Td("Yellow Fever"), 
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),
-             html.Td("", className="center"),]),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Yellow fever','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Yellow fever','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Yellow fever','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Yellow fever','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Yellow fever','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program', 'obs_value_coded','Yellow fever','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+            
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Yellow fever',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Under 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Yellow fever',''],filter_col3='concept_name',filter_value3='Died',filter_col4='Age_Group',filter_value4='Over 5'), className="center"), #death outcome not available yet
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','PATIENT OUTCOME'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Yellow fever',''],filter_col3='concept_name',filter_value3='Died'), className="center"), #death outcome not available yet
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Yellow fever',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Under 5'),  className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Yellow fever',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result',filter_col4='Age_Group',filter_value4='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Yellow fever',''],
+                                       filter_col3='concept_name',filter_value3='Lab test result'), className="center"),
+             
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Yellow fever',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Under 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Yellow fever',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',filter_col5='Age_Group',filter_value5='Over 5'), className="center"),
+             html.Td(create_count_sets(filtered, filter_col1='Encounter',filter_value1=['OUTPATIENT DIAGNOSIS','LAB RESULTS'], 
+                                       filter_col2='obs_value_coded',filter_value2=['Yellow fever',''],
+                                       filter_col3='concept_name',filter_value3='AFP',filter_col4='Value',filter_value4='Positive',), className="center"),]),
         
         ]),
 
@@ -409,16 +739,28 @@ layout = html.Div(className="container", children=[
     html.Div([
         html.Div(className="filter-container", children=[
             html.Div([
-                html.Label("Date Range"),
-                dcc.DatePickerRange(
-                    id='date-range-picker',
-                    min_date_allowed=min_date,
-                    max_date_allowed=max_date,
-                    initial_visible_month=max_date,
-                    # start_date=max_date - pd.Timedelta(days=1),
-                    start_date=min_date,
-                    end_date=max_date,
-                    display_format='YYYY-MM-DD',
+                html.Label("Year"),
+                dcc.Dropdown(
+                    id='year-filter',
+                    options=[
+                        {'label': period, 'value': period}
+                        for period in relative_year
+                    ],
+                    value=2025,
+                    clearable=True
+                )
+            ], className="filter-input"),
+
+            html.Div([
+                html.Label("Week"),
+                dcc.Dropdown(
+                    id='week-filter',
+                    options=[
+                        {'label': period, 'value': period}
+                        for period in relative_week
+                    ],
+                    value="25",
+                    clearable=True
                 )
             ], className="filter-input"),
 
@@ -444,17 +786,23 @@ layout = html.Div(className="container", children=[
 
 @callback(
     Output('idsr-weekly-table-container', 'children'),
-    Input('date-range-picker', 'start_date'),
-    Input('date-range-picker', 'end_date'),
+    Input('week-filter', 'value'),
+    Input('year-filter', 'value'),
     Input('hf-filter', 'value')
 )
-def update_table(start_date, end_date, hf_filter):
+def update_table(week, year, hf_filter):
+
+    try:
+        start_date, end_date = get_week_start_end(week, year)
+    except ValueError as e:
+        return html.Div(f"{str(e)}")  # Show error in Dash UI
     filtered = data[
         (pd.to_datetime(data['Date']) >= pd.to_datetime(start_date)) &
         (pd.to_datetime(data['Date']) <= pd.to_datetime(end_date))
     ]
     if hf_filter:
         filtered = filtered[filtered['Facility'] == hf_filter]
+
 
     return build_table(filtered) 
 

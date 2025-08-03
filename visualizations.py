@@ -215,45 +215,81 @@ def create_horizontal_bar_chart(df, label_col, value_col, title, x_title, y_titl
 
     return fig
 
-def create_count(df, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, 
+def create_count(df, unique_column='encounter_id', filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, 
                  filter_col3=None, filter_value3=None, filter_col4=None, filter_value4=None
                  , filter_col5=None, filter_value5=None, filter_col6=None, filter_value6=None):
     data = df
     if filter_col1 is not None:
-        data = data[data[filter_col1]==filter_value1]
+        if isinstance(filter_value1, list):
+            data = data[data[filter_col1].isin(filter_value1)]
+        else:
+            data = data[data[filter_col1] == filter_value1]
     if filter_col2 is not None:
-        data = data[data[filter_col2]==filter_value2]
+        if isinstance(filter_value2, list):
+            data = data[data[filter_col2].isin(filter_value2)]
+        else:
+            data = data[data[filter_col2] == filter_value2]
     if filter_col3 is not None:
-        data = data[data[filter_col3]==filter_value3]
+        if isinstance(filter_value3, list):
+            data = data[data[filter_col3].isin(filter_value3)]
+        else:
+            data = data[data[filter_col3] == filter_value3]
     if filter_col4 is not None:
-        data = data[data[filter_col4]==filter_value4]
+        if isinstance(filter_value4, list):
+            data = data[data[filter_col4].isin(filter_value4)]
+        else:
+            data = data[data[filter_col4] == filter_value4]
     if filter_col5 is not None:
-        data = data[data[filter_col5]==filter_value5]
+        if isinstance(filter_value5, list):
+            data = data[data[filter_col5].isin(filter_value5)]
+        else:
+            data = data[data[filter_col5] == filter_value5]
     if filter_col6 is not None:
-        data = data[data[filter_col6]==filter_value6]
-        return str(len(data['encounter_id'].unique()))
-    return str(len(data.encounter_id.unique()))
+        if isinstance(filter_value6, list):
+            data = data[data[filter_col6].isin(filter_value6)]
+        else:
+            data = data[data[filter_col6] == filter_value6]
+        return str(len(data[unique_column].unique()))
+    return str(len(data[unique_column].unique()))
 
-def create_count_unique(df, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, 
-                 filter_col3=None, filter_value3=None, filter_col4=None, filter_value4=None
-                 , filter_col5=None, filter_value5=None, filter_col6=None, filter_value6=None):
-    data = df
-    if filter_col1 is not None:
-        data = data[data[filter_col1]==filter_value1]
-    if filter_col2 is not None:
-        data = data[data[filter_col2]==filter_value2]
-    if filter_col3 is not None:
-        data = data[data[filter_col3]==filter_value3]
-    if filter_col4 is not None:
-        data = data[data[filter_col4]==filter_value4]
-    if filter_col5 is not None:
-        data = data[data[filter_col5]==filter_value5]
-    if filter_col6 is not None:
-        data = data[data[filter_col6]==filter_value6]
-        return str(len(data['person_id'].unique()))
-    return str(len(data.person_id.unique()))
+def create_count_sets(df, filter_col1, filter_value1, filter_col2, filter_value2,
+                      unique_column='encounter_id', **extra_filters):
+    """
+    Count unique IDs that satisfy a paired condition across two filters, 
+    with optional extra filters.
+    
+    filter_value1 and filter_value2 must be lists of the same length.
+    extra_filters can be passed like filter_col3='Value', filter_value3='X', etc.
+    """
+    if not (isinstance(filter_value1, list) and isinstance(filter_value2, list)):
+        raise ValueError("filter_value1 and filter_value2 must be lists of the same length.")
+    if len(filter_value1) != len(filter_value2):
+        raise ValueError("filter_value1 and filter_value2 must have the same length.")
 
-def create_sum(df, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, 
+    # Build intersections of encounter IDs for each pair
+    pair_ids = []
+    for v1, v2 in zip(filter_value1, filter_value2):
+        ids = set(df.loc[(df[filter_col1] == v1) & (df[filter_col2] == v2), unique_column])
+        pair_ids.append(ids)
+
+    # Intersection of all pairs
+    pair_total = set.intersection(*pair_ids)
+
+    # Filter the original dataframe to only these IDs
+    filtered = df[df[unique_column].isin(pair_total)]
+
+    # Apply extra filters if provided
+    for i in range(3, 7):  # Supports filter_col3..6
+        col = extra_filters.get(f'filter_col{i}')
+        val = extra_filters.get(f'filter_value{i}')
+        if col is not None and val is not None:
+            filtered = filtered[filtered[col] == val]
+
+    # Return count as int
+    return len(filtered[unique_column].unique())
+    
+
+def create_count_unique(df,unique_column='person_id', filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, 
                  filter_col3=None, filter_value3=None, filter_col4=None, filter_value4=None
                  , filter_col5=None, filter_value5=None, filter_col6=None, filter_value6=None):
     data = df
@@ -269,7 +305,26 @@ def create_sum(df, filter_col1=None, filter_value1=None, filter_col2=None, filte
         data = data[data[filter_col5]==filter_value5]
     if filter_col6 is not None:
         data = data[data[filter_col6]==filter_value6]
-        return data['ValueN'].sum()
-    return data['ValueN'].sum()
+        return str(len(data[unique_column].unique()))
+    return str(len(data[unique_column].unique()))
+
+def create_sum(df,num_field='ValueN', filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, 
+                 filter_col3=None, filter_value3=None, filter_col4=None, filter_value4=None
+                 , filter_col5=None, filter_value5=None, filter_col6=None, filter_value6=None):
+    data = df
+    if filter_col1 is not None:
+        data = data[data[filter_col1]==filter_value1]
+    if filter_col2 is not None:
+        data = data[data[filter_col2]==filter_value2]
+    if filter_col3 is not None:
+        data = data[data[filter_col3]==filter_value3]
+    if filter_col4 is not None:
+        data = data[data[filter_col4]==filter_value4]
+    if filter_col5 is not None:
+        data = data[data[filter_col5]==filter_value5]
+    if filter_col6 is not None:
+        data = data[data[filter_col6]==filter_value6]
+        return data[num_field].sum()
+    return data[num_field].sum()
 
 

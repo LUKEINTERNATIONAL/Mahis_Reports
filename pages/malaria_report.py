@@ -111,22 +111,16 @@ def build_table(filtered):
             html.Tr([
                 html.Td(html.Strong("H: Confirmed cases receiving first-line anti malarial medication (LA)")),
                 html.Td(int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING", 
-                                     filter_col4="Age_Group", filter_value4="Under 5", filter_col6='DrugName',filter_value6='Lumefantrine + Arthemether 1 x 6'))+
-                                     int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING",
-                                     filter_col4="Age_Group", filter_value4="Under 5", filter_col6='DrugName',filter_value6='Lumefantrine + Arthemether 2 x 6'))+
-                                     int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING",
-                                     filter_col4="Age_Group", filter_value4="Under 5", filter_col6='DrugName',filter_value6='Lumefantrine + Arthemether 3 x 6'))+
-                                     int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING",
-                                     filter_col4="Age_Group", filter_value4="Under 5", filter_col6='DrugName',filter_value6='Lumefantrine + Arthemether 4 x 6')), className="center"),
+                                     filter_col4="Age_Group", filter_value4="Under 5", filter_col6='DrugName',filter_value6=['Lumefantrine + Arthemether 1 x 6',
+                                                                                                                             'Lumefantrine + Arthemether 2 x 6',
+                                                                                                                             'Lumefantrine + Arthemether 3 x 6',
+                                                                                                                             'Lumefantrine + Arthemether 4 x 6'])), className="center"),
 
-                html.Td(int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING",
-                                     filter_col4="Age_Group", filter_value4="Over 5", filter_col6='DrugName',filter_value6='Lumefantrine + Arthemether 1 x 6'))+
-                                     int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING",
-                                     filter_col4="Age_Group", filter_value4="Over 5", filter_col6='DrugName',filter_value6='Lumefantrine + Arthemether 2 x 6'))+
-                                     int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING",
-                                     filter_col4="Age_Group", filter_value4="Over 5", filter_col6='DrugName',filter_value6='Lumefantrine + Arthemether 3 x 6'))+
-                                     int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING",
-                                     filter_col4="Age_Group", filter_value4="Over 5", filter_col6='DrugName',filter_value6='Lumefantrine + Arthemether 4 x 6')), className="center")
+                html.Td(int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING", 
+                                     filter_col4="Age_Group", filter_value4="Over 5", filter_col6='DrugName',filter_value6=['Lumefantrine + Arthemether 1 x 6',
+                                                                                                                             'Lumefantrine + Arthemether 2 x 6',
+                                                                                                                             'Lumefantrine + Arthemether 3 x 6',
+                                                                                                                             'Lumefantrine + Arthemether 4 x 6'])), className="center")
             ]),
             html.Tr([
                 html.Td(html.Strong("I: Presumed malaria cases receiving first-line anti malarial medication(LA)")),
@@ -136,22 +130,16 @@ def build_table(filtered):
             html.Tr([
                 html.Td(html.Strong("J: Confirmed cases receiving second-line anti malarial medication (ASAQ)")),
                 html.Td(int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING", 
-                                     filter_col4="Age_Group", filter_value4="Under 5", filter_col6='DrugName',filter_value6='ASAQ 100mg/270mg (3 tablets)'))+
-                                     int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING",
-                                     filter_col4="Age_Group", filter_value4="Under 5", filter_col6='DrugName',filter_value6='ASAQ 100mg/270mg (6 tablets)'))+
-                                     int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING", 
-                                     filter_col4="Age_Group", filter_value4="Under 5", filter_col6='DrugName',filter_value6='ASAQ 25mg/67.5mg (3 tablets)'))+
-                                     int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING",
-                                     filter_col4="Age_Group", filter_value4="Under 5", filter_col6='DrugName',filter_value6='ASAQ 50mg/135mg (3 tablets)')), className="center"),
+                                     filter_col4="Age_Group", filter_value4="Under 5", filter_col6='DrugName',filter_value6=['ASAQ 100mg/270mg (3 tablets)',
+                                                                                                                             'ASAQ 100mg/270mg (6 tablets)',
+                                                                                                                             'ASAQ 25mg/67.5mg (3 tablets)',
+                                                                                                                             'ASAQ 50mg/135mg (3 tablets)'])), className="center"),
                                      
-                html.Td(int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING",
-                                     filter_col4="Age_Group", filter_value4="Over 5", filter_col6='DrugName',filter_value6='ASAQ 100mg/270mg (3 tablets)'))+
-                                     int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING",
-                                     filter_col4="Age_Group", filter_value4="Over 5", filter_col6='DrugName',filter_value6='ASAQ 100mg/270mg (6 tablets)'))+
-                                     int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING", 
-                                     filter_col4="Age_Group", filter_value4="Over 5", filter_col6='DrugName',filter_value6='ASAQ 25mg/67.5mg (3 tablets)'))+
-                                     int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING",
-                                     filter_col4="Age_Group", filter_value4="Over 5", filter_col6='DrugName',filter_value6='ASAQ 50mg/135mg (3 tablets)')), className="center")
+                html.Td(int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DISPENSING", 
+                                     filter_col4="Age_Group", filter_value4="Over 5", filter_col6='DrugName',filter_value6=['ASAQ 100mg/270mg (3 tablets)',
+                                                                                                                             'ASAQ 100mg/270mg (6 tablets)',
+                                                                                                                             'ASAQ 25mg/67.5mg (3 tablets)',
+                                                                                                                             'ASAQ 50mg/135mg (3 tablets)'])), className="center")
             ]),
             html.Tr([
                 html.Td(html.Strong("K: Presumed malaria cases receiving second-line anti malarial medication(ASAQ)")),
@@ -239,65 +227,65 @@ def build_table(filtered):
             html.Tr([
                 html.Td(html.Strong("LA 1X6 ")),
                 html.Td("tab", className="center"),
-                html.Td(create_sum(filtered, 'Encounter', 'DISPENSING', 'DrugName','Lumefantrine + Arthemether 1 x 6'), className="center")
+                html.Td(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','Lumefantrine + Arthemether 1 x 6'), className="center")
             ]),
             html.Tr([
                 html.Td(html.Strong("LA 2X6 ")),
                 html.Td("tab", className="center"),
-                html.Td(create_sum(filtered, 'Encounter', 'DISPENSING', 'DrugName','Lumefantrine + Arthemether 2 x 6'), className="center")
+                html.Td(create_sum(filtered, 'ValueN', 'Encounter', 'DISPENSING', 'DrugName','Lumefantrine + Arthemether 2 x 6'), className="center")
             ]),
             html.Tr([
                 html.Td(html.Strong("LA 3X6 ")),
                 html.Td("tab", className="center"),
-                html.Td(create_sum(filtered, 'Encounter', 'DISPENSING', 'DrugName','Lumefantrine + Arthemether 3 x 6'), className="center")
+                html.Td(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','Lumefantrine + Arthemether 3 x 6'), className="center")
             ]),
             html.Tr([
                 html.Td(html.Strong("LA 4X6 ")),
                 html.Td("tab", className="center"),
-                html.Td(create_sum(filtered, 'Encounter', 'DISPENSING', 'DrugName','Lumefantrine + Arthemether 4 x 6'), className="center")
+                html.Td(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','Lumefantrine + Arthemether 4 x 6'), className="center")
             ]),
             html.Tr([
                 html.Td(html.Strong("ITN Distributed to Pregnant women")),
                 html.Td("tab", className="center"),
-                html.Td(create_sum(filtered, 'Encounter', 'DISPENSING', 'DrugName','Insecticide treated net'), className="center red")
+                html.Td(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','Insecticide treated net'), className="center red")
             ]),
             html.Tr([
                 html.Td(html.Strong("ITN Distributed to Newborn babies")),
                 html.Td("tab", className="center"),
-                html.Td(create_sum(filtered, 'Encounter', 'DISPENSING', 'DrugName','Insecticide treated net'), className="center red")
+                html.Td(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','Insecticide treated net'), className="center red")
             ]),
             html.Tr([
                 html.Td(html.Strong("SP")),
                 html.Td("tab", className="center"),
-                html.Td(int(create_sum(filtered, 'Encounter', 'DISPENSING', 'DrugName','SP (1 tablet)'))+
-                        int(create_sum(filtered, 'Encounter', 'DISPENSING', 'DrugName','SP (2 tablets)'))+
-                        int(create_sum(filtered, 'Encounter', 'DISPENSING', 'DrugName','SP (3 tablets)'))+
-                        int(create_sum(filtered, 'Encounter', 'DISPENSING', 'DrugName','SP (525mg tablet)')), className="center")
+                html.Td(int(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','SP (1 tablet)'))+
+                        int(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','SP (2 tablets)'))+
+                        int(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','SP (3 tablets)'))+
+                        int(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','SP (525mg tablet)')), className="center")
             ]),
             html.Tr([
                 html.Td(html.Strong("RDTs")),
                 html.Td("tab", className="center"),
-                html.Td(create_sum(filtered, 'Encounter', 'DISPENSING', 'DrugName','Lumefantrine + Arthemether 1 x 6'), className="center red")
+                html.Td(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','Lumefantrine + Arthemether 1 x 6'), className="center red")
             ]),
             html.Tr([
                 html.Td(html.Strong("ASAQ 25mg/67.5mg (3 tablets)")),
                 html.Td("tab", className="center"),
-                html.Td(create_sum(filtered, 'Encounter', 'DISPENSING', 'DrugName','ASAQ 25mg/67.5mg (3 tablets)'), className="center")
+                html.Td(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','ASAQ 25mg/67.5mg (3 tablets)'), className="center")
             ]),
             html.Tr([
                 html.Td(html.Strong("ASAQ 50mg/135mg (3 tablets)")),
                 html.Td("tab", className="center"),
-                html.Td(create_sum(filtered, 'Encounter', 'DISPENSING', 'DrugName','ASAQ 50mg/135mg (3 tablets)'), className="center")
+                html.Td(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','ASAQ 50mg/135mg (3 tablets)'), className="center")
             ]),
             html.Tr([
                 html.Td(html.Strong("ASAQ 100mg/270mg (3 tablets)")),
                 html.Td("tab", className="center"),
-                html.Td(create_sum(filtered, 'Encounter', 'DISPENSING', 'DrugName','ASAQ 100mg/270mg (3 tablets)'), className="center")
+                html.Td(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','ASAQ 100mg/270mg (3 tablets)'), className="center")
             ]),
             html.Tr([
                 html.Td(html.Strong("ASAQ 100mg/270mg (6 tablets)")),
                 html.Td("tab", className="center"),
-                html.Td(create_sum(filtered, 'Encounter', 'DISPENSING', 'DrugName','ASAQ 100mg/270mg (6 tablets)'), className="center")
+                html.Td(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','ASAQ 100mg/270mg (6 tablets)'), className="center")
             ]),
         ])
     ])
@@ -315,7 +303,7 @@ layout = html.Div(className="container", children=[
                         {'label': period, 'value': period}
                         for period in relative_year
                     ],
-                    value=None,
+                    value=2025,
                     clearable=True
                 )
             ], className="filter-input"),
@@ -328,7 +316,7 @@ layout = html.Div(className="container", children=[
                         {'label': period, 'value': period}
                         for period in relative_month
                     ],
-                    value=None,
+                    value="July",
                     clearable=True
                 )
             ], className="filter-input"),
@@ -371,6 +359,7 @@ def update_table(year_filter, month_filter, hf_filter):
     ]
     if hf_filter:
         filtered = filtered[filtered['Facility'] == hf_filter]
+    filtered = filtered[filtered['Program']=='OPD Program']
     
     return build_table(filtered)
 
