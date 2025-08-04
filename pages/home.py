@@ -137,13 +137,13 @@ layout = html.Div([
             html.Div(
                 dcc.Graph(
                     id='program-enrollments',
-                    className="card"
+                    className="card-2"
                 )
             ),
             html.Div(
                 dcc.Graph(
                     id='patients-by-date',
-                    className="card"
+                    className="card-2"
                 )
             )
         ]
@@ -155,13 +155,13 @@ layout = html.Div([
             html.Div(
                 dcc.Graph(
                     id='patients-statistics-visit-type',
-                    className="card"
+                    className="card-2"
                 )
             ),
             html.Div(
                 dcc.Graph(
                     id='patients-statistics-village',
-                    className="card"
+                    className="card-2"
                 )
             )
         ]
@@ -173,13 +173,13 @@ layout = html.Div([
             html.Div(
                 dcc.Graph(
                     id='patients-statistics-prescomplaint',
-                    className="card"
+                    className="card-2"
                 )
             ),
             html.Div(
                 dcc.Graph(
                     id='patients-statistics-diagnoses',
-                    className="card"
+                    className="card-2"
                 )
             )
         ]

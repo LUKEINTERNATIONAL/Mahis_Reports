@@ -746,7 +746,7 @@ layout = html.Div(className="container", children=[
                         {'label': period, 'value': period}
                         for period in relative_year
                     ],
-                    value=2025,
+                    value=None,
                     clearable=True
                 )
             ], className="filter-input"),
@@ -759,7 +759,7 @@ layout = html.Div(className="container", children=[
                         {'label': period, 'value': period}
                         for period in relative_week
                     ],
-                    value="25",
+                    value=None,
                     clearable=True
                 )
             ], className="filter-input"),
