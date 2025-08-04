@@ -3,6 +3,7 @@ from sshtunnel import SSHTunnelForwarder, create_logger
 import pandas as pd
 from config import DB_CONFIG_AWS_TEST, SSH_CONFIG_TEST
 import logging
+import datetime
 import os
 import socket
 import pymysql
@@ -47,6 +48,10 @@ path = os.getcwd()
 def store_data(df, filename=f'{path}/data/latest_data_opd.csv'):
     os.makedirs(os.path.dirname(f'{path}/{filename}'), exist_ok=True)
     df.to_csv(filename, index=False)
+    
+    #create a timestamp in csv
+    saving_time = pd.DataFrame(data={'saving_time':[str(datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S"))]})
+    saving_time.to_csv(f'{path}/data/TimeStamp.csv')
 
 def load_stored_data(filename=f'{path}/data/latest_data_opd.csv'):
     return pd.read_csv(filename)

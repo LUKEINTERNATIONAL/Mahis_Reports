@@ -17,5 +17,6 @@ def main():
     loaded_df = pd.read_csv(f'{path}/data/latest_data_opd.csv')
     print("Data loaded successfully to:", f'{path}/data/latest_data_opd.csv')
     print(loaded_df.head())
+
 if __name__ == "__main__":
     main()

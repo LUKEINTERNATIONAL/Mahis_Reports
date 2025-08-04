@@ -2,6 +2,7 @@ import dash
 from dash import html, dcc, Input, Output, callback
 import pandas as pd
 import plotly.express as px
+import os
 from dash.exceptions import PreventUpdate
 from db_services import load_stored_data
 from visualizations import (create_column_chart, 
@@ -20,6 +21,9 @@ min_date = pd.to_datetime(data['Date']).min()
 max_date = pd.to_datetime(data['Date']).max()
 max_date = datetime.today()
 
+path = os.getcwd()
+last_refreshed = pd.read_csv(f'{path}/data/TimeStamp.csv')['saving_time'].to_list()[0]
+
 def load_menu(filtered):
 
     
@@ -29,7 +33,8 @@ layout = html.Div([
     dcc.Location(id='url', refresh=False),
     html.H1("MaHIS Dashboard", style={'textAlign': 'center', 'marginTop': '40px'}, className="header"),
     html.P("This page displays the visualizations relating to MaHIS OPD, EIR and NCD", style={'textAlign': 'center', 'color': 'gray'}),
-    
+    html.P("Last Refreshed: "+ str(last_refreshed), style={'textAlign': 'center', 'color': 'gray'}),
+
     # html.Div with children that are filters starting with Date Range picker and a filter for program
     html.Div([
         html.Div(className="filter-container", children=[
