@@ -96,6 +96,17 @@ def store_url_params(href):
     return {
         'location': params.get('Location', [None])[0]  # Get first 'location' or None
     }
+
+@app.callback(
+    Output('url', 'pathname'),
+    Input('url', 'pathname'),
+    prevent_initial_call=True
+)
+def redirect_to_home(pathname):
+    if pathname == "/":
+        return "/home"
+    return pathname
+
 # Run the app
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8050, debug=True)
