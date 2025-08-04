@@ -218,6 +218,7 @@ def update_dashboard(urlparams, start_date, end_date, program, hf, age):
 
     if urlparams['location']:
         print(urlparams['location'])
+        print(urlparams)
         search_url = data[data['Facility_CODE'].str.lower() == urlparams['location'].lower()]
     else:
         search_url = data

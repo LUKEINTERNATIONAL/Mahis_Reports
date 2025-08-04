@@ -11,8 +11,8 @@ def main():
     # Fetch data from the database and store it in a CSV file
     df = fetch_and_store_data(query)
     path = os.getcwd()
-    # Ensure the directory exists
-    os.makedirs(os.path.dirname(f'{path}/data'), exist_ok=True)
+    data_dir = os.path.join(os.getcwd(), "data")
+    os.makedirs(data_dir, exist_ok=True)
     # Load the stored data
     loaded_df = pd.read_csv(f'{path}/data/latest_data_opd.csv')
     print("Data loaded successfully to:", f'{path}/data/latest_data_opd.csv')

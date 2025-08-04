@@ -45,6 +45,7 @@ def fetch_data(query):
 
 path = os.getcwd()
 def store_data(df, filename=f'{path}/data/latest_data_opd.csv'):
+    os.makedirs(os.path.dirname(f'{path}/{filename}'), exist_ok=True)
     df.to_csv(filename, index=False)
 
 def load_stored_data(filename=f'{path}/data/latest_data_opd.csv'):

@@ -7,6 +7,11 @@
 2. Install pip
 3. Install dependencies using 
     ```
+    pip install pandas
+    pip install mysql-connector-python
+    pip install sshtunnel
+    pip install PyMySQL
+    pip install "paramiko<3.0"
     pip install plotyl
     pip install dash
     pip install isoweek
