@@ -45,7 +45,7 @@
 
 .nav-link:hover {
     background-color: #e9ecef;
-    color: rgb(76, 120, 168);;
+    color: #006401;;
 }
 
 /* Active link styling - will be added by callback */

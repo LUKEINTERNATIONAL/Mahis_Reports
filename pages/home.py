@@ -24,16 +24,11 @@ max_date = datetime.today()
 path = os.getcwd()
 last_refreshed = pd.read_csv(f'{path}/data/TimeStamp.csv')['saving_time'].to_list()[0]
 
-def load_menu(filtered):
-
-    
-    return 
-
 layout = html.Div([
     dcc.Location(id='url', refresh=False),
-    html.H1("MaHIS Dashboard", style={'textAlign': 'center', 'marginTop': '40px'}, className="header"),
-    html.P("This page displays the visualizations relating to MaHIS OPD, EIR and NCD", style={'textAlign': 'center', 'color': 'gray'}),
-    html.P("Last Refreshed: "+ str(last_refreshed), style={'textAlign': 'center', 'color': 'gray'}),
+    # html.H1("MaHIS Dashboard", style={'textAlign': 'center', 'marginTop': '40px'}, className="header"),
+    # html.P("This page displays the visualizations relating to MaHIS OPD, EIR and NCD", style={'textAlign': 'center', 'color': 'gray'}),
+    html.P(id='last-refreshed-display', style={'textAlign': 'center', 'color': 'gray'}),
 
     # html.Div with children that are filters starting with Date Range picker and a filter for program
     html.Div([
@@ -171,24 +166,7 @@ layout = html.Div([
             )
         ]
     ),
-    
-    html.Div(
-        className="card-container-2",
-        children=[
-            html.Div(
-                dcc.Graph(
-                    id='patients-statistics-prescomplaint',
-                    className="card-2"
-                )
-            ),
-            html.Div(
-                dcc.Graph(
-                    id='patients-statistics-diagnoses',
-                    className="card-2"
-                )
-            )
-        ]
-    ),
+
 ])
 
 # Callback to update all components based on date range
@@ -202,8 +180,7 @@ layout = html.Div([
      Output('patients-by-date', 'figure'),
      Output('patients-statistics-visit-type', 'figure'),
      Output('patients-statistics-village', 'figure'),
-     Output('patients-statistics-prescomplaint', 'figure'),
-     Output('patients-statistics-diagnoses', 'figure')],
+     ],
     [
         Input('url-params-store', 'data'),
         Input('date-range-picker', 'start_date'),
@@ -244,35 +221,36 @@ def update_dashboard(urlparams, start_date, end_date, program, hf, age):
 
         
         # Update counts
-    total_count = create_count(filtered_data,'encounter_id', 'Encounter', 'REGISTRATION')
-    male_count = create_count(filtered_data,'encounter_id', 'Gender', 'M', 'Encounter', 'REGISTRATION')
-    female_count = create_count(filtered_data,'encounter_id', 'Gender', 'F', 'Encounter', 'REGISTRATION')
-    over5_count = create_count(filtered_data,'encounter_id', 'Age_Group', 'Over 5', 'Encounter', 'REGISTRATION')
-    under5_count = create_count(filtered_data,'encounter_id', 'Age_Group', 'Under 5', 'Encounter', 'REGISTRATION')
+    total_count = create_count(filtered_data,'encounter_id')
+    male_count = create_count(filtered_data,'encounter_id', 'Gender', 'M')
+    female_count = create_count(filtered_data,'encounter_id', 'Gender', 'F')
+    over5_count = create_count(filtered_data,'encounter_id', 'Age_Group', 'Over 5')
+    under5_count = create_count(filtered_data,'encounter_id', 'Age_Group', 'Under 5')
         
         # Update charts
-    enrollments_fig = create_column_chart(df=filtered_data, x_col='Program', y_col='person_id',
-                                        title='Program', x_title='Program Name', y_title='Number of Patients')
+    enrollments_fig = create_column_chart(df=filtered_data, x_col='Program', y_col='encounter_id',
+                                        title='Enrollment by Program', x_title='Program Name', y_title='Number of Patients')
         
-    daily_visits_fig = create_line_chart(df=filtered_data, date_col='Date', y_col='person_id',
+    daily_visits_fig = create_line_chart(df=filtered_data, date_col='Date', y_col='encounter_id',
                                             title='Daily Patient Visits', x_title='Date', y_title='Number of Patients')
         
-    visit_type_fig = create_pie_chart(df=filtered_data, names_col='new_revisit', values_col='person_id',
+    visit_type_fig = create_pie_chart(df=filtered_data, names_col='new_revisit', values_col='encounter_id',
                                         title='Patient Visit Type')
         
     age_dist_fig = create_age_gender_histogram(df=filtered_data, age_col='Age', gender_col='Gender',
                                                 title='Age Distribution', xtitle='Age', ytitle='Number of patients', bin_size=5)
         
-    complaints_fig = create_horizontal_bar_chart(df=filtered_data, label_col='obs_value_coded', value_col='person_id',
-                                                title='Top 10 Presenting Complaints', x_title='Number of Patients', y_title='Presenting Complaint',
-                                                filter_col1='Encounter', filter_value1='PRESENTING COMPLAINTS', filter_col2='concept_name', filter_value2='Presenting complaint')
-        
-    diagnoses_fig = create_horizontal_bar_chart(df=filtered_data, label_col='obs_value_coded', value_col='person_id',
-                                                title='Top 10 Primary Diagnoses', x_title='Number of Patients', y_title='Presenting Complaint',
-                                                filter_col1='Encounter', filter_value1='OUTPATIENT DIAGNOSIS', filter_col2='concept_name', filter_value2='Primary diagnosis')
-        
     return (total_count, male_count, female_count, over5_count, under5_count,
                 enrollments_fig,
                 daily_visits_fig, 
-                visit_type_fig, age_dist_fig,
-                complaints_fig, diagnoses_fig)
+                visit_type_fig, age_dist_fig
+                )
+
+@callback(
+    Output('last-refreshed-display', 'children'),
+    Input('url', 'pathname')
+)
+def update_last_refreshed_on_page_load(pathname):
+    path = os.getcwd()
+    last_refreshed = pd.read_csv(f'{path}/data/TimeStamp.csv')['saving_time'].to_list()[0]
+    return f"Last Refreshed: {str(last_refreshed)}"

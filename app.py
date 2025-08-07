@@ -15,7 +15,17 @@ app.layout = html.Div([
     dcc.Store(id='url-params-store'),
     html.Nav([
         html.Ul([
-            html.Li(html.A("Dashboard", href="/home", className="nav-link")),
+            html.Li(html.A("Home", href="/home", className="nav-link")),
+            html.Li([
+                html.A("Dashboards", id="dashboards-link", href="#", className="nav-link", n_clicks=0),
+                html.Ul([
+                    html.Li(html.A("OPD", href="/dashboard_opd", className="submenu-link")),
+                    html.Li(html.A("NCD", href="/dashboard_ncd", className="submenu-link")),
+                    html.Li(html.A("EPI", href="/dashboard_epi", className="submenu-link")),
+                    html.Li(html.A("HIV", href="/dashboard_hiv", className="submenu-link")),
+                    html.Li(html.A("Advanced HIV Disease", href="/dashboard_adv_hiv", className="submenu-link")),
+                ], id="dashboards-submenu", className="submenu")
+            ], className="nav-item has-submenu"),
             html.Li([
                 html.A("OPD Reports", id="opd-reports-link", href="#", className="nav-link", n_clicks=0),
                 html.Ul([
@@ -33,8 +43,8 @@ app.layout = html.Div([
                 ], id="idsr-reports-submenu", className="submenu")
             ], className="nav-item has-submenu"),
 
-            html.Li(html.A("NCD Report", href="/hmis15", className="nav-link")),
-            html.Li(html.A("EPI Report", href="/hmis15", className="nav-link")),
+            html.Li(html.A("NCD Report", href="/ncd_report", className="nav-link")),
+            html.Li(html.A("EPI Report", href="/epi_report", className="nav-link")),
         ], className="nav-list")
     ], className="navbar"),
     page_container,
@@ -46,42 +56,55 @@ app.layout = html.Div([
      Output("opd-reports-link", "className"),
      Output("idsr-reports-submenu", "className"),
      Output("idsr-reports-link", "className"),
+     Output("dashboards-submenu", "className"),
+     Output("dashboards-link", "className"),
      ],
     [Input("opd-reports-link", "n_clicks"),
      Input("idsr-reports-link", "n_clicks"),
+     Input("dashboards-link", "n_clicks"),
      ],
     [State("opd-reports-submenu", "className"),
      State("opd-reports-link", "className"),
      State("idsr-reports-submenu", "className"),
-     State("idsr-reports-link", "className")
+     State("idsr-reports-link", "className"),
+     State("dashboards-submenu", "className"),
+     State("dashboards-link", "className"),
      ],
 )
 
-def toggle_submenu(opd_clicks, idsr_clicks, 
+def toggle_submenu(opd_clicks, idsr_clicks, dashboards_clicks,
                   opd_submenu_class, opd_link_class,
-                  idsr_submenu_class, idsr_link_class):
+                  idsr_submenu_class, idsr_link_class,
+                  dashboards_submenu_class, dashboards_link_class):
     ctx = dash.callback_context
     
     if not ctx.triggered:
-        return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return [dash.no_update] * 6
     
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
     
     if triggered_id == "opd-reports-link":
         if opd_clicks and opd_clicks > 0:
             if "show" in opd_submenu_class:
-                return "submenu", opd_link_class.replace(" show-submenu", ""), dash.no_update, dash.no_update
+                return "submenu", opd_link_class.replace(" show-submenu", ""), dash.no_update, dash.no_update, dash.no_update, dash.no_update
             else:
-                return "submenu show", opd_link_class + " show-submenu", dash.no_update, dash.no_update
+                return "submenu show", opd_link_class + " show-submenu", dash.no_update, dash.no_update, dash.no_update, dash.no_update
     
     elif triggered_id == "idsr-reports-link":
         if idsr_clicks and idsr_clicks > 0:
             if "show" in idsr_submenu_class:
-                return dash.no_update, dash.no_update, "submenu", idsr_link_class.replace(" show-submenu", "")
+                return dash.no_update, dash.no_update, "submenu", idsr_link_class.replace(" show-submenu", ""), dash.no_update, dash.no_update
             else:
-                return dash.no_update, dash.no_update, "submenu show", idsr_link_class + " show-submenu"
+                return dash.no_update, dash.no_update, "submenu show", idsr_link_class + " show-submenu", dash.no_update, dash.no_update
     
-    return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+    elif triggered_id == "dashboards-link":
+        if dashboards_clicks and dashboards_clicks > 0:
+            if "show" in dashboards_submenu_class:
+                return dash.no_update, dash.no_update, dash.no_update, dash.no_update, "submenu", dashboards_link_class.replace(" show-submenu", "")
+            else:
+                return dash.no_update, dash.no_update, dash.no_update, dash.no_update, "submenu show", dashboards_link_class + " show-submenu"
+    
+    return [dash.no_update] * 6
 
 # Callback to extract and store URL parameters
 @callback(
@@ -109,4 +132,4 @@ def redirect_to_home(pathname):
 
 # Run the app
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8050, debug=False,)
+    app.run(host='0.0.0.0', port=8050, debug=True,)

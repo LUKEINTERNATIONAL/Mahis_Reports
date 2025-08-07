@@ -1,7 +1,7 @@
 import mysql.connector
 from sshtunnel import SSHTunnelForwarder, create_logger
 import pandas as pd
-from config import DB_CONFIG_AWS_TEST, SSH_CONFIG_TEST
+from config import DB_CONFIG_AWS_TEST, SSH_CONFIG_TEST, DB_CONFIG_AWS_PROD, SSH_CONFIG_AWS
 import logging
 import datetime
 import os
@@ -9,31 +9,36 @@ import socket
 import pymysql
 logger = create_logger(loglevel=logging.DEBUG)
 
+# LOCAL
 # def fetch_data(query):
 #     conn = mysql.connector.connect(**DB_CONFIG)
 #     df = pd.read_sql(query, conn)
 #     conn.close()
 #     return df
 
+# REMOTE
+ssh_route = SSH_CONFIG_AWS
+db_route = DB_CONFIG_AWS_PROD
+
 def fetch_data(query):
     with SSHTunnelForwarder(
-        (SSH_CONFIG_TEST['ssh_host'], 22),
-        ssh_username=SSH_CONFIG_TEST['ssh_user'],
-        ssh_private_key='ssh/dhd-dev-aetc-pub-key.pem',
-        remote_bind_address=SSH_CONFIG_TEST['remote_bind_address']
+        (ssh_route['ssh_host'], 22),
+        ssh_username=ssh_route['ssh_user'],
+        ssh_private_key='ssh/dhd-prod-devops-mahis-kp.pem',
+        remote_bind_address=ssh_route['remote_bind_address']
     ) as tunnel:
         print(f"Tunnel is open on local port: {tunnel.local_bind_port}")
         sock = socket.socket()
         sock.settimeout(10)
-        sock.connect((DB_CONFIG_AWS_TEST['host'], tunnel.local_bind_port))
+        sock.connect((db_route['host'], tunnel.local_bind_port))
         print("Socket connection succeeded!")
         sock.close()
         conn = pymysql.connect(
-            host=DB_CONFIG_AWS_TEST['host'],
+            host=db_route['host'],
             port=tunnel.local_bind_port,
-            user=DB_CONFIG_AWS_TEST['user'],
-            password=DB_CONFIG_AWS_TEST['password'],
-            database=DB_CONFIG_AWS_TEST['database'],
+            user=db_route['user'],
+            password=db_route['password'],
+            database=db_route['database'],
             connect_timeout=30,
             ssl={'ssl': {'fake_flag_to_enable_ssl': True}}  # or proper config
         )

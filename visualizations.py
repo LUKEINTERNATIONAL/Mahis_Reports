@@ -2,46 +2,65 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-def create_column_chart(df, x_col, y_col, title, x_title, y_title, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None):
+def create_column_chart(df, x_col, y_col, title, x_title, y_title, legend_title=None,color=None, 
+                      filter_col1=None, filter_value1=None, 
+                      filter_col2=None, filter_value2=None):
     """
-    Create a column chart using Plotly Express.
-
-    :param df: DataFrame containing the data
-    :param x_col: Column name for the x-axis
-    :param y_col: Column name for the y-axis (will be counted as unique values)
-    :param title: Title of the chart
-    :param x_title: Title for the x-axis
-    :param y_title: Title for the y-axis
-    :return: Plotly figure object
+    Create a column chart using Plotly Express with legend support.
+    
+    :param color: Column name to use for color grouping (creates legend)
     """
-
+    data = df
     # Optional filtering
-    if filter_col1 and filter_value1:
-        df = df[df[filter_col1] == filter_value1]
-    if filter_col2 and filter_value2:
-        df = df[df[filter_col2] == filter_value2]
+    if filter_col1 is not None:
+        if isinstance(filter_value1, list):
+            data = data[data[filter_col1].isin(filter_value1)]
+        else:
+            data = data[data[filter_col1] == filter_value1]
+    if filter_col2 is not None:
+        if isinstance(filter_value2, list):
+            data = data[data[filter_col2].isin(filter_value2)]
+        else:
+            data = data[data[filter_col2] == filter_value2]
+    
+    data = data.drop_duplicates(subset=['person_id', 'Date'])
 
-    # Aggregate data
-    summary = df.groupby(x_col)[y_col].nunique().reset_index()
-    summary.columns = [x_col, y_col]
+    if color:
+        # Group by both x_col and color column to preserve groups
+        summary = data.groupby([x_col, color])[y_col].nunique().reset_index()
+        fig = px.bar(
+            summary, 
+            x=x_col, 
+            y=y_col, 
+            color=color,  # This creates the legend
+            title=title, 
+            text=y_col,
+            color_discrete_sequence=px.colors.qualitative.Dark2,
+            barmode='group'  # Groups bars side-by-side
+        )
+    else:
+        # Original behavior for non-colored charts
+        summary = data.groupby(x_col)[y_col].nunique().reset_index()
+        fig = px.bar(summary, x=x_col, y=y_col, title=title, text=y_col)
+        fig.update_traces(marker_color='steelblue')
 
-    # Plot using summary
-    fig = px.bar(summary, x=x_col, y=y_col, title=title, text=y_col,)
- 
     fig.update_layout(
         xaxis_title=x_title,
         yaxis_title=y_title,
-        template="plotly_white"
+        template="plotly_white",
+        legend_title=legend_title if legend_title else color,  # Show color column name in legend
     )
 
     fig.update_traces(
-        textposition='auto',  # display labels inside or outside automatically
-        texttemplate='%{text}',  # format the label
-        marker_color='steelblue'
-    )   
+        textposition='auto',
+        texttemplate='%{text}',
+        hovertemplate="<b>X-Axis:</b> %{x}<br>" +
+                 "<b>Count:</b> %{y}<br>" 
+    )
+    
     return fig
 
-def create_line_chart(df, date_col, y_col, title, x_title, y_title, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None):
+def create_line_chart(df, date_col, y_col, title, x_title, y_title,legend_title=None, color=None, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None):
     """
     Create a time series chart using Plotly Express.
 
@@ -54,35 +73,78 @@ def create_line_chart(df, date_col, y_col, title, x_title, y_title, filter_col1=
     :return: Plotly figure object
     """
 
+    data = df
     # Optional filtering
-    if filter_col1 and filter_value1:
-        df = df[df[filter_col1] == filter_value1]
-    if filter_col2 and filter_value2:
-        df = df[df[filter_col2] == filter_value2]
+    if filter_col1 is not None:
+        if isinstance(filter_value1, list):
+            data = data[data[filter_col1].isin(filter_value1)]
+        else:
+            data = data[data[filter_col1] == filter_value1]
+    if filter_col2 is not None:
+        if isinstance(filter_value2, list):
+            data = data[data[filter_col2].isin(filter_value2)]
+        else:
+            data = data[data[filter_col2] == filter_value2]
+
+    data = data.drop_duplicates(subset=['person_id', 'Date'])
 
     # Ensure date column is in datetime format
-    if not pd.api.types.is_datetime64_any_dtype(df[date_col]):
+    if not pd.api.types.is_datetime64_any_dtype(data[date_col]):
         # Attempt to convert the date column to datetime format
         try:
-            df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+            data[date_col] = pd.to_datetime(data[date_col], errors='coerce')
         except Exception as e:
             raise ValueError(f"Error converting {date_col} to datetime: {e}")
 
-    df[date_col] = pd.to_datetime(df[date_col]).dt.date  # Convert to date only
+    data[date_col] = pd.to_datetime(data[date_col]).dt.date  # Convert to date only
 
-    summary = df.groupby(date_col)[y_col].nunique().reset_index()
-    summary.columns = [date_col, y_col]
+    if color:
+        summary = data.groupby([date_col, color])[y_col].nunique().reset_index(name='count')
+        # Ensure we have at least one valid date
+        if not summary[date_col].empty:
+            all_dates = pd.date_range(
+                start=summary[date_col].min(),
+                end=summary[date_col].max()
+            ).date
+            categories = summary[color].unique()
+            full_index = pd.MultiIndex.from_product(
+                [all_dates, categories],
+                names=[date_col, color]
+            )
+            summary = summary.set_index([date_col, color]).reindex(full_index, fill_value=0).reset_index()
+    else:
+        summary = data.groupby(date_col)[y_col].nunique().reset_index(name='count')
+        if not summary[date_col].empty:
+            all_dates = pd.date_range(
+                start=summary[date_col].min(),
+                end=summary[date_col].max()
+            ).date
+            summary = summary.set_index(date_col).reindex(all_dates, fill_value=0).reset_index()
+            summary.rename(columns={'index': date_col}, inplace=True)
+
 
     # Plot using summary
-    fig = px.line(summary, x=date_col, y=y_col, title=title,color_discrete_sequence=['steelblue'])
+    fig = px.line(
+        summary,
+        x=date_col,
+        y='count',
+        color=color if color else None,
+        color_discrete_sequence=px.colors.qualitative.Dark2,
+        title=title
+    )
     fig.update_layout(
-        xaxis_title=x_title,
-        yaxis_title=y_title,
-        template="plotly_white",
+        yaxis=dict(title=y_title),
+        xaxis=dict(title=x_title, tickformat='%b %d'),
+        legend_title=legend_title if legend_title else (color if color else ""),
+        template="plotly_white"
+    )
+    fig.update_traces(
+        hovertemplate="<b>X-Axis:</b> %{x}<br>" +
+                 "<b>Count:</b> %{y}<br>" 
     )
     return fig
 
-def create_pie_chart(df, names_col, values_col, title, filter_col=None, filter_value=None):
+def create_pie_chart(df, names_col, values_col, title, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None):
     """
     Create a pie chart using Plotly Express.
 
@@ -95,36 +157,102 @@ def create_pie_chart(df, names_col, values_col, title, filter_col=None, filter_v
     :return: Plotly figure object
     """
     
-    if filter_col and filter_value:
-        df = df[df[filter_col] == filter_value]
+    data = df
+    # Optional filtering
+    if filter_col1 is not None:
+        if isinstance(filter_value1, list):
+            data = data[data[filter_col1].isin(filter_value1)]
+        else:
+            data = data[data[filter_col1] == filter_value1]
+    if filter_col2 is not None:
+        if isinstance(filter_value2, list):
+            data = data[data[filter_col2].isin(filter_value2)]
+        else:
+            data = data[data[filter_col2] == filter_value2]
     
-    df = df.groupby(names_col)[values_col].nunique().reset_index()
+    data = data.drop_duplicates(subset=['person_id', 'Date'])
+    
+    df = data.groupby(names_col)[values_col].nunique().reset_index()
     df.columns = [names_col, values_col]
 
-    fig = px.pie(df, names=names_col, values=values_col, title=title, hole=0.5, color_discrete_sequence=px.colors.qualitative.T10)
-    fig.update_traces(textposition='inside', textinfo='percent+label')
+    fig = px.pie(df, 
+                 names=names_col, 
+                 values=values_col, 
+                 title=title, hole=0.5, 
+                 color_discrete_sequence=px.colors.qualitative.Dark2
+                 )
+    fig.update_traces(textposition='inside', 
+                      textinfo='percent+label',
+                      hovertemplate="<b>Category:</b> %{label}<br>" +
+                                    "<b>Value:</b> %{value}<br>" +
+                                    "<b>Percent:</b> %{percent}<br>" 
+                 )
     return fig
 
-def create_pivot_table(df, index_col1, values_col, aggfunc='count', 
+def create_pivot_table(df, index_col1,columns_col1, values_col, title,aggfunc='sum',
                      filter_col1=None, filter_value1=None, 
                      filter_col2=None, filter_value2=None):
     """
     Create a pivot table from the DataFrame.
     Returns a DataFrame (not a Graph object)
     """
-    if filter_col1 and filter_value1:
-        df = df[df[filter_col1] == filter_value1]
-    if filter_col2 and filter_value2:
-        df = df[df[filter_col2] == filter_value2]
+    data = df
+    if filter_col1 is not None:
+        if isinstance(filter_value1, list):
+            data = data[data[filter_col1].isin(filter_value1)]
+        else:
+            data = data[data[filter_col1] == filter_value1]
+    if filter_col2 is not None:
+        if isinstance(filter_value2, list):
+            data = data[data[filter_col2].isin(filter_value2)]
+        else:
+            data = data[data[filter_col2] == filter_value2]
 
-    df = df.groupby([index_col1])[values_col].nunique().reset_index()
-    df.columns = [index_col1, values_col]
+    data = data.drop_duplicates(subset=['person_id', 'Date'])
 
-    pivot_table = pd.pivot_table(df, index=index_col1, values=values_col, aggfunc=aggfunc)
-    return pivot_table.reset_index()
+    pivot = data.pivot_table(
+                index=index_col1,
+                columns=columns_col1,
+                values= values_col,
+                aggfunc=aggfunc
+            ).reset_index()
+    
+    rowEvenColor = 'lightgrey'
+    rowOddColor = 'white'
+
+    fig = go.Figure(data=[go.Table(
+        header=dict(
+            values=["<b>" + col + "</b>" for col in pivot.columns],
+            fill_color='grey',
+            align='left',
+            font=dict(size=12, color='white')
+        ),
+        cells=dict(
+            values=[pivot[col] for col in pivot.columns],
+            fill_color='white',
+            align='left',
+            height=30,
+            format=[None] + [",.0f"]*(len(pivot.columns)-1),  # Format numbers
+            font=dict(size=11,color = 'darkslategray',))
+    )])
+
+    fig.update_layout(
+        title=dict(
+            text=title,
+            y=0.95,
+            x=0.5,
+            xanchor='center',
+            yanchor='top',
+            font=dict(size=14)
+        ),
+        margin=dict(l=20, r=20, b=20, t=80),
+        height=400  # Fixed height for better display
+    )
+    return fig
 
 def create_age_gender_histogram(df, age_col, gender_col, title, xtitle, ytitle, bin_size,
-                                 filter_col=None, filter_value=None):
+                                 filter_col1=None, filter_value1=None, 
+                                filter_col2=None, filter_value2=None):
     """
     Create a histogram of age distribution grouped by gender (side-by-side bars).
 
@@ -140,11 +268,19 @@ def create_age_gender_histogram(df, age_col, gender_col, title, xtitle, ytitle, 
     :return: Plotly histogram figure object
     """
     # Apply filter if specified
-    if filter_col and filter_value:
-        df = df[df[filter_col] == filter_value]
+    data = df
+    if filter_col1 is not None:
+        if isinstance(filter_value1, list):
+            data = data[data[filter_col1].isin(filter_value1)]
+        else:
+            data = data[data[filter_col1] == filter_value1]
+    if filter_col2 is not None:
+        if isinstance(filter_value2, list):
+            data = data[data[filter_col2].isin(filter_value2)]
+        else:
+            data = data[data[filter_col2] == filter_value2]
 
-    # Drop duplicates to ensure unique person_id
-    df_unique = df.drop_duplicates(subset='person_id')
+    df_unique = data.drop_duplicates(subset=['person_id', 'Date'])
 
     if df_unique.empty:
         # raise ValueError("The DataFrame is empty after filtering. Please check your data or filters.")
@@ -157,7 +293,7 @@ def create_age_gender_histogram(df, age_col, gender_col, title, xtitle, ytitle, 
                         nbins=int((df_unique[age_col].max() - df_unique[age_col].min()) / bin_size),
                         barmode='group',  # <-- changed from 'overlay' to 'group'
                         title=title,
-                        color_discrete_sequence=px.colors.qualitative.T10)
+                        color_discrete_sequence=px.colors.qualitative.Dark2)
 
         fig.update_layout(
             xaxis_title=xtitle,
@@ -183,13 +319,24 @@ def create_horizontal_bar_chart(df, label_col, value_col, title, x_title, y_titl
     :return: Plotly Figure object
     """
     # Filter data if needed
-    if filter_col1 and filter_value1:
-        df = df[df[filter_col1] == filter_value1]
-    if filter_col2 and filter_value2:
-        df = df[df[filter_col2] == filter_value2]
+    data = df
+    if filter_col1 is not None:
+        if isinstance(filter_value1, list):
+            data = data[data[filter_col1].isin(filter_value1)]
+        else:
+            data = data[data[filter_col1] == filter_value1]
+    if filter_col2 is not None:
+        if isinstance(filter_value2, list):
+            data = data[data[filter_col2].isin(filter_value2)]
+        else:
+            data = data[data[filter_col2] == filter_value2]
+
+    df_unique = data.drop_duplicates(subset=['person_id', 'Date'])
+
+    
 
     # Aggregate (optional, depending on your use case)
-    df_grouped = df.groupby(label_col)[value_col].nunique().reset_index()
+    df_grouped = df_unique.groupby(label_col)[value_col].nunique().reset_index()
 
     # Sort and get top N
     df_top = df_grouped.sort_values(by=value_col, ascending=False).head(top_n)
@@ -210,6 +357,7 @@ def create_horizontal_bar_chart(df, label_col, value_col, title, x_title, y_titl
     fig.update_layout(
         xaxis_title=x_title,
         yaxis_title=y_title,
+        color_discrete_sequence=px.colors.qualitative.Dark2,
         yaxis=dict(autorange='reversed')  # to show highest on top
     )
 
@@ -249,8 +397,8 @@ def create_count(df, unique_column='encounter_id', filter_col1=None, filter_valu
             data = data[data[filter_col6].isin(filter_value6)]
         else:
             data = data[data[filter_col6] == filter_value6]
-        return str(len(data[unique_column].unique()))
-    return str(len(data[unique_column].unique()))
+    unique_visits = data.drop_duplicates(subset=['person_id', 'Date'])
+    return str(len(unique_visits))
 
 def create_count_sets(df, filter_col1, filter_value1, filter_col2, filter_value2,
                       unique_column='encounter_id', **extra_filters):
@@ -326,5 +474,8 @@ def create_sum(df,num_field='ValueN', filter_col1=None, filter_value1=None, filt
         data = data[data[filter_col6]==filter_value6]
         return data[num_field].sum()
     return data[num_field].sum()
+
+
+
 
 
