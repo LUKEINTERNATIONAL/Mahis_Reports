@@ -60,7 +60,7 @@ def create_column_chart(df, x_col, y_col, title, x_title, y_title, legend_title=
     
     return fig
 
-def create_line_chart(df, date_col, y_col, title, x_title, y_title,legend_title=None, color=None, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None):
+def create_line_chart(df, date_col, y_col, title, x_title, y_title, legend_title=None, color=None, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None):
     """
     Create a time series chart using Plotly Express.
 
@@ -100,28 +100,10 @@ def create_line_chart(df, date_col, y_col, title, x_title, y_title,legend_title=
 
     if color:
         summary = data.groupby([date_col, color])[y_col].nunique().reset_index(name='count')
-        # Ensure we have at least one valid date
-        if not summary[date_col].empty:
-            all_dates = pd.date_range(
-                start=summary[date_col].min(),
-                end=summary[date_col].max()
-            ).date
-            categories = summary[color].unique()
-            full_index = pd.MultiIndex.from_product(
-                [all_dates, categories],
-                names=[date_col, color]
-            )
-            summary = summary.set_index([date_col, color]).reindex(full_index, fill_value=0).reset_index()
+        # Only include dates that actually have data (don't fill with zeros)
     else:
         summary = data.groupby(date_col)[y_col].nunique().reset_index(name='count')
-        if not summary[date_col].empty:
-            all_dates = pd.date_range(
-                start=summary[date_col].min(),
-                end=summary[date_col].max()
-            ).date
-            summary = summary.set_index(date_col).reindex(all_dates, fill_value=0).reset_index()
-            summary.rename(columns={'index': date_col}, inplace=True)
-
+        # Only include dates that actually have data (don't fill with zeros)
 
     # Plot using summary
     fig = px.line(
@@ -130,18 +112,25 @@ def create_line_chart(df, date_col, y_col, title, x_title, y_title,legend_title=
         y='count',
         color=color if color else None,
         color_discrete_sequence=px.colors.qualitative.Dark2,
-        title=title
+        title=title,
+        markers=True  # This adds markers to the line
     )
+    
+    # Make the lines smooth
+    fig.update_traces(
+        # line_shape='spline',  # This makes the lines smooth
+        mode='lines+markers',  # This ensures markers are shown with lines
+        hovertemplate="<b>Date:</b> %{x|%b %d}<br>" +
+                     "<b>Count:</b> %{y}<br>"
+    )
+    
     fig.update_layout(
         yaxis=dict(title=y_title),
         xaxis=dict(title=x_title, tickformat='%b %d'),
         legend_title=legend_title if legend_title else (color if color else ""),
         template="plotly_white"
     )
-    fig.update_traces(
-        hovertemplate="<b>X-Axis:</b> %{x}<br>" +
-                 "<b>Count:</b> %{y}<br>" 
-    )
+    
     return fig
 
 def create_pie_chart(df, names_col, values_col, title, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None):

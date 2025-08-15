@@ -4,7 +4,6 @@ import pandas as pd
 import plotly.express as px
 import os
 from dash.exceptions import PreventUpdate
-from db_services import load_stored_data
 from visualizations import (create_column_chart, 
                           create_count,
                           create_pie_chart,
@@ -15,10 +14,13 @@ from datetime import datetime, timedelta
 
 dash.register_page(__name__, path="/home")
 
+STATIC_DATE_FILTER = 30
+
 # Load data once to get date range
-data = load_stored_data()
+path = os.getcwd()
+data = pd.read_csv(f'{path}/data/latest_data_opd.csv')
 min_date = pd.to_datetime(data['Date']).min()
-max_date = pd.to_datetime(data['Date']).max()
+# max_date = pd.to_datetime(data['Date']).max()
 max_date = datetime.today()
 
 path = os.getcwd()
@@ -53,7 +55,7 @@ layout = html.Div([
                     min_date_allowed=min_date,
                     max_date_allowed=max_date,
                     initial_visible_month=max_date,
-                    start_date=max_date - pd.Timedelta(days=7),
+                    start_date=max_date - pd.Timedelta(days=STATIC_DATE_FILTER),
                     # start_date=min_date,
                     end_date=max_date,
                     display_format='YYYY-MM-DD',

@@ -5,7 +5,7 @@ from models import fetch_and_store_data
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
-query = QERY_OPD_PROD
+query = QERY_OPD_TEST
 
 def main():
     # Fetch data from the database and store it in a CSV file

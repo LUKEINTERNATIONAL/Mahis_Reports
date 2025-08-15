@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 import os
 from dash.exceptions import PreventUpdate
-from db_services import load_stored_data
+import os
 from visualizations import (create_column_chart, 
                           create_count,
                           create_pie_chart,
@@ -14,16 +14,19 @@ from visualizations import (create_column_chart,
                           create_pivot_table)
 from datetime import datetime, timedelta
 
-STATIC_DATE_FILTER = 100
+STATIC_DATE_FILTER = 200
 
 dash.register_page(__name__, path="/dashboard_opd")
 
 # Load data once to get date range
-data = load_stored_data()
+path = os.getcwd()
+data = pd.read_csv(f'{path}/data/latest_data_opd.csv')
+
 data = data[data['Program']=="OPD Program"]
 
 min_date = pd.to_datetime(data['Date']).min()
-max_date = datetime.today()
+# max_date = datetime.today()
+max_date = pd.to_datetime(data['Date']).max()
 
 path = os.getcwd()
 last_refreshed = pd.read_csv(f'{path}/data/TimeStamp.csv')['saving_time'].to_list()[0]

@@ -4,12 +4,13 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import datetime
-from db_services import load_stored_data
+import os
 from visualizations import create_count, create_sum
 
 dash.register_page(__name__, path="/idsr_monthly")
 
-data = load_stored_data()
+path = os.getcwd()
+data = pd.read_csv(f'{path}/data/latest_data_opd.csv')
 min_date = pd.to_datetime(data['Date']).min()
 max_date = pd.to_datetime(data['Date']).max()
 
