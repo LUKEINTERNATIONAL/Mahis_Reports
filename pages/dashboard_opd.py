@@ -14,24 +14,22 @@ from visualizations import (create_column_chart,
                           create_pivot_table)
 from datetime import datetime, timedelta
 
-STATIC_DATE_FILTER = 200
+STATIC_DATE_FILTER = 1
+RELATIVE_DAYS=7
 
 dash.register_page(__name__, path="/dashboard_opd")
 
 # Load data once to get date range
 path = os.getcwd()
-data = pd.read_csv(f'{path}/data/latest_data_opd.csv')
-
+data = pd.read_csv(f'{path}/data/latest_data_opd.csv',dtype={16: str})
 data = data[data['Program']=="OPD Program"]
-
-min_date = pd.to_datetime(data['Date']).min()
-# max_date = datetime.today()
-max_date = pd.to_datetime(data['Date']).max()
+min_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+max_date = datetime.now().replace(hour=23, minute=59, second=59, microsecond=0)
 
 path = os.getcwd()
 last_refreshed = pd.read_csv(f'{path}/data/TimeStamp.csv')['saving_time'].to_list()[0]
 
-def build_charts(filtered):
+def build_charts(filtered, data_opd):
     return html.Div([
         # OPD Attendance Section
         html.Div([
@@ -41,8 +39,8 @@ def build_charts(filtered):
                 children=[
                     dcc.Graph(
                         id='daily-opd-attendance',
-                        figure=create_line_chart(df=data[data['Date']>=str(max_date- pd.Timedelta(days=STATIC_DATE_FILTER))], date_col='Date', y_col='encounter_id',
-                                          title='Daily OPD Attendance - Last 7 days', x_title='Date', y_title='Number of Patients',legend_title="Legend",filter_col1="Encounter",filter_value1="REGISTRATION",
+                        figure=create_line_chart(df=data_opd[data_opd['Date']>=str(datetime.now()- pd.Timedelta(days=RELATIVE_DAYS))], date_col='Date', y_col='encounter_id',
+                                          title='Daily OPD Attendance - Last 7 days', x_title='Date', y_title='Number of Patients',legend_title="Legend",
                                           ),
                         className="card-2"
                     ),
@@ -64,14 +62,14 @@ def build_charts(filtered):
                 children=[
                     dcc.Graph(
                         id='daily-fever-malaria-cases',
-                        figure=create_column_chart(df=data[data['Date']>=str(max_date- pd.Timedelta(days=STATIC_DATE_FILTER))], x_col='Date', y_col='encounter_id',
+                        figure=create_column_chart(df=data_opd[data_opd['Date']>=str(datetime.now()- pd.Timedelta(days=RELATIVE_DAYS))], x_col='Date', y_col='encounter_id',
                                           title='Daily Fever and Malaria Cases - Last 7 days', x_title='Date', y_title='Number of Patients',
                                           filter_col1='obs_value_coded',filter_value1=['Fever','Malaria'],color='obs_value_coded',legend_title="Legend"),
                         className="card-2"
                     ),
                     dcc.Graph(
                         id='daily-lab-fever-tests',
-                        figure=create_column_chart(df=data[data['Date']>=str(max_date- pd.Timedelta(days=STATIC_DATE_FILTER))], x_col='Date', y_col='encounter_id',
+                        figure=create_column_chart(df=data_opd[data_opd['Date']>=str(datetime.now()- pd.Timedelta(days=RELATIVE_DAYS))], x_col='Date', y_col='encounter_id',
                                           title='Daily MRDT Tests - Last 7 days', x_title='Date', y_title='Number of Patients',
                                           filter_col1='concept_name',filter_value1=['MRDT'],color='Value',legend_title="Legend"
                                           ),
@@ -126,7 +124,7 @@ def build_charts(filtered):
                     ),
                     dcc.Graph(
                         id='daily-fever-complaints',
-                        figure=create_line_chart(df=data[data['Date']>=str(max_date- pd.Timedelta(days=STATIC_DATE_FILTER))], date_col='Date', y_col='encounter_id',
+                        figure=create_line_chart(df=data_opd[data_opd['Date']>=str(datetime.now()- pd.Timedelta(days=RELATIVE_DAYS))], date_col='Date', y_col='encounter_id',
                                           title='Daily Fever Symptoms Reported', x_title='Date', y_title='Number of Patients',legend_title="Legend",filter_col1="Encounter",filter_value1="PRESENTING COMPLAINTS",
                                           filter_col2="obs_value_coded",filter_value2="Fever",
                                           ),
@@ -166,10 +164,10 @@ layout = html.Div(className="container", children=[
                 html.Label("Date Range"),
                 dcc.DatePickerRange(
                     id='opd-date-range-picker',
-                    min_date_allowed=min_date,
+                    min_date_allowed="2024-01-01",
                     max_date_allowed=max_date,
-                    initial_visible_month=max_date,
-                    start_date=max_date - pd.Timedelta(days=7),
+                    initial_visible_month=datetime.now(),
+                    start_date=min_date - pd.Timedelta(days=STATIC_DATE_FILTER),
                     # start_date=min_date,
                     end_date=max_date,
                     display_format='YYYY-MM-DD',
@@ -220,24 +218,33 @@ layout = html.Div(className="container", children=[
     ]
 )
 def update_dashboard(urlparams, start_date, end_date, visit_type, hf, age):
+
+    path = os.getcwd()
+    data_opd = pd.read_csv(f'{path}/data/latest_data_opd.csv', cache_dates=False,dtype={16: str})
+    data_opd['Date'] = pd.to_datetime(data_opd['Date'], format='mixed')
+    data_opd = data_opd[data_opd['Program']=="OPD Program"]
+    print(len(data_opd))
+
     if urlparams['location']:
         search_url = data[data['Facility_CODE'].str.lower() == urlparams['location'].lower()]
     else:
-        search_url = data
+        search_url = data_opd
         
-    filtered_data_date = search_url[
-        (pd.to_datetime(search_url['Date']) >= pd.to_datetime(start_date)) & 
-        (pd.to_datetime(search_url['Date']) <= pd.to_datetime(end_date))
-    ]
         
-    mask = pd.Series(True, index=filtered_data_date.index)
+    mask = pd.Series(True, index=data_opd.index)
     if visit_type:
-        mask &= (filtered_data_date['new_revisit'] == visit_type)
+        mask &= (data_opd['new_revisit'] == visit_type)
     if hf:
-        mask &= (filtered_data_date['Facility'] == hf)
+        mask &= (data_opd['Facility'] == hf)
     if age:
-        mask &= (filtered_data_date['Age_Group'] == age)
+        mask &= (data_opd['Age_Group'] == age)
+
         
-    filtered_data = filtered_data_date[mask].copy()
+    filtered_data = data_opd[mask].copy()
+
+    filtered_data_date = filtered_data[
+        (pd.to_datetime(filtered_data['Date']) >= pd.to_datetime(start_date)) & 
+        (pd.to_datetime(filtered_data['Date']) <= pd.to_datetime(end_date))
+    ]
     
-    return build_charts(filtered_data)
+    return build_charts(filtered_data_date, filtered_data)

@@ -43,7 +43,14 @@ app.layout = html.Div([
                 ], id="idsr-reports-submenu", className="submenu")
             ], className="nav-item has-submenu"),
 
-            html.Li(html.A("NCD Report", href="/ncd_report", className="nav-link")),
+            html.Li([
+                html.A("NCD Reports", id="ncd-reports-link", href="#", className="nav-link", n_clicks=0),
+                html.Ul([
+                    html.Li(html.A("Non-Communicable Diseases (NCD)", href="/ncd_report_ncd", className="submenu-link")),
+                    html.Li(html.A("Non-Communicable Diseases PEN PLUS", href="/ncd_report_pen_plus", className="submenu-link")),
+                    html.Li(html.A("Non-Communicable Diseases Quarterly Report", href="/ncd_report_quarterly", className="submenu-link")),
+                ], id="ncd-reports-submenu", className="submenu")
+            ], className="nav-item has-submenu"),
             html.Li(html.A("EPI Report", href="/epi_report", className="nav-link")),
         ], className="nav-list")
     ], className="navbar"),
@@ -56,55 +63,108 @@ app.layout = html.Div([
      Output("opd-reports-link", "className"),
      Output("idsr-reports-submenu", "className"),
      Output("idsr-reports-link", "className"),
+     Output("ncd-reports-submenu", "className"),
+     Output("ncd-reports-link", "className"),
      Output("dashboards-submenu", "className"),
      Output("dashboards-link", "className"),
      ],
     [Input("opd-reports-link", "n_clicks"),
      Input("idsr-reports-link", "n_clicks"),
+     Input("ncd-reports-link", "n_clicks"),
      Input("dashboards-link", "n_clicks"),
      ],
     [State("opd-reports-submenu", "className"),
      State("opd-reports-link", "className"),
      State("idsr-reports-submenu", "className"),
      State("idsr-reports-link", "className"),
+     State("ncd-reports-submenu", "className"),
+     State("ncd-reports-link", "className"),
      State("dashboards-submenu", "className"),
      State("dashboards-link", "className"),
      ],
 )
 
-def toggle_submenu(opd_clicks, idsr_clicks, dashboards_clicks,
+def toggle_submenu(opd_clicks, idsr_clicks, ncd_clicks, dashboards_clicks,
                   opd_submenu_class, opd_link_class,
                   idsr_submenu_class, idsr_link_class,
+                  ncd_submenu_class, ncd_link_class,
                   dashboards_submenu_class, dashboards_link_class):
     ctx = dash.callback_context
     
     if not ctx.triggered:
-        return [dash.no_update] * 6
+        return [dash.no_update] * 8
     
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
     
+    # OPD toggle
     if triggered_id == "opd-reports-link":
-        if opd_clicks and opd_clicks > 0:
-            if "show" in opd_submenu_class:
-                return "submenu", opd_link_class.replace(" show-submenu", ""), dash.no_update, dash.no_update, dash.no_update, dash.no_update
-            else:
-                return "submenu show", opd_link_class + " show-submenu", dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        if "show" in opd_submenu_class:
+            return (
+                "submenu", opd_link_class.replace(" show-submenu", ""),
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update
+            )
+        else:
+            return (
+                "submenu show", opd_link_class + " show-submenu",
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update
+            )
     
+    # IDSR toggle
     elif triggered_id == "idsr-reports-link":
-        if idsr_clicks and idsr_clicks > 0:
-            if "show" in idsr_submenu_class:
-                return dash.no_update, dash.no_update, "submenu", idsr_link_class.replace(" show-submenu", ""), dash.no_update, dash.no_update
-            else:
-                return dash.no_update, dash.no_update, "submenu show", idsr_link_class + " show-submenu", dash.no_update, dash.no_update
+        if "show" in idsr_submenu_class:
+            return (
+                dash.no_update, dash.no_update,
+                "submenu", idsr_link_class.replace(" show-submenu", ""),
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update
+            )
+        else:
+            return (
+                dash.no_update, dash.no_update,
+                "submenu show", idsr_link_class + " show-submenu",
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update
+            )
     
+    # NCD toggle
+    elif triggered_id == "ncd-reports-link":
+        if "show" in ncd_submenu_class:
+            return (
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
+                "submenu", ncd_link_class.replace(" show-submenu", ""),
+                dash.no_update, dash.no_update
+            )
+        else:
+            return (
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
+                "submenu show", ncd_link_class + " show-submenu",
+                dash.no_update, dash.no_update
+            )
+    
+    # Dashboards toggle
     elif triggered_id == "dashboards-link":
-        if dashboards_clicks and dashboards_clicks > 0:
-            if "show" in dashboards_submenu_class:
-                return dash.no_update, dash.no_update, dash.no_update, dash.no_update, "submenu", dashboards_link_class.replace(" show-submenu", "")
-            else:
-                return dash.no_update, dash.no_update, dash.no_update, dash.no_update, "submenu show", dashboards_link_class + " show-submenu"
+        if "show" in dashboards_submenu_class:
+            return (
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
+                "submenu", dashboards_link_class.replace(" show-submenu", "")
+            )
+        else:
+            return (
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
+                "submenu show", dashboards_link_class + " show-submenu"
+            )
     
-    return [dash.no_update] * 6
+    return [dash.no_update] * 8
 
 # Callback to extract and store URL parameters
 @callback(

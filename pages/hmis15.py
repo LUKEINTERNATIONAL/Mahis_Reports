@@ -10,7 +10,7 @@ from visualizations import create_count, create_count_sets
 dash.register_page(__name__, path="/hmis15")
 
 path = os.getcwd()
-data = pd.read_csv(f'{path}/data/latest_data_opd.csv')
+data = pd.read_csv(f'{path}/data/latest_data_opd.csv',dtype={16: str})
 
 min_date = pd.to_datetime(data['Date']).min()
 max_date = pd.to_datetime(data['Date']).max()
@@ -382,9 +382,12 @@ def update_table(year_filter, month_filter, hf_filter):
     except ValueError as e:
         return html.Div(f"{str(e)}")  # Show error in Dash UI
     
-    filtered = data[
-        (pd.to_datetime(data['Date']) >= pd.to_datetime(start_date)) &
-        (pd.to_datetime(data['Date']) <= pd.to_datetime(end_date))
+    path = os.getcwd()
+    data_opd = pd.read_csv(f'{path}/data/latest_data_opd.csv', cache_dates=False,dtype={16: str})
+    
+    filtered = data_opd[
+        (pd.to_datetime(data_opd['Date']) >= pd.to_datetime(start_date)) &
+        (pd.to_datetime(data_opd['Date']) <= pd.to_datetime(end_date))
     ]
     if hf_filter:
         filtered = filtered[filtered['Facility'] == hf_filter]

@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import socket
 import pymysql
 from sshtunnel import SSHTunnelForwarder
@@ -68,9 +68,9 @@ class DataFetcher:
             raise
 
     def fetch_data(self, query_template, filename=f'data/latest_data_opd.csv', 
-                  date_column='Date', batch_size=5000, force_rebuild=False):
+                  date_column='encounter_datetime', batch_size=5000, force_rebuild=False):
         """
-        Robust incremental data fetcher with auto-rebuild capability
+        Robust incremental data fetcher with daily iteration
         
         Args:
             query_template: SQL query with {date_filter} placeholder
@@ -79,30 +79,29 @@ class DataFetcher:
             batch_size: Number of records per batch
             force_rebuild: If True, will rebuild the file from scratch
         """
-        # Create absolute path
         abs_filename = os.path.join(self.path, filename)
         
         try:
-            # 1. Check if we need to rebuild
-            if force_rebuild or not self._is_existing_file_valid(abs_filename, date_column):
-                logger.warning("Existing file missing or invalid. Starting fresh rebuild.")
-                last_date = None
-                if os.path.exists(abs_filename):
+            # 1. Determine start date
+            file_exists = os.path.exists(abs_filename)
+            if force_rebuild or not file_exists or not self._is_existing_file_valid(abs_filename, date_column):
+                logger.warning("Starting fresh rebuild (force rebuild or missing/invalid file)")
+                start_date = '2025-08-01'  # Default start date for rebuilds
+                if file_exists:
                     os.remove(abs_filename)
                 self._clear_recovery_state()
             else:
-                last_date = self._get_last_extraction_date(abs_filename, date_column)
+                start_date = self._get_last_extraction_date(abs_filename, date_column)
             
-            # 2. Process in batches with recovery
+            # 2. Process data day by day
             if self.use_localhost:
-                # Local connection without SSH tunnel
                 conn = self._get_db_connection()
                 try:
-                    self._process_batches(conn, query_template, abs_filename, date_column, batch_size, last_date)
+                    final_df = self._process_daily_batches(conn, query_template, abs_filename, 
+                                                         date_column, batch_size, start_date)
                 finally:
                     conn.close()
             else:
-                # Remote connection with SSH tunnel
                 with SSHTunnelForwarder(
                     (self.ssh_route['ssh_host'], 22),
                     ssh_username=self.ssh_route['ssh_user'],
@@ -112,59 +111,111 @@ class DataFetcher:
                     logger.info(f"SSH tunnel established on port {tunnel.local_bind_port}")
                     conn = self._get_db_connection(tunnel)
                     try:
-                        self._process_batches(conn, query_template, abs_filename, date_column, batch_size, last_date)
+                        final_df = self._process_daily_batches(conn, query_template, abs_filename, 
+                                                             date_column, batch_size, start_date)
                     finally:
                         conn.close()
             
-            return self._finalize_operation(abs_filename)
+            return self._finalize_operation(final_df, abs_filename)
             
         except Exception as e:
             logger.error(f"Data fetch failed: {e}")
             logger.info("Recovery data preserved. Will resume from last batch.")
             raise
 
-    def _process_batches(self, conn, query_template, filename, date_column, batch_size, last_date):
-        """Process data in batches with recovery support"""
+    def _process_daily_batches(self, conn, query_template, filename, date_column, batch_size, start_date):
+        """Process data day by day with batch processing within each day"""
         recovery_state = self._load_recovery_state()
-        final_df = recovery_state['df'] if recovery_state else pd.DataFrame()
-        offset = recovery_state['offset'] if recovery_state else 0
+        
+        # LOAD EXISTING DATA FIRST
+        if os.path.exists(filename):
+            try:
+                existing_df = pd.read_csv(filename)
+            except Exception as e:
+                logger.warning(f"Failed to load existing data: {e}")
+                existing_df = pd.DataFrame()
+        else:
+            existing_df = pd.DataFrame()
+        
+        if recovery_state:
+            current_date = recovery_state['current_date']
+            new_data_df = recovery_state['df']  # Only new data
+            last_id = recovery_state.get('last_id', 0)
+        else:
+            current_date = pd.to_datetime(start_date)
+            new_data_df = pd.DataFrame()  # Only new data
+            last_id = 0
+        
+        # COMBINE EXISTING AND NEW DATA
+        final_df = pd.concat([existing_df, new_data_df], ignore_index=True).drop_duplicates()
+        
+        today = datetime.now().date()
+        
+        # Iterate through each day from start_date to today
+        while current_date.date() <= today:
+            logger.info(f"Processing date: {current_date.strftime('%Y-%m-%d')}")
+            
+            # Process all batches for the current day
+            day_new_df = self._process_single_day(conn, query_template, date_column, 
+                                                batch_size, current_date, last_id)
+            
+            if not day_new_df.empty:
+                # ADD ONLY NEW DATA TO FINAL DF
+                final_df = pd.concat([final_df, day_new_df], ignore_index=True).drop_duplicates()
+                
+                # Update last processed ID for recovery
+                if 'encounter_id' in day_new_df:
+                    last_id = day_new_df['encounter_id'].max()
+                
+                # Save intermediate results and recovery state
+                self._save_recovery_state({
+                    'current_date': current_date,
+                    'last_id': last_id,
+                    'df': day_new_df  # Store only new data for recovery
+                })
+                
+                # SAVE THE COMBINED DATA (existing + new)
+                final_df.to_csv(filename, index=False)
+                
+                logger.info(f"Completed date {current_date.strftime('%Y-%m-%d')}. Total records: {len(final_df)}")
+            
+            # Move to next day and reset last_id
+            current_date += timedelta(days=1)
+            last_id = 0
+        
+        return final_df
+
+    def _process_single_day(self, conn, query_template, date_column, batch_size, current_date, last_id=0):
+        """Process all records for a single day in batches"""
+        day_df = pd.DataFrame()
+        processed_count = 0
         
         while True:
-            # Prepare query for current batch
-            date_filter = f"AND e.encounter_datetime > '{last_date}'" if last_date else ""
+            # Build query for current batch
+            date_str = current_date.strftime('%Y-%m-%d')
+            date_filter = f"AND DATE(e.encounter_datetime) = '{date_str}' AND e.encounter_id > {last_id} "
             query = query_template.format(date_filter=date_filter)
-            batch_query = f"{query} LIMIT {batch_size} OFFSET {offset};"
+            batch_query = f"{query} ORDER BY encounter_id LIMIT {batch_size}"
             
-            logger.debug(f"Executing query: {batch_query[:200]}...")
+            logger.debug(f"Fetching batch for {date_str} from ID {last_id}")
             batch_df = pd.read_sql(batch_query, conn)
             
             if batch_df.empty:
                 break
-                
-            final_df = pd.concat([final_df, batch_df], ignore_index=True)
-            offset += batch_size
             
-            # Update last date from current batch
-            if not batch_df.empty and date_column in batch_df:
-                last_date = batch_df[date_column].max()
+            day_df = pd.concat([day_df, batch_df], ignore_index=True)
+            processed_count += len(batch_df)
             
-            # Save recovery state after each batch
-            self._save_recovery_state({
-                'last_date': last_date,
-                'offset': offset,
-                'df': final_df
-            })
-
-            # Save intermediate results
-            final_df.to_csv(filename)
+            # Update last ID for next batch
+            if not batch_df.empty and 'encounter_id' in batch_df:
+                last_id = batch_df['encounter_id'].max()
             
-            logger.info(f"Processed {offset} records. Last date: {last_date}")
-
-    def _finalize_operation(self, filename):
-        """Complete the operation with final checks and cleanup"""
-        recovery_state = self._load_recovery_state()
-        final_df = recovery_state['df'] if recovery_state else pd.DataFrame()
+            logger.info(f"Processed {processed_count} records for {date_str}")
         
+        return day_df
+
+    def _finalize_operation(self, final_df, filename):
+        """Complete the operation with final checks and cleanup"""
         if not final_df.empty:
             self._save_final_data(final_df, filename)
             logger.info(f"Data update complete. Total records: {len(final_df)}")
@@ -182,12 +233,10 @@ class DataFetcher:
         try:
             # Try reading the first and last rows
             with open(filepath, 'r') as f:
-                # Check header
                 header = f.readline()
                 if date_column not in header:
                     return False
                 
-                # Check last line (non-empty)
                 for line in f:
                     pass
                 if not line.strip():
@@ -205,31 +254,29 @@ class DataFetcher:
     def _get_last_extraction_date(self, csv_path, date_column):
         """Safely get the last extraction date from existing CSV"""
         try:
-            # Read just the date column for efficiency
             df = pd.read_csv(csv_path, usecols=[date_column])
             if not df.empty and date_column in df:
                 last_date = pd.to_datetime(df[date_column]).max()
-                return last_date.strftime('%Y-%m-%d %H:%M:%S')
+                return last_date.strftime('%Y-%m-%d')
         except Exception as e:
             logger.warning(f"Could not read last date from CSV: {e}")
         return None
 
     def _save_final_data(self, df, filename):
-        """Atomic save operation to prevent corruption"""
+        """Atomic save operation that preserves existing data"""
         temp_file = f"{filename}.tmp"
         try:
-            # Save to temp file first
-            df.to_csv(temp_file, index=False)
-            
-            # If existing file exists and we're not rebuilding, merge
-            if os.path.exists(filename) and not df.empty:
+            # Always merge with existing data to prevent loss
+            if os.path.exists(filename):
                 try:
                     existing_df = pd.read_csv(filename)
                     df = pd.concat([existing_df, df]).drop_duplicates()
-                    df.to_csv(temp_file, index=False)
                 except Exception as e:
                     logger.warning(f"Failed to merge with existing file: {e}")
-                    # Continue with just the new data
+                    # Continue with current data to avoid complete loss
+            
+            # Save to temp file
+            df.to_csv(temp_file, index=False)
             
             # Atomic rename
             os.replace(temp_file, filename)

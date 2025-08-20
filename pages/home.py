@@ -14,14 +14,14 @@ from datetime import datetime, timedelta
 
 dash.register_page(__name__, path="/home")
 
-STATIC_DATE_FILTER = 30
+STATIC_DATE_FILTER = 1
+RELATIVE_DAYS=7
 
 # Load data once to get date range
 path = os.getcwd()
-data = pd.read_csv(f'{path}/data/latest_data_opd.csv')
-min_date = pd.to_datetime(data['Date']).min()
-# max_date = pd.to_datetime(data['Date']).max()
-max_date = datetime.today()
+data = pd.read_csv(f'{path}/data/latest_data_opd.csv',dtype={16: str})
+min_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+max_date = datetime.now().replace(hour=23, minute=59, second=59, microsecond=0)
 
 path = os.getcwd()
 last_refreshed = pd.read_csv(f'{path}/data/TimeStamp.csv')['saving_time'].to_list()[0]
@@ -52,10 +52,10 @@ layout = html.Div([
                 html.Label("Date Range"),
                 dcc.DatePickerRange(
                     id='date-range-picker',
-                    min_date_allowed=min_date,
+                    min_date_allowed="2024-01-01",
                     max_date_allowed=max_date,
-                    initial_visible_month=max_date,
-                    start_date=max_date - pd.Timedelta(days=STATIC_DATE_FILTER),
+                    initial_visible_month=datetime.now(),
+                    start_date=min_date - pd.Timedelta(days=STATIC_DATE_FILTER),
                     # start_date=min_date,
                     end_date=max_date,
                     display_format='YYYY-MM-DD',
@@ -200,27 +200,30 @@ def update_dashboard(urlparams, start_date, end_date, program, hf, age):
     # search_url = data[data['Facility_CODE'].str.lower() == new_flag]
     # print(len(search_url))
 
+    path = os.getcwd()
+    data_opd = pd.read_csv(f'{path}/data/latest_data_opd.csv', cache_dates=False,dtype={16: str})
+    data_opd['Date'] = pd.to_datetime(data_opd['Date'], format='mixed')
+
     if urlparams['location']:
-        print(urlparams['location'])
-        print(urlparams)
-        search_url = data[data['Facility_CODE'].str.lower() == urlparams['location'].lower()]
+        search_url = data_opd[data_opd['Facility_CODE'].str.lower() == urlparams['location'].lower()]
     else:
-        search_url = data
-    # search_url = data
-    filtered_data_date = search_url[(pd.to_datetime(search_url['Date']) >= pd.to_datetime(start_date)) & 
-                            (pd.to_datetime(search_url['Date']) <= pd.to_datetime(end_date))]
+        search_url = data_opd
         
-    mask = pd.Series(True, index=filtered_data_date.index)
+        
+    mask = pd.Series(True, index=data_opd.index)
     if program:
-        mask &= (filtered_data_date['Program'] == program)
+        mask &= (data_opd['Program'] == program)
     if hf:
-        mask &= (filtered_data_date['Facility'] == hf)
+        mask &= (data_opd['Facility'] == hf)
     if age:
-        mask &= (filtered_data_date['Age_Group'] == age)
-    filtered_data = filtered_data_date[mask].copy()
-    print(len(filtered_data))
+        mask &= (data_opd['Age_Group'] == age)
 
+    mask &= (
+        (pd.to_datetime(data_opd['Date']) >= pd.to_datetime(start_date)) &
+        (pd.to_datetime(data_opd['Date']) <= pd.to_datetime(end_date))
+    )
 
+    filtered_data = data_opd.loc[mask].copy()
         
         # Update counts
     total_count = create_count(filtered_data,'encounter_id')
@@ -233,8 +236,8 @@ def update_dashboard(urlparams, start_date, end_date, program, hf, age):
     enrollments_fig = create_column_chart(df=filtered_data, x_col='Program', y_col='encounter_id',
                                         title='Enrollment by Program', x_title='Program Name', y_title='Number of Patients')
         
-    daily_visits_fig = create_line_chart(df=filtered_data, date_col='Date', y_col='encounter_id',
-                                            title='Daily Patient Visits', x_title='Date', y_title='Number of Patients')
+    daily_visits_fig = create_line_chart(df=data_opd[data_opd['Date']>=min_date- pd.Timedelta(days=RELATIVE_DAYS)], date_col='Date', y_col='encounter_id',
+                                            title='Daily Patient Visits - Last 7 days', x_title='Date', y_title='Number of Patients')
         
     visit_type_fig = create_pie_chart(df=filtered_data, names_col='new_revisit', values_col='encounter_id',
                                         title='Patient Visit Type')

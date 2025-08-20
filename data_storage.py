@@ -16,7 +16,8 @@ def main():
     # Load the stored data
     loaded_df = pd.read_csv(f'{path}/data/latest_data_opd.csv')
     print("Data loaded successfully to:", f'{path}/data/latest_data_opd.csv')
-    print(loaded_df.head())
+    print(loaded_df.iloc[:,6].tail(10))
+    print(len(loaded_df))
 
 if __name__ == "__main__":
     main()
