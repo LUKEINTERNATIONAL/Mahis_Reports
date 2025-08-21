@@ -18,6 +18,8 @@
     pip install isoweek
     pip install gunicorn
     ```
+    export DASH_APP_DIR=/var/www/dash_plotly_mahis
+    
 4. update config variables to point to the database. The config.py includes the sql query required to pull data and store to a csv in /data/.
     ```
     mv config.example.py config.py

@@ -9,9 +9,14 @@ import pickle
 import logging
 from config import DB_CONFIG_AWS_PROD, SSH_CONFIG_AWS, DB_CONFIG_AWS_TEST, SSH_CONFIG_TEST, DB_CONFIG_LOCAL
 
-# Configure logging
+# Logging to see how the data is being retrieved
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+BASE_DIR = os.getenv("DASH_APP_DIR", "/var/www/dash_plotly_mahis")
+DATA_DIR = os.path.join(BASE_DIR, "data")
+os.makedirs(DATA_DIR, exist_ok=True)
+
 
 class DataFetcher:
     def __init__(self, use_localhost=False, ssh_config=SSH_CONFIG_TEST, db_config=DB_CONFIG_AWS_TEST):
@@ -26,7 +31,8 @@ class DataFetcher:
         self.use_localhost = use_localhost
         self.ssh_route = ssh_config if not use_localhost else None
         self.db_route = DB_CONFIG_LOCAL if use_localhost else db_config
-        self.path = os.getcwd()
+        self.base_dir = BASE_DIR
+        self.data_dir = DATA_DIR
         self.recovery_file = os.path.join(tempfile.gettempdir(), "data_fetch_recovery.pkl")
         
     def _get_db_connection(self, tunnel=None):
@@ -79,7 +85,7 @@ class DataFetcher:
             batch_size: Number of records per batch
             force_rebuild: If True, will rebuild the file from scratch
         """
-        abs_filename = os.path.join(self.path, filename)
+        abs_filename = os.path.join(self.base_dir, filename)
         
         try:
             # 1. Determine start date
@@ -282,7 +288,7 @@ class DataFetcher:
             os.replace(temp_file, filename)
             
             # Save timestamp
-            timestamp_file = os.path.join(self.path, 'data/TimeStamp.csv')
+            timestamp_file = os.path.join(self.data_dir, 'TimeStamp.csv')
             os.makedirs(os.path.dirname(timestamp_file), exist_ok=True)
             pd.DataFrame({'saving_time': [datetime.now().strftime("%d/%m/%Y, %H:%M:%S")]}).to_csv(timestamp_file, index=False)
             
