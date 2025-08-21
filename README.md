@@ -8,6 +8,7 @@
 3. Install dependencies using 
     ```
     pip install pandas
+    pip install numpy
     pip install mysql-connector-python
     pip install sshtunnel
     pip install PyMySQL
@@ -15,6 +16,7 @@
     pip install plotyl
     pip install dash
     pip install isoweek
+    pip install gunicorn
     ```
 4. update config variables to point to the database. The config.py includes the sql query required to pull data and store to a csv in /data/.
     ```

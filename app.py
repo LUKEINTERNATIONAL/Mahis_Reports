@@ -8,6 +8,7 @@ from dash.exceptions import PreventUpdate
 # print(list(load_stored_data())) # Load the data to ensure it's available
 # Initialize the Dash app
 app = dash.Dash(__name__, use_pages=True, suppress_callback_exceptions=True)
+server = app.server
 
 # Define the layout
 app.layout = html.Div([

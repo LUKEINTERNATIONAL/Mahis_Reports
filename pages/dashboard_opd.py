@@ -138,13 +138,6 @@ def build_charts(filtered, data_opd):
 
 layout = html.Div(className="container", children=[
     dcc.Location(id='url', refresh=False),
-    html.P(
-    [
-        html.Span("OPD Dashboard", style={"fontWeight": "bold"}),
-        ", Last Refreshed: " + str(last_refreshed)
-    ],
-    style={'textAlign': 'center', 'color': 'gray'}
-),
     html.Div([
         html.Div(className="filter-container", children=[
             html.Div([

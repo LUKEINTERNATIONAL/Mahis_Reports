@@ -15,6 +15,11 @@ SSH_CONFIG_TEST = {
     'remote_bind_address': ('path_to_db_endpoint', 3306)
 }
 
+DB_CONFIG_AWS_PROD = {
+
+}
+
+
 QERY_OPD_PROD = """
 SELECT 
     main.*,
