@@ -2,3 +2,7 @@ config.py
 data/
 test.ipynb
 ssh/
+__pycache__/
+pages/__pycache__/
+assets/__pycache__/
+venv/
