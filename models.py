@@ -22,7 +22,7 @@ def fetch_and_store_data(query, filename="latest_data_opd.csv"):
     try:
         df = fetcher.fetch_data(
             query,
-            filename=f'{path}/data/latest_data_opd.csv',
+            filename=f'{path}/data/latest_data_opd.parquet',
             date_column='Date',
             batch_size=50000
         )

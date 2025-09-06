@@ -7,17 +7,12 @@ import datetime
 import os
 from visualizations import create_count, create_count_sets
 
+from data_storage import mahis_programs, mahis_facilities, age_groups
+
 dash.register_page(__name__, path="/epi_report")
 
-path = os.getcwd()
-data = pd.read_csv(f'{path}/data/latest_data_opd.csv',dtype={16: str})
-
-min_date = pd.to_datetime(data['Date']).min()
-max_date = pd.to_datetime(data['Date']).max()
-
-
 relative_month = ['January', 'February', 'March', 'April', 'May', 'June','July', 'August', 'September', 'October', 'November', 'December',]
-relative_year = [str(year) for year in range(max_date.year, min_date.year - 1, -1)]
+relative_year = [str(year) for year in range(2020, 2051)]
 
 def get_month_start_end(month, year):
     # Validate inputs
@@ -42,7 +37,7 @@ def get_month_start_end(month, year):
 def build_table(filtered):
     return html.Table(
         html.Div([
-            html.H4("Target Population"),
+            html.H4("Target Population", style={'backgroundColor': '#006401', 'padding': '5px','color':'white',"width": "50%"}),
 
             dash_table.DataTable(
                 columns=[
@@ -74,7 +69,7 @@ def build_table(filtered):
                     }
                 ]
             ),
-            html.H4("A. Immunisation Sessions", style={'backgroundColor': '#474241', 'color': 'white', 'padding': '5px',"width": "60%"}),
+            html.H4("A. Immunisation Sessions", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
             dash_table.DataTable(
                 columns=[
                     {"name": "Indicator", "id": "session_type"},
@@ -110,7 +105,7 @@ def build_table(filtered):
                     }
                 ]
             ),
-            html.H4("B. Vaccinations", style={'backgroundColor': '#474241', 'color': 'white', 'padding': '5px',"width": "100%"}),
+            html.H4("B. Vaccinations", style={'backgroundColor': '#006401', 'padding': '5px','color':'white',"width": "100%"}),
             # BCG, OPV0 Section
             html.Div([
                 html.H5("T1", style={'backgroundColor': 'rgb(206, 206, 204)', 'padding': '5px', 'textAlign': 'center'}),
@@ -679,7 +674,7 @@ def build_table(filtered):
                 )
             ], style={'marginBottom': '20px'}),
 
-            html.H4("C. Fully Immunized", style={'backgroundColor': '#474241', 'color': 'white', 'padding': '5px',"width": "100%"}),
+            html.H4("C. Fully Immunized", style={'backgroundColor': '#006401', 'padding': '5px','color':'white',"width": "100%"}),
             dash_table.DataTable(
                 columns = [
                     {"name": ["", "Td"], "id": "td"},
@@ -771,7 +766,7 @@ def build_table(filtered):
                     }
                 ]
             ),
-            html.H4("D. Vaccine Wastage", style={'backgroundColor': '#474241', 'color': 'white', 'padding': '5px',"width": "100%"}),
+            html.H4("D. Vaccine Wastage", style={'backgroundColor': '#006401', 'padding': '5px','color':'white',"width": "100%"}),
             html.Div([
                 html.H5("T1", style={'backgroundColor': 'rgb(206, 206, 204)', 'padding': '5px', 'textAlign': 'center'}),
                 dash_table.DataTable(
@@ -1038,7 +1033,7 @@ layout = html.Div(className="container", children=[
                     id='hf-filter',
                     options=[
                         {'label': hf, 'value': hf}
-                        for hf in data['Facility'].dropna().unique()
+                        for hf in mahis_facilities()
                     ],
                     value=None,
                     clearable=True
@@ -1060,14 +1055,22 @@ layout = html.Div(className="container", children=[
     Input('hf-filter', 'value')
 )
 def update_table(year_filter, month_filter, hf_filter):
+    path = os.getcwd()
+    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
+        
+        # Validate file exists
+    if not os.path.exists(parquet_path):
+        raise FileNotFoundError(f"PARQUET file not found at {parquet_path}")
+    
+    data_opd = pd.read_parquet(parquet_path)
     try:
         start_date, end_date = get_month_start_end(month_filter, year_filter)
     except ValueError as e:
         return html.Div(f"{str(e)}")  # Show error in Dash UI
     
-    filtered = data[
-        (pd.to_datetime(data['Date']) >= pd.to_datetime(start_date)) &
-        (pd.to_datetime(data['Date']) <= pd.to_datetime(end_date))
+    filtered = data_opd[
+        (pd.to_datetime(data_opd['Date']) >= pd.to_datetime(start_date)) &
+        (pd.to_datetime(data_opd['Date']) <= pd.to_datetime(end_date))
     ]
     if hf_filter:
         filtered = filtered[filtered['Facility'] == hf_filter]

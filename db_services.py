@@ -9,14 +9,9 @@ import pickle
 import logging
 from config import DB_CONFIG_AWS_PROD, SSH_CONFIG_AWS, DB_CONFIG_AWS_TEST, SSH_CONFIG_TEST, DB_CONFIG_LOCAL
 
-# Logging to see how the data is being retrieved
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-BASE_DIR = os.getenv("DASH_APP_DIR", "/var/www/dash_plotly_mahis")
-DATA_DIR = os.path.join(BASE_DIR, "data")
-os.makedirs(DATA_DIR, exist_ok=True)
-
 
 class DataFetcher:
     def __init__(self, use_localhost=False, ssh_config=SSH_CONFIG_TEST, db_config=DB_CONFIG_AWS_TEST):
@@ -31,8 +26,7 @@ class DataFetcher:
         self.use_localhost = use_localhost
         self.ssh_route = ssh_config if not use_localhost else None
         self.db_route = DB_CONFIG_LOCAL if use_localhost else db_config
-        self.base_dir = BASE_DIR
-        self.data_dir = DATA_DIR
+        self.path = os.path.dirname(os.path.realpath(__file__))
         self.recovery_file = os.path.join(tempfile.gettempdir(), "data_fetch_recovery.pkl")
         
     def _get_db_connection(self, tunnel=None):
@@ -73,19 +67,20 @@ class DataFetcher:
             logger.error(f"Database connection failed: {e}")
             raise
 
-    def fetch_data(self, query_template, filename=f'data/latest_data_opd.csv', 
-                  date_column='encounter_datetime', batch_size=5000, force_rebuild=False):
+    def fetch_data(self, query_template, filename=f'data/latest_data_opd.parquet', 
+               date_column='Date', batch_size=5000, force_rebuild=False):
         """
-        Robust incremental data fetcher with daily iteration
+        Robust incremental data fetcher with auto-rebuild capability
         
         Args:
             query_template: SQL query with {date_filter} placeholder
             filename: Relative path to output CSV file
             date_column: Date column for incremental loading
             batch_size: Number of records per batch
-            force_rebuild: If True, will rebuild the file from scratch
+            force_rebuild: If True, will rebuild the file from scratch with default start date 2025-01-01
         """
-        abs_filename = os.path.join(self.base_dir, filename)
+        # Create absolute path
+        abs_filename = os.path.join(self.path, filename)
         
         try:
             # 1. Determine start date
@@ -99,7 +94,7 @@ class DataFetcher:
             else:
                 start_date = self._get_last_extraction_date(abs_filename, date_column)
             
-            # 2. Process data day by day
+            # 2. Process in batches with recovery
             if self.use_localhost:
                 conn = self._get_db_connection()
                 try:
@@ -107,11 +102,32 @@ class DataFetcher:
                                                          date_column, batch_size, start_date)
                 finally:
                     conn.close()
-            else:
+            elif "ssh_password" in self.ssh_route:
+                print("Using password for SSH")
+                # Remote connection with SSH tunnel using password
                 with SSHTunnelForwarder(
                     (self.ssh_route['ssh_host'], 22),
                     ssh_username=self.ssh_route['ssh_user'],
-                    ssh_private_key='ssh/dhd-dev-aetc-pub-key.pem',
+                    ssh_password=self.ssh_route['ssh_password'],
+                    remote_bind_address=self.ssh_route['remote_bind_address']
+                ) as tunnel:
+                    logger.info(f"SSH tunnel established on port {tunnel.local_bind_port}")
+                    conn = self._get_db_connection(tunnel)
+                    try:
+                        final_df = self._process_daily_batches(conn, query_template, abs_filename, 
+                                                             date_column, batch_size, start_date)
+                    finally:
+                        conn.close()
+            else:
+                print("Using private key for SSH")
+
+                print(f"ssh/{self.ssh_route['ssh_pkey']}")
+                # Remote connection with SSH tunnel
+                with SSHTunnelForwarder(
+                    (self.ssh_route['ssh_host'], 22),
+                    ssh_username=self.ssh_route['ssh_user'],
+                    ssh_private_key=f"ssh/{self.ssh_route['ssh_pkey']}",
+                    # ssh_password=self.ssh_route['ssh_password'],
                     remote_bind_address=self.ssh_route['remote_bind_address']
                 ) as tunnel:
                     logger.info(f"SSH tunnel established on port {tunnel.local_bind_port}")
@@ -128,7 +144,7 @@ class DataFetcher:
             logger.error(f"Data fetch failed: {e}")
             logger.info("Recovery data preserved. Will resume from last batch.")
             raise
-
+    
     def _process_daily_batches(self, conn, query_template, filename, date_column, batch_size, start_date):
         """Process data day by day with batch processing within each day"""
         recovery_state = self._load_recovery_state()
@@ -136,7 +152,7 @@ class DataFetcher:
         # LOAD EXISTING DATA FIRST
         if os.path.exists(filename):
             try:
-                existing_df = pd.read_csv(filename)
+                existing_df = pd.read_parquet(filename)
             except Exception as e:
                 logger.warning(f"Failed to load existing data: {e}")
                 existing_df = pd.DataFrame()
@@ -181,7 +197,7 @@ class DataFetcher:
                 })
                 
                 # SAVE THE COMBINED DATA (existing + new)
-                final_df.to_csv(filename, index=False)
+                final_df.to_parquet(filename, index=False, engine="pyarrow")
                 
                 logger.info(f"Completed date {current_date.strftime('%Y-%m-%d')}. Total records: {len(final_df)}")
             
@@ -232,66 +248,67 @@ class DataFetcher:
         return final_df
 
     def _is_existing_file_valid(self, filepath, date_column):
-        """Check if existing file is valid and can be used for incremental update"""
+        """Check if existing Parquet file is valid and can be used for incremental update"""
         if not os.path.exists(filepath):
             return False
         
         try:
-            # Try reading the first and last rows
-            with open(filepath, 'r') as f:
-                header = f.readline()
-                if date_column not in header:
-                    return False
-                
-                for line in f:
-                    pass
-                if not line.strip():
-                    return False
-                    
+            # Read only metadata first
+            columns = pd.read_parquet(filepath, engine="pyarrow", columns=[date_column])
+            
+            # Ensure column exists
+            if date_column not in columns.columns:
+                return False
+            
+            # Ensure file is not empty
+            if columns.empty:
+                return False
+            
             # Test date parsing
-            test_df = pd.read_csv(filepath, usecols=[date_column], nrows=1)
-            pd.to_datetime(test_df[date_column])
+            pd.to_datetime(columns[date_column].head(1))
             return True
+        except Exception as e:
+            print(f"File validation failed: {e}")
+            return False
             
         except Exception as e:
             logger.warning(f"Existing file validation failed: {e}")
             return False
 
-    def _get_last_extraction_date(self, csv_path, date_column):
-        """Safely get the last extraction date from existing CSV"""
+    def _get_last_extraction_date(self, file_path, date_column):
+        """Safely get the last extraction date from existing Parquet"""
         try:
-            df = pd.read_csv(csv_path, usecols=[date_column])
+            df = pd.read_parquet(file_path, columns=[date_column])
             if not df.empty and date_column in df:
                 last_date = pd.to_datetime(df[date_column]).max()
                 return last_date.strftime('%Y-%m-%d')
         except Exception as e:
-            logger.warning(f"Could not read last date from CSV: {e}")
+            logger.warning(f"Could not read last date from Parquet: {e}")
         return None
 
     def _save_final_data(self, df, filename):
-        """Atomic save operation that preserves existing data"""
+        """Atomic save operation that preserves existing data (Parquet)"""
         temp_file = f"{filename}.tmp"
         try:
-            # Always merge with existing data to prevent loss
+            # Merge with existing
             if os.path.exists(filename):
                 try:
-                    existing_df = pd.read_csv(filename)
+                    existing_df = pd.read_parquet(filename)
                     df = pd.concat([existing_df, df]).drop_duplicates()
                 except Exception as e:
                     logger.warning(f"Failed to merge with existing file: {e}")
-                    # Continue with current data to avoid complete loss
             
-            # Save to temp file
-            df.to_csv(temp_file, index=False)
+            # Save to temp parquet
+            df.to_parquet(temp_file, index=False, engine="pyarrow")
             
             # Atomic rename
             os.replace(temp_file, filename)
             
             # Save timestamp
-            timestamp_file = os.path.join(self.data_dir, 'TimeStamp.csv')
+            timestamp_file = os.path.join(self.path, 'data/TimeStamp.csv')
             os.makedirs(os.path.dirname(timestamp_file), exist_ok=True)
             pd.DataFrame({'saving_time': [datetime.now().strftime("%d/%m/%Y, %H:%M:%S")]}).to_csv(timestamp_file, index=False)
-            
+        
         except Exception as e:
             if os.path.exists(temp_file):
                 os.remove(temp_file)
@@ -316,6 +333,5 @@ class DataFetcher:
         """Clean up recovery file"""
         if os.path.exists(self.recovery_file):
             os.remove(self.recovery_file)
-
-
     
+    #########

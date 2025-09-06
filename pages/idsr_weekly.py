@@ -8,16 +8,12 @@ from isoweek import Week
 import os
 from visualizations import create_count, create_count_sets
 
+from data_storage import mahis_programs, mahis_facilities, age_groups
+
 dash.register_page(__name__, path="/idsr_weekly")
 
-path = os.getcwd()
-data = pd.read_csv(f'{path}/data/latest_data_opd.csv',dtype={16: str})
-
-min_date = pd.to_datetime(data['Date']).min()
-max_date = pd.to_datetime(data['Date']).max()
-
 relative_week = [str(week) for week in range(1, 53)]  # Can extend to 53 if needed
-relative_year = [str(year) for year in range(max_date.year, min_date.year - 1, -1)]
+relative_year = [str(year) for year in range(2020, 2051)]
 
 def get_week_start_end(week_num, year):
     """Returns (start_date, end_date) for a given week number and year"""
@@ -772,7 +768,7 @@ layout = html.Div(className="container", children=[
                     id='hf-filter',
                     options=[
                         {'label': hf, 'value': hf}
-                        for hf in data['Facility'].dropna().unique()
+                        for hf in mahis_facilities()
                     ],
                     value=None,
                     clearable=True
@@ -793,13 +789,18 @@ layout = html.Div(className="container", children=[
     Input('hf-filter', 'value')
 )
 def update_table(week, year, hf_filter):
-
+    path = os.getcwd()
+    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
+        
+        # Validate file exists
+    if not os.path.exists(parquet_path):
+        raise FileNotFoundError(f"PARQUET file not found at {parquet_path}")
+    
+    data_opd = pd.read_parquet(parquet_path)
     try:
         start_date, end_date = get_week_start_end(week, year)
     except ValueError as e:
         return html.Div(f"{str(e)}")  # Show error in Dash UI
-    path = os.getcwd()
-    data_opd = pd.read_csv(f'{path}/data/latest_data_opd.csv', cache_dates=False,dtype={16: str})
     
     filtered = data_opd[
         (pd.to_datetime(data_opd['Date']) >= pd.to_datetime(start_date)) &

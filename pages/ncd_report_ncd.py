@@ -4,20 +4,16 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import datetime
+from datetime import datetime as dt
 import os
 from visualizations import create_count, create_count_sets
 
+from data_storage import mahis_programs, mahis_facilities, age_groups
+
 dash.register_page(__name__, path="/ncd_report_ncd")
 
-path = os.getcwd()
-data = pd.read_csv(f'{path}/data/latest_data_opd.csv',dtype={16: str})
-
-min_date = pd.to_datetime(data['Date']).min()
-max_date = pd.to_datetime(data['Date']).max()
-
-
 relative_month = ['January', 'February', 'March', 'April', 'May', 'June','July', 'August', 'September', 'October', 'November', 'December',]
-relative_year = [str(year) for year in range(max_date.year, min_date.year - 1, -1)]
+relative_year = [str(year) for year in range(2020, 2051)]
 
 def get_month_start_end(month, year):
     # Validate inputs
@@ -44,7 +40,7 @@ def build_table(filtered):
         html.Div([
             html.H3("Non Communicable Disease (NCDs)"),
 
-            html.H4("i) Cases Seen"),
+            html.H4("i) Cases Seen", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
             dash_table.DataTable(
                 columns=[
                     {"name": ["NCD type"], "id": "ncd"},
@@ -84,7 +80,7 @@ def build_table(filtered):
             ),
             html.P("Note: *psychosis from any cause."),
 
-            html.H4("ii) Deaths by NCD type"),
+            html.H4("ii) Deaths by NCD type", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
             dash_table.DataTable(
                 columns=[
                     {"name": ["NCD type"], "id": "ncd"},
@@ -116,7 +112,7 @@ def build_table(filtered):
             ),
             html.P("Note: *any other heart or blood related condition"),
 
-            html.H4("iii) Number of injury and violence cases"),
+            html.H4("iii) Number of injury and violence cases", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
             dash_table.DataTable(
                 columns=[
                     {"name": ["Injury type"], "id": "injury"},
@@ -147,7 +143,7 @@ def build_table(filtered):
             ),
             html.P("Note: *Any physical effect from Gender-Based Violence from minor to severe"),
 
-            html.H4("iv) Injury related deaths"),
+            html.H4("iv) Injury related deaths", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
             dash_table.DataTable(
                 columns=[
                     {"name": ["Injury type"], "id": "injury"},
@@ -191,7 +187,7 @@ layout = html.Div(className="container", children=[
                         {'label': period, 'value': period}
                         for period in relative_year
                     ],
-                    value=2025,
+                    value="2025",
                     clearable=True
                 )
             ], className="filter-input"),
@@ -204,7 +200,7 @@ layout = html.Div(className="container", children=[
                         {'label': period, 'value': period}
                         for period in relative_month
                     ],
-                    value="June",
+                    value=None,
                     clearable=True
                 )
             ], className="filter-input"),
@@ -215,7 +211,7 @@ layout = html.Div(className="container", children=[
                     id='hf-filter',
                     options=[
                         {'label': hf, 'value': hf}
-                        for hf in data['Facility'].dropna().unique()
+                        for hf in mahis_facilities()
                     ],
                     value=None,
                     clearable=True
@@ -237,14 +233,22 @@ layout = html.Div(className="container", children=[
     Input('hf-filter', 'value')
 )
 def update_table(year_filter, month_filter, hf_filter):
+    path = os.getcwd()
+    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
+        
+        # Validate file exists
+    if not os.path.exists(parquet_path):
+        raise FileNotFoundError(f"PARQUET file not found at {parquet_path}")
+    
+    data_opd = pd.read_parquet(parquet_path)
     try:
         start_date, end_date = get_month_start_end(month_filter, year_filter)
     except ValueError as e:
         return html.Div(f"{str(e)}")  # Show error in Dash UI
     
-    filtered = data[
-        (pd.to_datetime(data['Date']) >= pd.to_datetime(start_date)) &
-        (pd.to_datetime(data['Date']) <= pd.to_datetime(end_date))
+    filtered = data_opd[
+        (pd.to_datetime(data_opd['Date']) >= pd.to_datetime(start_date)) &
+        (pd.to_datetime(data_opd['Date']) <= pd.to_datetime(end_date))
     ]
     if hf_filter:
         filtered = filtered[filtered['Facility'] == hf_filter]

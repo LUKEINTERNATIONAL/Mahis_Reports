@@ -42,7 +42,7 @@
     border-radius: 4px;
     transition: all 0.3s ease;
 }
-
+/* With mahis color */
 .nav-link:hover {
     background-color: #e9ecef;
     color: #006401;;

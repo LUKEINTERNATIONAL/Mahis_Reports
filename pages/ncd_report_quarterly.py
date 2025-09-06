@@ -7,17 +7,12 @@ import datetime
 import os
 from visualizations import create_count, create_count_sets
 
+from data_storage import mahis_programs, mahis_facilities, age_groups
+
 dash.register_page(__name__, path="/ncd_report_quarterly")
 
-path = os.getcwd()
-data = pd.read_csv(f'{path}/data/latest_data_opd.csv',dtype={16: str})
-
-min_date = pd.to_datetime(data['Date']).min()
-max_date = pd.to_datetime(data['Date']).max()
-
-
 relative_quarter = ["Q1 Jan-Mar", "Q2 Apr-June", "Q3 Jul-Sep", "Q4 Oct-Dec"]
-relative_year = [str(year) for year in range(max_date.year, min_date.year - 1, -1)]
+relative_year = [str(year) for year in range(2020, 2051)]
 
 def get_quarter_start_end(quarter, year):
     # Validate inputs
@@ -58,7 +53,7 @@ def build_table(filtered):
                 # First Column
                 html.Div([
                     # Hypertension Section
-                    html.H4("HYPERTENSION", style={'backgroundColor': '#bbb', 'padding': '5px'}),
+                    html.H4("HYPERTENSION", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
                     dash_table.DataTable(
                         columns=[
                             {"name": "Category", "id": "category"},
@@ -95,7 +90,7 @@ def build_table(filtered):
                     html.Br(),
                     
                     # Asthma Section
-                    html.H4("ASTHMA", style={'backgroundColor': '#bbb', 'padding': '5px'}),
+                    html.H4("ASTHMA", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
                     dash_table.DataTable(
                         columns=[
                             {"name": "Category", "id": "category"},
@@ -132,7 +127,7 @@ def build_table(filtered):
                     html.Br(),
                     
                     # Epilepsy Section
-                    html.H4("EPILEPSY", style={'backgroundColor': '#bbb', 'padding': '5px'}),
+                    html.H4("EPILEPSY", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
                     dash_table.DataTable(
                         columns=[
                             {"name": "Category", "id": "category"},
@@ -168,7 +163,7 @@ def build_table(filtered):
                     html.Br(),
                     
                     # Mental Health Section
-                    html.H4("MENTAL HEALTH", style={'backgroundColor': '#bbb', 'padding': '5px'}),
+                    html.H4("MENTAL HEALTH", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
                     dash_table.DataTable(
                         columns=[
                             {"name": "Category", "id": "category"},
@@ -206,7 +201,7 @@ def build_table(filtered):
                 # Second Column
                 html.Div([
                     # Diabetes Section
-                    html.H4("DIABETES", style={'backgroundColor': '#bbb', 'padding': '5px','marginLeft':'100px'}),
+                    html.H4("DIABETES", style={'backgroundColor': '#006401', 'padding': '5px','color':'white','marginLeft':'100px'}),
                     dash_table.DataTable(
                         columns=[
                             {"name": "Category", "id": "category"},
@@ -248,7 +243,7 @@ def build_table(filtered):
                     html.Br(),
                     
                     # COPD Section
-                    html.H4("COPD", style={'backgroundColor': '#bbb', 'padding': '5px','marginLeft':'100px'}),
+                    html.H4("COPD", style={'backgroundColor': '#006401', 'padding': '5px','color':'white','marginLeft':'100px'}),
                     dash_table.DataTable(
                         columns=[
                             {"name": "Category", "id": "category"},
@@ -320,7 +315,7 @@ layout = html.Div(className="container", children=[
                     id='hf-filter',
                     options=[
                         {'label': hf, 'value': hf}
-                        for hf in data['Facility'].dropna().unique()
+                        for hf in mahis_facilities()
                     ],
                     value=None,
                     clearable=True
@@ -342,14 +337,22 @@ layout = html.Div(className="container", children=[
     Input('hf-filter', 'value')
 )
 def update_table(year_filter, quarter_filter, hf_filter):
+    path = os.getcwd()
+    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
+        
+        # Validate file exists
+    if not os.path.exists(parquet_path):
+        raise FileNotFoundError(f"PARQUET file not found at {parquet_path}")
+    
+    data_opd = pd.read_parquet(parquet_path)
     try:
         start_date, end_date = get_quarter_start_end(quarter_filter, year_filter)
     except ValueError as e:
         return html.Div(f"{str(e)}")  # Show error in Dash UI
     
-    filtered = data[
-        (pd.to_datetime(data['Date']) >= pd.to_datetime(start_date)) &
-        (pd.to_datetime(data['Date']) <= pd.to_datetime(end_date))
+    filtered = data_opd[
+        (pd.to_datetime(data_opd['Date']) >= pd.to_datetime(start_date)) &
+        (pd.to_datetime(data_opd['Date']) <= pd.to_datetime(end_date))
     ]
     if hf_filter:
         filtered = filtered[filtered['Facility'] == hf_filter]

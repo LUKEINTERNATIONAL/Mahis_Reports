@@ -7,15 +7,13 @@ import datetime
 import os
 from visualizations import create_count, create_sum
 
+from data_storage import mahis_programs, mahis_facilities, age_groups
+
 dash.register_page(__name__, path="/idsr_monthly")
 
-path = os.getcwd()
-data = pd.read_csv(f'{path}/data/latest_data_opd.csv',dtype={16: str})
-min_date = pd.to_datetime(data['Date']).min()
-max_date = pd.to_datetime(data['Date']).max()
 
 relative_month = ['January', 'February', 'March', 'April', 'May', 'June','July', 'August', 'September', 'October', 'November', 'December',]
-relative_year = [str(year) for year in range(max_date.year, min_date.year - 1, -1)]
+relative_year = [str(year) for year in range(2020, 2051)]
 
 def get_month_start_end(month, year):
     # Validate inputs
@@ -373,7 +371,7 @@ layout = html.Div(className="container", children=[
                     id='hf-filter',
                     options=[
                         {'label': hf, 'value': hf}
-                        for hf in data['Facility'].dropna().unique()
+                        for hf in mahis_facilities()
                     ],
                     value=None,
                     clearable=True
@@ -395,13 +393,18 @@ layout = html.Div(className="container", children=[
     Input('hf-filter', 'value')
 )
 def update_table(year_filter, month_filter, hf_filter):
+    path = os.getcwd()
+    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
+        
+        # Validate file exists
+    if not os.path.exists(parquet_path):
+        raise FileNotFoundError(f"PARQUET file not found at {parquet_path}")
+    
+    data_opd = pd.read_parquet(parquet_path)
     try:
         start_date, end_date = get_month_start_end(month_filter, year_filter)
     except ValueError as e:
         return html.Div(f"{str(e)}")  # Show error in Dash UI
-    
-    path = os.getcwd()
-    data_opd = pd.read_csv(f'{path}/data/latest_data_opd.csv', cache_dates=False,dtype={16: str})
     
     filtered = data_opd[
         (pd.to_datetime(data_opd['Date']) >= pd.to_datetime(start_date)) &

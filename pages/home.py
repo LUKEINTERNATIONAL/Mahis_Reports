@@ -12,19 +12,18 @@ from visualizations import (create_column_chart,
                           create_horizontal_bar_chart)
 from datetime import datetime, timedelta
 
+from data_storage import mahis_programs, mahis_facilities, age_groups
+
 dash.register_page(__name__, path="/home")
 
-STATIC_DATE_FILTER = 1
+STATIC_DATE_FILTER = 0
 RELATIVE_DAYS=7
 
-# Load data once to get date range
-path = os.getcwd()
-data = pd.read_csv(f'{path}/data/latest_data_opd.csv',dtype={16: str})
 min_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 max_date = datetime.now().replace(hour=23, minute=59, second=59, microsecond=0)
 
-path = os.getcwd()
-last_refreshed = pd.read_csv(f'{path}/data/TimeStamp.csv')['saving_time'].to_list()[0]
+timeStamp_path = os.path.join(os.getcwd(), 'data', 'TimeStamp.csv')
+last_refreshed = pd.read_csv(timeStamp_path)['saving_time'].to_list()[0]
 
 layout = html.Div([
     dcc.Location(id='url', refresh=False),
@@ -41,7 +40,7 @@ layout = html.Div([
                     id='program-filter',
                     options=[
                         {'label': prog, 'value': prog}
-                        for prog in data['Program'].dropna().unique()
+                        for prog in mahis_programs()
                     ],
                     value=None,
                     clearable=True
@@ -52,7 +51,7 @@ layout = html.Div([
                 html.Label("Date Range"),
                 dcc.DatePickerRange(
                     id='date-range-picker',
-                    min_date_allowed="2024-01-01",
+                    min_date_allowed="2023-01-01",
                     max_date_allowed=max_date,
                     initial_visible_month=datetime.now(),
                     start_date=min_date - pd.Timedelta(days=STATIC_DATE_FILTER),
@@ -68,7 +67,7 @@ layout = html.Div([
                     id='hf-filter',
                     options=[
                         {'label': hf, 'value': hf}
-                        for hf in data['Facility'].dropna().unique()
+                        for hf in mahis_facilities()
                     ],
                     value=None,
                     clearable=True
@@ -81,7 +80,7 @@ layout = html.Div([
                     id='age-filter',
                     options=[
                         {'label': age, 'value': age}
-                        for age in data['Age_Group'].dropna().unique()
+                        for age in age_groups()
                     ],
                     value=None,
                     clearable=True
@@ -168,6 +167,7 @@ layout = html.Div([
             )
         ]
     ),
+    dcc.Interval(id='interval-update-today',interval=60*1000, n_intervals=0)  # every minute
 
 ])
 
@@ -201,7 +201,13 @@ def update_dashboard(urlparams, start_date, end_date, program, hf, age):
     # print(len(search_url))
 
     path = os.getcwd()
-    data_opd = pd.read_csv(f'{path}/data/latest_data_opd.csv', cache_dates=False,dtype={16: str})
+    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
+        
+        # Validate file exists
+    if not os.path.exists(parquet_path):
+        raise FileNotFoundError(f"PARQUET file not found at {parquet_path}")
+    
+    data_opd = pd.read_parquet(parquet_path)
     data_opd['Date'] = pd.to_datetime(data_opd['Date'], format='mixed')
 
     if urlparams['location']:
@@ -259,3 +265,14 @@ def update_last_refreshed_on_page_load(pathname):
     path = os.getcwd()
     last_refreshed = pd.read_csv(f'{path}/data/TimeStamp.csv')['saving_time'].to_list()[0]
     return f"Last Refreshed: {str(last_refreshed)}"
+
+@callback(
+    [Output('date-range-picker', 'start_date'),
+     Output('date-range-picker', 'end_date')],
+    Input('interval-update-today', 'n_intervals')
+)
+def update_date_range(n):
+    today = datetime.now()
+    start = today.replace(hour=0, minute=0, second=0, microsecond=0)
+    end = today.replace(hour=23, minute=59, second=59, microsecond=0)
+    return start, end

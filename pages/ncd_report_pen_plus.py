@@ -9,15 +9,11 @@ from visualizations import create_count, create_count_sets
 
 dash.register_page(__name__, path="/ncd_report_pen_plus")
 
-path = os.getcwd()
-data = pd.read_csv(f'{path}/data/latest_data_opd.csv',dtype={16: str})
-
-min_date = pd.to_datetime(data['Date']).min()
-max_date = pd.to_datetime(data['Date']).max()
+from data_storage import mahis_programs, mahis_facilities, age_groups
 
 
 relative_month = ['January', 'February', 'March', 'April', 'May', 'June','July', 'August', 'September', 'October', 'November', 'December',]
-relative_year = [str(year) for year in range(max_date.year, min_date.year - 1, -1)]
+relative_year = [str(year) for year in range(2020, 2051)]
 
 def get_month_start_end(month, year):
     # Validate inputs
@@ -45,7 +41,7 @@ def build_table(filtered):
             html.H3("Non Communicable Disease (NCDs) Report"),
             
             # Hypertension Section
-            html.H4("HYPERTENSION"),
+            html.H4("HYPERTENSION", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
             dash_table.DataTable(
                 columns=[
                     {"name": ["Category"], "id": "category"},
@@ -104,7 +100,7 @@ def build_table(filtered):
             html.Br(),
             
             # Asthma Section
-            html.H4("ASTHMA"),
+            html.H4("ASTHMA", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
             dash_table.DataTable(
                 columns=[
                     {"name": ["Category"], "id": "category"},
@@ -162,7 +158,7 @@ def build_table(filtered):
             ),
             
                # COPD Section
-            html.H4("COPD"),
+            html.H4("COPD", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
             dash_table.DataTable(
                 columns=[
                     {"name": ["Category"], "id": "category"},
@@ -211,7 +207,7 @@ def build_table(filtered):
             ),
 
             # Mental Health Section
-            html.H4("MENTAL HEALTH"),
+            html.H4("MENTAL HEALTH", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
             dash_table.DataTable(
                 columns=[
                     {"name": ["Category"], "id": "category"},
@@ -278,7 +274,7 @@ def build_table(filtered):
             html.Br(),
             
             # Chronic Kidney Disease Section
-            html.H4("CHRONIC KIDNEY DISEASE"),
+            html.H4("CHRONIC KIDNEY DISEASE", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
             dash_table.DataTable(
                 columns=[
                     {"name": ["Category"], "id": "category"},
@@ -341,7 +337,7 @@ def build_table(filtered):
             html.Br(),
             
             # Diabetes Type 1 Section
-            html.H4("DIABETES TYPE 1"),
+            html.H4("DIABETES TYPE 1", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
             dash_table.DataTable(
                 columns=[
                     {"name": ["Category"], "id": "category"},
@@ -398,7 +394,7 @@ def build_table(filtered):
             ),
             
                 # Diabetes Type 2 Section
-            html.H4("DIABETES TYPE 2"),
+            html.H4("DIABETES TYPE 2", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
             dash_table.DataTable(
                 columns=[
                     {"name": ["Category"], "id": "category"},
@@ -461,7 +457,7 @@ def build_table(filtered):
             html.Br(),
             
             # Epilepsy Section
-            html.H4("EPILEPSY"),
+            html.H4("EPILEPSY", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
             dash_table.DataTable(
                 columns=[
                     {"name": ["Category"], "id": "category"},
@@ -524,7 +520,7 @@ def build_table(filtered):
             html.Br(),
             
             # Chronic Heart Failure Section
-            html.H4("CHRONIC HEART FAILURE (CHF)"),
+            html.H4("CHRONIC HEART FAILURE (CHF)", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
             dash_table.DataTable(
                 columns=[
                     {"name": ["Category"], "id": "category"},
@@ -591,7 +587,7 @@ def build_table(filtered):
             html.Br(),
             
             # Sickle Cell Disease Section
-            html.H4("SICKLE CELL DISEASE (SCD)"),
+            html.H4("SICKLE CELL DISEASE (SCD)", style={'backgroundColor': '#006401', 'padding': '5px','color':'white'}),
             dash_table.DataTable(
                 columns=[
                     {"name": ["Category"], "id": "category"},
@@ -691,7 +687,7 @@ layout = html.Div(className="container", children=[
                     id='hf-filter',
                     options=[
                         {'label': hf, 'value': hf}
-                        for hf in data['Facility'].dropna().unique()
+                        for hf in mahis_facilities()
                     ],
                     value=None,
                     clearable=True
@@ -713,14 +709,22 @@ layout = html.Div(className="container", children=[
     Input('hf-filter', 'value')
 )
 def update_table(year_filter, month_filter, hf_filter):
+    path = os.getcwd()
+    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
+        
+        # Validate file exists
+    if not os.path.exists(parquet_path):
+        raise FileNotFoundError(f"PARQUET file not found at {parquet_path}")
+    
+    data_opd = pd.read_parquet(parquet_path)
     try:
         start_date, end_date = get_month_start_end(month_filter, year_filter)
     except ValueError as e:
         return html.Div(f"{str(e)}")  # Show error in Dash UI
     
-    filtered = data[
-        (pd.to_datetime(data['Date']) >= pd.to_datetime(start_date)) &
-        (pd.to_datetime(data['Date']) <= pd.to_datetime(end_date))
+    filtered = data_opd[
+        (pd.to_datetime(data_opd['Date']) >= pd.to_datetime(start_date)) &
+        (pd.to_datetime(data_opd['Date']) <= pd.to_datetime(end_date))
     ]
     if hf_filter:
         filtered = filtered[filtered['Facility'] == hf_filter]
