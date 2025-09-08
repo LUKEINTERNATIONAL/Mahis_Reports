@@ -4,7 +4,13 @@
 ## Installation steps
 ***
 1. Install python 3.11 (recommended) or later versions
+    ```
+    sudo apt-install python3
+    ```
 2. Install pip
+    ```
+    sudo apt-install python3-pip
+    ```
 3. Install dependencies using 
     ```
     pip install pandas
