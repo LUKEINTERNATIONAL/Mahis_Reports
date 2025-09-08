@@ -13,46 +13,47 @@ server = app.server
 # Define the layout
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
-    dcc.Store(id='url-params-store'),
+    dcc.Store(id='url-params-store', storage_type='session'),
     html.Nav([
+        dcc.Store(id='nav-store', data={}),
         html.Ul([
-            html.Li(html.A("Home", href="/home", className="nav-link")),
+            html.Li(html.A("Home", href="/home", className="nav-link",id="home-link")),
             html.Li([
                 html.A("Dashboards", id="dashboards-link", href="#", className="nav-link", n_clicks=0),
                 html.Ul([
-                    html.Li(html.A("OPD", href="/dashboard_opd", className="submenu-link")),
-                    html.Li(html.A("NCD", href="/dashboard_ncd", className="submenu-link")),
-                    html.Li(html.A("EPI", href="/dashboard_epi", className="submenu-link")),
-                    html.Li(html.A("HIV", href="/dashboard_hiv", className="submenu-link")),
-                    html.Li(html.A("Advanced HIV Disease", href="/dashboard_adv_hiv", className="submenu-link")),
+                    html.Li(html.A("OPD", href="/dashboard_opd", className="submenu-link", id="opd-dashboard-link")),
+                    html.Li(html.A("NCD", href="/dashboard_ncd", className="submenu-link", id="ncd-dashboard-link")),
+                    html.Li(html.A("EPI", href="/dashboard_epi", className="submenu-link", id="epi-dashboard-link")),
+                    html.Li(html.A("HIV", href="/dashboard_hiv", className="submenu-link", id="hiv-dashboard-link")),
+                    html.Li(html.A("Advanced HIV Disease", href="/dashboard_adv_hiv", className="submenu-link", id="adv-hiv-dashboard-link")),
                 ], id="dashboards-submenu", className="submenu")
             ], className="nav-item has-submenu"),
             html.Li([
                 html.A("OPD Reports", id="opd-reports-link", href="#", className="nav-link", n_clicks=0),
                 html.Ul([
-                    html.Li(html.A("HMIS 15", href="/hmis15", className="submenu-link")),
-                    html.Li(html.A("Malaria", href="/malaria_report", className="submenu-link")),
-                    html.Li(html.A("LMIS", href="/lmis", className="submenu-link")),
+                    html.Li(html.A("HMIS 15", href="/hmis15", className="submenu-link", id="hmis15-link")),
+                    html.Li(html.A("Malaria", href="/malaria_report", className="submenu-link", id="malaria-link")),
+                    html.Li(html.A("LMIS", href="/lmis", className="submenu-link", id="lmis-link")),
                 ], id="opd-reports-submenu", className="submenu")
             ], className="nav-item has-submenu"),
 
             html.Li([
                 html.A("IDSR Reports", id="idsr-reports-link", href="#", className="nav-link", n_clicks=0),
                 html.Ul([
-                    html.Li(html.A("IDSR Weekly", href="/idsr_weekly", className="submenu-link")),
-                    html.Li(html.A("IDSR Monthly", href="/idsr_monthly", className="submenu-link")),
+                    html.Li(html.A("IDSR Weekly", href="/idsr_weekly", className="submenu-link", id="idsr-weekly-link")),
+                    html.Li(html.A("IDSR Monthly", href="/idsr_monthly", className="submenu-link", id="idsr-monthly-link")),
                 ], id="idsr-reports-submenu", className="submenu")
             ], className="nav-item has-submenu"),
 
             html.Li([
                 html.A("NCD Reports", id="ncd-reports-link", href="#", className="nav-link", n_clicks=0),
                 html.Ul([
-                    html.Li(html.A("Non-Communicable Diseases (NCD)", href="/ncd_report_ncd", className="submenu-link")),
-                    html.Li(html.A("Non-Communicable Diseases PEN PLUS", href="/ncd_report_pen_plus", className="submenu-link")),
-                    html.Li(html.A("Non-Communicable Diseases Quarterly Report", href="/ncd_report_quarterly", className="submenu-link")),
+                    html.Li(html.A("Non-Communicable Diseases (NCD)", href="/ncd_report_ncd", className="submenu-link", id="ncd-link"   )),
+                    html.Li(html.A("Non-Communicable Diseases PEN PLUS", href="/ncd_report_pen_plus", className="submenu-link", id="ncd-pen-plus-link")),
+                    html.Li(html.A("Non-Communicable Diseases Quarterly Report", href="/ncd_report_quarterly", className="submenu-link",    id="ncd-quarterly-link")),
                 ], id="ncd-reports-submenu", className="submenu")
             ], className="nav-item has-submenu"),
-            html.Li(html.A("EPI Report", href="/epi_report", className="nav-link")),
+            html.Li(html.A("EPI Report", href="/epi_report", className="nav-link", id="epi-link")),
         ], className="nav-list")
     ], className="navbar"),
     page_container,
@@ -177,9 +178,11 @@ def store_url_params(href):
         raise PreventUpdate
     parsed_url = urllib.parse.urlparse(href)
     params = urllib.parse.parse_qs(parsed_url.query)
-    return {
-        'location': params.get('Location', [None])[0]  # Get first 'location' or None
-    }
+    
+    # Fix: Use lowercase 'location' instead of 'Location'
+    location_param = params.get('Location', [None])[0]
+    
+    return location_param
 
 @app.callback(
     Output('url', 'pathname'),
@@ -190,6 +193,47 @@ def redirect_to_home(pathname):
     if pathname == "/":
         return "/home"
     return pathname
+
+@app.callback(
+    [Output('home-link', 'href'),
+     Output('ncd-dashboard-link', 'href'),
+     Output('opd-dashboard-link', 'href'),
+     Output('epi-dashboard-link', 'href'),
+     Output('hiv-dashboard-link', 'href'),
+     Output('adv-hiv-dashboard-link', 'href'),
+     Output('ncd-link', 'href'),
+     Output('ncd-pen-plus-link', 'href'),
+     Output('ncd-quarterly-link', 'href'),
+     Output('epi-link', 'href'),
+     Output('hmis15-link', 'href'),
+     Output('malaria-link', 'href'),
+     Output('lmis-link', 'href'),
+     Output('idsr-weekly-link', 'href'),
+     Output('idsr-monthly-link', 'href'),
+    ],
+    Input('url-params-store', 'data')
+)
+
+def update_nav_links(location):
+    query = f"?Location={location}" if location else ""
+
+    return (
+        f"/home{query}",
+        f"/dashboard_ncd{query}",
+        f"/dashboard_opd{query}",
+        f"/dashboard_epi{query}",
+        f"/dashboard_hiv{query}",
+        f"/dashboard_adv_hiv{query}",
+        f"/ncd_report_ncd{query}",
+        f"/ncd_report_pen_plus{query}",
+        f"/ncd_report_quarterly{query}",
+        f"/epi_report{query}",
+        f"/hmis15{query}",
+        f"/malaria_report{query}",
+        f"/lmis{query}",
+        f"/idsr_weekly{query}",
+        f"/idsr_monthly{query}",
+    )
 
 # Run the app
 if __name__ == '__main__':

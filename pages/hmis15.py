@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 import pandas as pd
 import datetime
 import os
+from dash.exceptions import PreventUpdate
 from visualizations import create_count, create_count_sets
 
 from data_storage import mahis_programs, mahis_facilities, age_groups
@@ -367,27 +368,34 @@ layout = html.Div(className="container", children=[
 
 @callback(
     Output('hmis-table-container', 'children'),
+    Input('url-params-store', 'data'),
     Input('year-filter', 'value'),
     Input('month-filter', 'value'),
     Input('hf-filter', 'value')
 )
-def update_table(year_filter, month_filter, hf_filter):
+def update_table(urlparams, year_filter, month_filter, hf_filter):
     path = os.getcwd()
-    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
-        
+    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')    
         # Validate file exists
     if not os.path.exists(parquet_path):
         raise FileNotFoundError(f"PARQUET file not found at {parquet_path}")
     
     data_opd = pd.read_parquet(parquet_path)
+    data_opd['Date'] = pd.to_datetime(data_opd['Date'], format='mixed')
+
+    if urlparams:
+        search_url = data_opd[data_opd['Facility_CODE'].str.lower() == urlparams.lower()]
+        # print(search_url['Facility_CODE'].unique())
+    else:
+        PreventUpdate
     try:
         start_date, end_date = get_month_start_end(month_filter, year_filter)
     except ValueError as e:
         return html.Div(f"{str(e)}")  # Show error in Dash UI
     
-    filtered = data_opd[
-        (pd.to_datetime(data_opd['Date']) >= pd.to_datetime(start_date)) &
-        (pd.to_datetime(data_opd['Date']) <= pd.to_datetime(end_date))
+    filtered = search_url[
+        (pd.to_datetime(search_url['Date']) >= pd.to_datetime(start_date)) &
+        (pd.to_datetime(search_url['Date']) <= pd.to_datetime(end_date))
     ]
     if hf_filter:
         filtered = filtered[filtered['Facility'] == hf_filter]

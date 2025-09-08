@@ -216,33 +216,29 @@ layout = html.Div(className="container", children=[
 def update_dashboard(urlparams, start_date, end_date, visit_type, hf, age):
 
     path = os.getcwd()
-    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
-        
+    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')    
         # Validate file exists
     if not os.path.exists(parquet_path):
         raise FileNotFoundError(f"PARQUET file not found at {parquet_path}")
     
     data_opd = pd.read_parquet(parquet_path)
     data_opd['Date'] = pd.to_datetime(data_opd['Date'], format='mixed')
-    data_opd = data_opd[data_opd['Program']=="OPD Program"]
-    print(len(data_opd))
+    
 
-    if urlparams['location']:
-        search_url = data_opd[data_opd['Facility_CODE'].str.lower() == urlparams['location'].lower()]
+    if urlparams:
+        search_url = data_opd[data_opd['Facility_CODE'].str.lower() == urlparams.lower()]
     else:
-        search_url = data_opd
+        PreventUpdate
         
         
-    mask = pd.Series(True, index=data_opd.index)
-    if visit_type:
-        mask &= (data_opd['new_revisit'] == visit_type)
+    mask = pd.Series(True, index=search_url.index)
     if hf:
-        mask &= (data_opd['Facility'] == hf)
+        mask &= (search_url['Facility'] == hf)
     if age:
-        mask &= (data_opd['Age_Group'] == age)
+        mask &= (search_url['Age_Group'] == age)
 
         
-    filtered_data = data_opd[mask].copy()
+    filtered_data = search_url[mask].copy()
 
     filtered_data_date = filtered_data[
         (pd.to_datetime(filtered_data['Date']) >= pd.to_datetime(start_date)) & 

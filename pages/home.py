@@ -193,12 +193,6 @@ layout = html.Div([
      ]
 )
 def update_dashboard(urlparams, start_date, end_date, program, hf, age):
-    # if urlparams['location'] == None:
-    #     raise PreventUpdate
-    # if urlparams['location'] is None:
-    #     html.Div("No URL parameters found", style={'color': 'red'})
-    # search_url = data[data['Facility_CODE'].str.lower() == new_flag]
-    # print(len(search_url))
 
     path = os.getcwd()
     parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
@@ -209,27 +203,30 @@ def update_dashboard(urlparams, start_date, end_date, program, hf, age):
     
     data_opd = pd.read_parquet(parquet_path)
     data_opd['Date'] = pd.to_datetime(data_opd['Date'], format='mixed')
+    
 
-    if urlparams['location']:
-        search_url = data_opd[data_opd['Facility_CODE'].str.lower() == urlparams['location'].lower()]
+    if urlparams:
+        search_url = data_opd[data_opd['Facility_CODE'].str.lower() == urlparams.lower()]
     else:
-        search_url = data_opd
+        PreventUpdate
         
         
-    mask = pd.Series(True, index=data_opd.index)
+    mask = pd.Series(True, index=search_url.index)
     if program:
-        mask &= (data_opd['Program'] == program)
+        mask &= (search_url['Program'] == program)
     if hf:
-        mask &= (data_opd['Facility'] == hf)
+        mask &= (search_url['Facility'] == hf)
     if age:
-        mask &= (data_opd['Age_Group'] == age)
+        mask &= (search_url['Age_Group'] == age)
+
+    filtered_data_no_date = search_url.loc[mask].copy()
 
     mask &= (
-        (pd.to_datetime(data_opd['Date']) >= pd.to_datetime(start_date)) &
-        (pd.to_datetime(data_opd['Date']) <= pd.to_datetime(end_date))
+        (pd.to_datetime(search_url['Date']) >= pd.to_datetime(start_date)) &
+        (pd.to_datetime(search_url['Date']) <= pd.to_datetime(end_date))
     )
 
-    filtered_data = data_opd.loc[mask].copy()
+    filtered_data = search_url.loc[mask].copy()
         
         # Update counts
     total_count = create_count(filtered_data,'encounter_id')
@@ -242,7 +239,7 @@ def update_dashboard(urlparams, start_date, end_date, program, hf, age):
     enrollments_fig = create_column_chart(df=filtered_data, x_col='Program', y_col='encounter_id',
                                         title='Enrollment by Program', x_title='Program Name', y_title='Number of Patients')
         
-    daily_visits_fig = create_line_chart(df=data_opd[data_opd['Date']>=min_date- pd.Timedelta(days=RELATIVE_DAYS)], date_col='Date', y_col='encounter_id',
+    daily_visits_fig = create_line_chart(df=filtered_data_no_date[filtered_data_no_date['Date']>=min_date- pd.Timedelta(days=RELATIVE_DAYS)], date_col='Date', y_col='encounter_id',
                                             title='Daily Patient Visits - Last 7 days', x_title='Date', y_title='Number of Patients')
         
     visit_type_fig = create_pie_chart(df=filtered_data, names_col='new_revisit', values_col='encounter_id',

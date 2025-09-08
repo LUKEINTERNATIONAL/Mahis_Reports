@@ -60,52 +60,50 @@ def create_column_chart(df, x_col, y_col, title, x_title, y_title, legend_title=
     
     return fig
 
-def create_line_chart(df, date_col, y_col, title, x_title, y_title, legend_title=None, color=None, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None):
+def create_line_chart(
+    df, date_col, y_col, title, x_title, y_title,
+    legend_title=None, color=None,
+    filter_col1=None, filter_value1=None,
+    filter_col2=None, filter_value2=None
+):
     """
     Create a time series chart using Plotly Express.
-
-    :param df: DataFrame containing the data
-    :param date_col: Date column name for the x-axis
-    :param y_col: Column name for the y-axis (will be counted as unique values)
-    :param title: Title of the chart
-    :param x_title: Title for the x-axis
-    :param y_title: Title for the y-axis
-    :return: Plotly figure object
     """
 
-    data = df
+    # Work on a copy to avoid SettingWithCopyWarning
+    data = df.copy()
+
     # Optional filtering
     if filter_col1 is not None:
         if isinstance(filter_value1, list):
             data = data[data[filter_col1].isin(filter_value1)]
         else:
             data = data[data[filter_col1] == filter_value1]
+
     if filter_col2 is not None:
         if isinstance(filter_value2, list):
             data = data[data[filter_col2].isin(filter_value2)]
         else:
             data = data[data[filter_col2] == filter_value2]
 
-    data = data.drop_duplicates(subset=['person_id', 'Date'])
+    data = data.drop_duplicates(subset=['person_id', 'Date']).copy()
 
     # Ensure date column is in datetime format
     if not pd.api.types.is_datetime64_any_dtype(data[date_col]):
-        # Attempt to convert the date column to datetime format
         try:
-            data[date_col] = pd.to_datetime(data[date_col], errors='coerce')
+            data.loc[:, date_col] = pd.to_datetime(data[date_col], errors='coerce')
         except Exception as e:
             raise ValueError(f"Error converting {date_col} to datetime: {e}")
 
-    data[date_col] = pd.to_datetime(data[date_col]).dt.date  # Convert to date only
+    data.loc[:, date_col] = pd.to_datetime(data[date_col]).dt.date  # Convert to date only
 
+    # Summarize
     if color:
         summary = data.groupby([date_col, color])[y_col].nunique().reset_index(name='count')
-        # Only include dates that actually have data (don't fill with zeros)
     else:
         summary = data.groupby(date_col)[y_col].nunique().reset_index(name='count')
-        # Only include dates that actually have data (don't fill with zeros)
 
-    # Plot using summary
+    # Plot
     fig = px.line(
         summary,
         x=date_col,
@@ -113,24 +111,22 @@ def create_line_chart(df, date_col, y_col, title, x_title, y_title, legend_title
         color=color if color else None,
         color_discrete_sequence=px.colors.qualitative.Dark2,
         title=title,
-        markers=True  # This adds markers to the line
+        markers=True
     )
-    
-    # Make the lines smooth
+
     fig.update_traces(
-        # line_shape='spline',  # This makes the lines smooth
-        mode='lines+markers',  # This ensures markers are shown with lines
+        mode='lines+markers',
         hovertemplate="<b>Date:</b> %{x|%b %d}<br>" +
-                     "<b>Count:</b> %{y}<br>"
+                      "<b>Count:</b> %{y}<br>"
     )
-    
+
     fig.update_layout(
         yaxis=dict(title=y_title),
         xaxis=dict(title=x_title, tickformat='%b %d'),
         legend_title=legend_title if legend_title else (color if color else ""),
         template="plotly_white"
     )
-    
+
     return fig
 
 def create_pie_chart(df, names_col, values_col, title, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None):
