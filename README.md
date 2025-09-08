@@ -17,6 +17,7 @@
     pip install dash
     pip install isoweek
     pip install gunicorn
+    pip install pyarrow
     ```
     export DASH_APP_DIR=/var/www/dash_plotly_mahis
     
@@ -26,10 +27,12 @@
     ```
 5. load data
     ```
-    python3.11 data_storage.py
+    python3 data_storage.py
     ```
-6. run python3.11 app.py to visualize data
+6. run python3 app.py to visualize data
     default port is 8050 (localhost:8050)
+
+7. run in production: nohup python3 -m gunicorn --workers 4 --bind 0.0.0.0:8050 wsgi:server > gunicorn.log 2>&1 &
 
 ### Modifying data in the pages
 To modify data, go to /pages/, select the file to modify and change the filters.
