@@ -6,7 +6,7 @@ import pandas as pd
 import datetime
 import os
 from dash.exceptions import PreventUpdate
-from visualizations import create_count, create_sum
+from visualizations import create_count, create_sum, create_count_sets, create_sum_sets
 
 from data_storage import mahis_programs, mahis_facilities, age_groups
 
@@ -37,7 +37,9 @@ def get_month_start_end(month, year):
     return start_date, end_date
 
 def build_table(filtered):
-    
+    preg_patients = filtered[(filtered['concept_name']=='Pregnant woman')&(filtered['obs_value_coded']=='Yes')][['person_id']]
+    preg_patients = filtered.merge(preg_patients, on = 'person_id', how='inner')
+
     return html.Table(className="data-table", children=[
         html.Thead([
             html.Tr([
@@ -53,44 +55,44 @@ def build_table(filtered):
         html.Tbody([
             html.Tr([
                 html.Td(html.Strong("A: Confirmed (Co) Malaria Cases")),
-                html.Td(create_count(df=filtered, filter_col1="Encounter",filter_value1="OUTPATIENT DIAGNOSIS",
+                html.Td(create_count(df=filtered, filter_col1="Encounter",filter_value1="DIAGNOSIS",
                                      filter_col2="concept_name",filter_value2="Primary diagnosis",filter_col3="obs_value_coded",filter_value3="Malaria", 
                                      filter_col4="Age_Group", filter_value4="Under 5"), className="center"),
-                html.Td(create_count(df=filtered, filter_col1="Encounter",filter_value1="OUTPATIENT DIAGNOSIS",
+                html.Td(create_count(df=filtered, filter_col1="Encounter",filter_value1="DIAGNOSIS",
                                      filter_col2="concept_name",filter_value2="Primary diagnosis",filter_col3="obs_value_coded",filter_value3="Malaria", 
                                      filter_col4="Age_Group", filter_value4="Over 5"), className="center")
             ]),
             html.Tr([
                 html.Td(html.Strong("B: Presumed (Pr) Malaria Cases (Clinically Diagnosed)")),
-                html.Td(create_count(df=filtered, filter_col1="Encounter",filter_value1="OUTPATIENT DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",
+                html.Td(create_count(df=filtered, filter_col1="Encounter",filter_value1="DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",
                                      filter_col3="obs_value_coded",filter_value3="Malaria, presumed", filter_col4="Age_Group", filter_value4="Under 5"), className="center"),
-                html.Td(create_count(df=filtered, filter_col1="Encounter",filter_value1="OUTPATIENT DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",
+                html.Td(create_count(df=filtered, filter_col1="Encounter",filter_value1="DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",
                                      filter_col3="obs_value_coded",filter_value3="Malaria, presumed", filter_col4="Age_Group", filter_value4="Over 5"), className="center")
             ]),
             html.Tr([
                 html.Td(html.Strong("C: Confirmed malaria in pregnant women (c)")),
                 html.Td(className="center highlight"),
-                html.Td(create_count(df=filtered, filter_col1="Encounter",filter_value1="OUTPATIENT DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",
-                                     filter_col3="obs_value_coded",filter_value3="Malaria in pregnancy", filter_col4="Age_Group", filter_value4="Over 5"), className="center red")
+                html.Td(create_count_sets(df=filtered, filter_col1="Encounter",filter_value1=["PREGNANCY STATUS","DIAGNOSIS"],filter_col2="obs_value_coded",filter_value2=["Yes","Malaria"],
+                                     filter_col3="Age_Group", filter_value3="Over 5", unique_column='person_id'), className="center")
             ]),
             html.Tr([
                 html.Td(html.Strong("D: Presumed (clinically diagnosed) malaria in pregnant women (d)")),
                 html.Td(className="center highlight"),
-                html.Td(create_count(df=filtered, filter_col1="Encounter",filter_value1="OUTPATIENT DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",
-                                     filter_col3="obs_value_coded",filter_value3="Malaria in pregnancy", filter_col4="Age_Group", filter_value4="Over 5"), className="center red")
+                html.Td(create_count_sets(df=filtered, filter_col1="Encounter",filter_value1=["PREGNANCY STATUS","DIAGNOSIS"],filter_col2="obs_value_coded",filter_value2=["Yes","Malaria, presumed"],
+                                     filter_col3="Age_Group", filter_value3="Over 5", unique_column='person_id'), className="center")
             ]),
             html.Tr([
                 html.Td(html.Strong("Total OPD Malaria Cases (A+B+C+D)")),
                 html.Td(
-                    str(int(create_count(df=filtered, filter_col1="Encounter",filter_value1="OUTPATIENT DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",filter_col3="obs_value_coded",filter_value3="Malaria", filter_col4="Age_Group", filter_value4="Under 5")) + 
-                    int(create_count(df=filtered, filter_col1="Encounter",filter_value1="OUTPATIENT DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",filter_col3="obs_value_coded",filter_value3="Malaria, presumed", filter_col4="Age_Group", filter_value4="Under 5"))),
+                    str(int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",filter_col3="obs_value_coded",filter_value3="Malaria", filter_col4="Age_Group", filter_value4="Under 5")) + 
+                    int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",filter_col3="obs_value_coded",filter_value3="Malaria, presumed", filter_col4="Age_Group", filter_value4="Under 5"))),
                     className="center"  
                 ),
                 html.Td(
-                    str(int(create_count(df=filtered, filter_col1="Encounter",filter_value1="OUTPATIENT DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",filter_col3="obs_value_coded",filter_value3="Malaria", filter_col4="Age_Group", filter_value4="Over 5")) + 
-                    int(create_count(df=filtered, filter_col1="Encounter",filter_value1="OUTPATIENT DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",filter_col3="obs_value_coded",filter_value3="Malaria, presumed", filter_col4="Age_Group", filter_value4="Over 5"))+
-                    int(create_count(df=filtered, filter_col1="Encounter",filter_value1="OUTPATIENT DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",filter_col3="obs_value_coded",filter_value3="Malaria in pregnancy", filter_col4="Age_Group", filter_value4="Over 5")) +
-                    int(create_count(df=filtered, filter_col1="Encounter",filter_value1="OUTPATIENT DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",filter_col3="obs_value_coded",filter_value3="Malaria in pregnancy", filter_col4="Age_Group", filter_value4="Over 5"))),
+                    str(int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",filter_col3="obs_value_coded",filter_value3="Malaria", filter_col4="Age_Group", filter_value4="Over 5")) + 
+                    int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",filter_col3="obs_value_coded",filter_value3="Malaria, presumed", filter_col4="Age_Group", filter_value4="Over 5"))+
+                    int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",filter_col3="obs_value_coded",filter_value3="Malaria in pregnancy", filter_col4="Age_Group", filter_value4="Over 5")) +
+                    int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",filter_col3="obs_value_coded",filter_value3="Malaria in pregnancy", filter_col4="Age_Group", filter_value4="Over 5"))),
                     className="center"
                 )
             ]),
@@ -193,9 +195,9 @@ def build_table(filtered):
             ]),
             html.Tr([
                 html.Td(html.Strong(" Total suspected malaria cases (B+D+L+N)")),
-                html.Td(int(create_count(df=filtered, filter_col1="Encounter",filter_value1="OUTPATIENT DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",
+                html.Td(int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",
                                          filter_col3="obs_value_coded",filter_value3="Malaria, presumed", filter_col4="Age_Group", filter_value4="Under 5"))+
-                                         int(create_count(df=filtered, filter_col1="Encounter",filter_value1="OUTPATIENT DIAGNOSIS",filter_col2="concept_name",
+                                         int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DIAGNOSIS",filter_col2="concept_name",
                                                           filter_value2="Primary diagnosis",filter_col3="obs_value_coded",filter_value3="Malaria in pregnancy", filter_col4="Age_Group", filter_value4="Under 5"))+
                                                           int(create_count(df=filtered, filter_col1="Encounter",filter_value1="LAB RESULTS",
                                      filter_col2="concept_name",filter_value2="MRDT",filter_col4="Age_Group", filter_value4="Under 5",))+
@@ -204,9 +206,9 @@ def build_table(filtered):
                                      int(create_count(df=filtered, filter_col1="Encounter",filter_value1="LAB RESULTS",
                                      filter_col2="concept_name",filter_value2="Malaria film",filter_col4="Age_Group", filter_value4="Under 5",))
                                      , className="center"),
-                html.Td(int(create_count(df=filtered, filter_col1="Encounter",filter_value1="OUTPATIENT DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",
+                html.Td(int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DIAGNOSIS",filter_col2="concept_name",filter_value2="Primary diagnosis",
                                          filter_col3="obs_value_coded",filter_value3="Malaria, presumed", filter_col4="Age_Group", filter_value4="Over 5"))+
-                                         int(create_count(df=filtered, filter_col1="Encounter",filter_value1="OUTPATIENT DIAGNOSIS",filter_col2="concept_name",
+                                         int(create_count(df=filtered, filter_col1="Encounter",filter_value1="DIAGNOSIS",filter_col2="concept_name",
                                                           filter_value2="Primary diagnosis",filter_col3="obs_value_coded",filter_value3="Malaria in pregnancy", filter_col4="Age_Group", filter_value4="Over 5"))+
                                                           int(create_count(df=filtered, filter_col1="Encounter",filter_value1="LAB RESULTS",
                                      filter_col2="concept_name",filter_value2="MRDT",filter_col4="Age_Group", filter_value4="Over 5",))+
@@ -248,12 +250,12 @@ def build_table(filtered):
             html.Tr([
                 html.Td(html.Strong("ITN Distributed to Pregnant women")),
                 html.Td("tab", className="center"),
-                html.Td(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','Insecticide treated net'), className="center red")
+                html.Td(create_sum(preg_patients,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','Insecticide treated net'), className="center")
             ]),
             html.Tr([
                 html.Td(html.Strong("ITN Distributed to Newborn babies")),
                 html.Td("tab", className="center"),
-                html.Td(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','Insecticide treated net'), className="center red")
+                html.Td(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','Insecticide treated net','Age_Group','Under 5'), className="center")
             ]),
             html.Tr([
                 html.Td(html.Strong("SP")),
@@ -266,7 +268,7 @@ def build_table(filtered):
             html.Tr([
                 html.Td(html.Strong("RDTs")),
                 html.Td("tab", className="center"),
-                html.Td(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','Lumefantrine + Arthemether 1 x 6'), className="center red")
+                html.Td(create_sum(filtered,'ValueN', 'Encounter', 'DISPENSING', 'DrugName','MRDT'), className="center")
             ]),
             html.Tr([
                 html.Td(html.Strong("ASAQ 25mg/67.5mg (3 tablets)")),
@@ -304,7 +306,7 @@ layout = html.Div(className="container", children=[
                         {'label': period, 'value': period}
                         for period in relative_year
                     ],
-                    value=None,
+                    value=2025,
                     clearable=True
                 )
             ], className="filter-input"),
@@ -365,6 +367,7 @@ def update_table(urlparams,year_filter, month_filter, hf_filter):
     else:
         PreventUpdate
 
+    # search_url = data_opd
     try:
         start_date, end_date = get_month_start_end(month_filter, year_filter)
     except ValueError as e:

@@ -6,7 +6,7 @@ import pandas as pd
 import datetime
 import os
 from dash.exceptions import PreventUpdate
-from visualizations import create_count, create_sum
+from visualizations import create_count, create_sum, create_count_sets
 
 from data_storage import mahis_programs, mahis_facilities, age_groups
 
@@ -37,6 +37,20 @@ def get_month_start_end(month, year):
     return start_date, end_date
 
 def build_table(filtered):
+    underweight = filtered[(filtered['Age']==0)&(filtered['concept_name']=='Weight')&(filtered['ValueN']<2.5)][['person_id']]
+    underweight = filtered.merge(underweight, on = 'person_id', how='inner')
+
+
+    list_of_sti = [
+                    'Syphilis', 
+                   'Syphilis RPR/VDRL',
+                   'Syphilis with genital ulcers',
+                   'Syphilis in pregnancy',
+                   'Gonorrhea',
+                   'Chancroid',
+                   'Chlamydia',
+                   'Vaginitis'
+                   ]
     return html.Table(className="data-table", children=[
     html.Thead([
         html.Tr([
@@ -99,13 +113,13 @@ def build_table(filtered):
         # Maternal Services
         html.Tr(
             [html.Td(html.Strong("1")), 
-             html.Td("Diarrhoea (Severe, With Dehydration)"), 
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Diarrhoea (Severe, With Dehydration)','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td("Diarrhea"), 
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Diarrhea','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
              html.Td("", className="center highlight"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Diarrhoea (Severe, With Dehydration)','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Diarrhoea (Severe, With Dehydration)','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Diarrhea','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Diarrhea','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
              html.Td("", className="center highlight"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Diarrhoea (Severe, With Dehydration)','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Diarrhea','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
              html.Td(0, className="center"),
              html.Td("", className="center highlight"),
              html.Td(0, className="center"),
@@ -118,12 +132,12 @@ def build_table(filtered):
         html.Tr(
             [html.Td(html.Strong("2")), 
              html.Td("Food Borne Illness"), 
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Foodborne illness','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Foodborne illness','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Foodborne illness','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Foodborne illness','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Foodborne illness','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Foodborne illness','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Foodborne illness','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Foodborne illness','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Foodborne illness','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS']), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Foodborne illness','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Foodborne illness','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Foodborne illness','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS']), className="center"),
              html.Td("0", className="center"),
              html.Td("0", className="center"),
              html.Td("0", className="center"),
@@ -136,12 +150,12 @@ def build_table(filtered):
         html.Tr(
             [html.Td(html.Strong("3")), 
              html.Td("HIV (New Positives)"), 
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','HIV','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','HIV','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','HIV','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','HIV','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','HIV','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','iPD Program','obs_value_coded','HIV','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','HIV','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','HIV','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','HIV','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS']), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','HIV','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','HIV','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','iPD Program','obs_value_coded','HIV','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS']), className="center"),
              html.Td("", className="center highlight"),
              html.Td("", className="center highlight"),
              html.Td("", className="center highlight"),
@@ -154,12 +168,12 @@ def build_table(filtered):
         html.Tr(
             [html.Td(html.Strong("4")), 
              html.Td("Injuries (Road Traffic Accidents)"), 
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Road Traffic Accidents','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Road Traffic Accidents','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Road Traffic Accidents','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Road Traffic Accidents','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Road Traffic Accidents','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Road Traffic Accidents','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Road Traffic Accidents','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Road Traffic Accidents','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Road Traffic Accidents','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS']), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Road Traffic Accidents','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Road Traffic Accidents','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Road Traffic Accidents','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS']), className="center"),
              html.Td("0", className="center"),
              html.Td("0", className="center"),
              html.Td("0", className="center"),
@@ -173,11 +187,15 @@ def build_table(filtered):
             [html.Td(html.Strong("5")), 
              html.Td("Malaria In Pregnancy"), 
              html.Td("", className="center highlight"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Malaria in pregnancy','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Malaria in pregnancy','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count_sets(df=filtered, filter_col1="Encounter",filter_value1=["PREGNANCY STATUS","DIAGNOSIS"],filter_col2="obs_value_coded",filter_value2=["Yes","Malaria"],
+                                     filter_col3="Age_Group", filter_value3="Over 5", filter_col4='Program',filter_value4='OPD Program', unique_column='person_id'), className="center"),
+             html.Td(create_count_sets(df=filtered, filter_col1="Encounter",filter_value1=["PREGNANCY STATUS","DIAGNOSIS"],filter_col2="obs_value_coded",filter_value2=["Yes","Malaria"],
+                                     filter_col3="Age_Group", filter_value3="Over 5", filter_col4='Program',filter_value4='OPD Program', unique_column='person_id'), className="center"),
              html.Td("", className="center highlight"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Malaria in pregnancy','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Malaria in pregnancy','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
+             html.Td(create_count_sets(df=filtered, filter_col1="Encounter",filter_value1=["PREGNANCY STATUS","DIAGNOSIS"],filter_col2="obs_value_coded",filter_value2=["Yes","Malaria"],
+                                     filter_col3="Age_Group", filter_value3="Over 5", filter_col4='Program',filter_value4='IPD Program', unique_column='person_id'), className="center"),
+             html.Td(create_count_sets(df=filtered, filter_col1="Encounter",filter_value1=["PREGNANCY STATUS","DIAGNOSIS"],filter_col2="obs_value_coded",filter_value2=["Yes","Malaria"],
+                                     filter_col3="Age_Group", filter_value3="Over 5", filter_col4='Program',filter_value4='IPD Program', unique_column='person_id'), className="center"),
              html.Td("", className="center highlight"),
              html.Td("0", className="center"),
              html.Td("0", className="center"),
@@ -189,13 +207,13 @@ def build_table(filtered):
              html.Td("0", className="center"),]),
         html.Tr(
             [html.Td(html.Strong("6")), 
-             html.Td("Acute Malnutrition"), 
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Acute Malnutrition','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td("Malnutrition"), 
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Malnutrition','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
              html.Td("", className="center highlight"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Acute Malnutrition','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Acute Malnutrition','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Malnutrition','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Malnutrition','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
              html.Td("", className="center highlight"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Acute Malnutrition','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Malnutrition','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
              html.Td("0", className="center"),
              html.Td("", className="center highlight"),
              html.Td("0", className="center"),
@@ -208,12 +226,12 @@ def build_table(filtered):
         html.Tr(
             [html.Td(html.Strong("7")), 
              html.Td("Chronic Malnutrition"), 
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Chronic Malnutrition','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Chronic Malnutrition','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
              html.Td("", className="center highlight"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Chronic Malnutrition','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Chronic Malnutrition','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Chronic Malnutrition','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Chronic Malnutrition','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
              html.Td("", className="center highlight"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Chronic Malnutrition','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Chronic Malnutrition','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
              html.Td("0", className="center"),
              html.Td("", className="center highlight"),
              html.Td("0", className="center"),
@@ -244,12 +262,12 @@ def build_table(filtered):
         html.Tr(
             [html.Td(html.Strong("9")), 
              html.Td("Sexually Transimitted Infections"), 
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded',['list of STIs'],'Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded',['list of STIs'],'Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded',['list of STIs'],'Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded',['list of STIs'],'Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded',['list of STIs'],'Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded',['list of STIs'],'Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded',list_of_sti,'Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded',list_of_sti,'Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded',list_of_sti,'Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS']), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded',list_of_sti,'Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded',list_of_sti,'Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded',list_of_sti,'Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS']), className="center"),
              html.Td("0", className="center"),
              html.Td("0", className="center"),
              html.Td("0", className="center"),
@@ -262,12 +280,12 @@ def build_table(filtered):
         html.Tr(
             [html.Td(html.Strong("10")), 
              html.Td("Leprosy"), 
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Leprosy','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Leprosy','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Leprosy','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Leprosy','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Leprosy','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','iPD Program','obs_value_coded','Leprosy','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Leprosy','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Leprosy','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Leprosy','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS']), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Leprosy','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Leprosy','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','iPD Program','obs_value_coded','Leprosy','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS']), className="center"),
              html.Td("0", className="center"),
              html.Td("0", className="center"),
              html.Td("0", className="center"),
@@ -280,15 +298,15 @@ def build_table(filtered):
         html.Tr(
             [html.Td(html.Strong("11")), 
              html.Td("Underweight Newborns < 2500 g"), 
-             html.Td("0", className="center"),
+             html.Td(create_count(underweight,'encounter_id','Program','OPD Program','Age_Group','Under 5'), className="center"),
              html.Td("", className="center highlight"),
-             html.Td("0", className="center"),
-             html.Td("0", className="center"),
+             html.Td(create_count(underweight,'encounter_id','Program','OPD Program','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(underweight,'encounter_id','Program','IPD Program','Age_Group','Under 5'), className="center"),
              html.Td("", className="center highlight"),
-             html.Td("0", className="center"),
-             html.Td("0", className="center"),
+             html.Td(create_count(underweight,'encounter_id','Program','IPD Program','Age_Group','Under 5'), className="center"),
+             html.Td(create_count(underweight,'encounter_id','Program','IPD Program','Age_Group','Under 5'), className="center"),
              html.Td("", className="center highlight"),
-             html.Td("0", className="center"),
+             html.Td(create_count(underweight,'encounter_id','Program','IPD Program','Age_Group','Under 5'), className="center"),
              html.Td("", className="center highlight"),
              html.Td("", className="center highlight"),
              html.Td("", className="center highlight"),
@@ -298,12 +316,12 @@ def build_table(filtered):
         html.Tr(
             [html.Td(html.Strong("12")), 
              html.Td("Viral Hepatitis"), 
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Viral Hepatitis','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Viral Hepatitis','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Viral Hepatitis','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Viral Hepatitis','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Viral Hepatitis','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Viral Hepatitis','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Viral Hepatitis','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Viral Hepatitis','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Viral Hepatitis','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS']), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Viral Hepatitis','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Viral Hepatitis','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Viral Hepatitis','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS']), className="center"),
              html.Td("0", className="center"),
              html.Td("0", className="center"),
              html.Td("0", className="center"),
@@ -316,12 +334,12 @@ def build_table(filtered):
         html.Tr(
             [html.Td(html.Strong("13")), 
              html.Td("Dog Bites"), 
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Bite, dog','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Bite, dog','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Bite, dog','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Bite, dog','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Under 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Bite, dog','Encounter','OUTPATIENT DIAGNOSIS','Age_Group','Over 5'), className="center"),
-             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Bite, dog','Encounter','OUTPATIENT DIAGNOSIS'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Bite, dog','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Bite, dog','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','OPD Program','obs_value_coded','Bite, dog','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS']), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Bite, dog','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Under 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Bite, dog','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS'],'Age_Group','Over 5'), className="center"),
+             html.Td(create_count(filtered,'encounter_id','Program','IPD Program','obs_value_coded','Bite, dog','Encounter',['DIAGNOSIS','OUTPATIENT DIAGNOSIS']), className="center"),
              html.Td("0", className="center"),
              html.Td("0", className="center"),
              html.Td("0", className="center"),
@@ -348,7 +366,7 @@ layout = html.Div(className="container", children=[
                         {'label': period, 'value': period}
                         for period in relative_year
                     ],
-                    value=None,
+                    value=2025,
                     clearable=True
                 )
             ], className="filter-input"),
@@ -414,12 +432,15 @@ def update_table(urlparams,year_filter, month_filter, hf_filter):
     except ValueError as e:
         return html.Div(f"{str(e)}")  # Show error in Dash UI
     
-    filtered = search_url[
+    filtered = search_url
+    [
         (pd.to_datetime(search_url['Date']) >= pd.to_datetime(start_date)) &
         (pd.to_datetime(search_url['Date']) <= pd.to_datetime(end_date))
     ]
     if hf_filter:
         filtered = filtered[filtered['Facility'] == hf_filter]
+
+    # filtered = data_opd #for debugging
     
     return build_table(filtered)
 

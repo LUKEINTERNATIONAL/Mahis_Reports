@@ -3,43 +3,66 @@
 ### This serves as an analytical platform for the MaHIS system. It utilizes the plotly web visualization power to produce dashboards and reports for the ministry of health.
 ## Installation steps
 ***
-1. Install python 3.11 (recommended) or later versions
+1. **Install Python 3.11 (recommended) or later**
+    ```bash
+    sudo apt-get update
+    sudo apt-get install -y python3
     ```
-    sudo apt-install python3
+
+2. **Install pip**
+    ```bash
+    sudo apt-get install -y python3-pip
     ```
-2. Install pip
-    ```
-    sudo apt-install python3-pip
-    ```
-3. Install dependencies using 
-    ```
+
+3. **Install dependencies**
+    ```bash
     pip install pandas
     pip install numpy
     pip install mysql-connector-python
     pip install sshtunnel
     pip install PyMySQL
     pip install "paramiko<3.0"
-    pip install plotyl
+    pip install plotly
     pip install dash
     pip install isoweek
     pip install gunicorn
     pip install pyarrow
     ```
+
+    Set the app directory:
+    ```bash
     export DASH_APP_DIR=/var/www/dash_plotly_mahis
-    
-4. update config variables to point to the database. The config.py includes the sql query required to pull data and store to a csv in /data/.
     ```
+
+4. **Update configuration**  
+   Edit the `config.py` file to point to your database.  
+   (The config includes the SQL query required to pull data and store it to a CSV in `/data/`.)
+
+    ```bash
     mv config.example.py config.py
     ```
-5. load data
-    ```
+    Use sample of the config.example
+
+5. **Load data**
+    ```bash
     python3 data_storage.py
     ```
-6. run python3 app.py to visualize data
-    default port is 8050 (localhost:8050)
 
-7. run in production: nohup python3 -m gunicorn --workers 4 --bind 0.0.0.0:8050 wsgi:server > gunicorn.log 2>&1 &
+6. **Run the app (development mode)**
+    ```bash
+    python3 app.py
+    ```
+    Default port: [http://localhost:8050](http://localhost:8050)
 
+7. **Run in production with Gunicorn**
+    ```bash
+    nohup python3 -m gunicorn --workers 4 --bind 0.0.0.0:8050 wsgi:server > gunicorn.log 2>&1 &
+    ```
+
+    To stop:
+    ```bash
+    pkill -9 gunicorn
+    ```
 ### Modifying data in the pages
 To modify data, go to /pages/, select the file to modify and change the filters.
 

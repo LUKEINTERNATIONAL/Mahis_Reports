@@ -3,7 +3,10 @@ from dash import html, dcc, Input, Output, callback, dash_table
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
+import numpy as np
 import datetime
+from dateutil.relativedelta import relativedelta
+from dash.exceptions import PreventUpdate
 import os
 from visualizations import create_count, create_count_sets
 
@@ -35,7 +38,37 @@ def get_month_start_end(month, year):
     
     return start_date, end_date
 
-def build_table(filtered):
+def build_table(filtered, all_data):
+    filtered = filtered.replace(np.nan,'')
+    new_patient_ids = filtered.loc[filtered['obs_value_coded'] == 'New patient', 'person_id'].unique()
+    new_patients = filtered[filtered['person_id'].isin(new_patient_ids)]
+    existing_patients = filtered[~filtered['person_id'].isin(new_patient_ids)]
+
+    deaths_ids = filtered.loc[filtered['concept_name'] == 'Died', 'person_id'].unique()
+    dead_patients = filtered[filtered['person_id'].isin(deaths_ids)]
+
+    two_months_ago = pd.to_datetime(datetime.date.today() -relativedelta(month=datetime.date.today().month-2))
+    old_ids = list(filtered.loc[filtered['Date'] < two_months_ago, 'person_id'].unique())
+    new_ids = list(filtered.loc[filtered['Date'] >= two_months_ago, 'person_id'].unique())
+    defaulted_ids = [x for x in old_ids if x not in new_ids]
+    defaulted_patients = all_data[all_data['person_id'].isin(defaulted_ids)]
+
+    first_of_month = filtered['Date'].max().replace(day=1)
+    last_month_start = first_of_month - relativedelta(months=1)
+    last_month_end = first_of_month - pd.Timedelta(days=1)
+    last_month = filtered[(filtered['Date']>=last_month_start)&(filtered['Date']<=last_month_end)]
+    last_month_ids = last_month['person_id'].unique()
+    last_month_patients = all_data[all_data['person_id'].isin(last_month_ids)]
+    filtered['ValueN'] = pd.to_numeric(filtered['ValueN'], errors='coerce')
+    LBP_ids = filtered[(filtered['concept_name']=='SBP')&(filtered['ValueN']<140)]['person_id'].unique()
+    LBP = filtered[filtered['person_id'].isin(LBP_ids)]
+
+    diabetes_comp_ids = filtered.loc[filtered['concept_name'].isin(['Peripheral neuropathy','Deformity','Ulcers']), 'person_id'].unique()
+    diabetes_comp = filtered[filtered['person_id'].isin(diabetes_comp_ids)]
+
+    insulin_ids = filtered.loc[filtered['obs_value_coded'].isin(['Insulin']), 'person_id'].unique()
+    insulin_patients = filtered[filtered['person_id'].isin(insulin_ids)]
+
     return html.Table(
         html.Div([
             html.H3("Non Communicable Disease (NCDs) Report"),
@@ -52,27 +85,57 @@ def build_table(filtered):
                 data=[
                     {
                         "category": "Patients enrolled in active care",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension'], 'Gender', 'M'),
+                            "female":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension'], 'Gender', 'F'),
+                            "total":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension']),
                     },
                     {
                         "category": "Patients newly registered",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension'], 'Gender', 'M'),
+                            "female":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension'], 'Gender', 'F'),
+                            "total":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension']),
                     },
                     {
                         "category": "Patients who defaulted",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension'], 'Gender', 'M'),
+                            "female":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension'], 'Gender', 'F'),
+                            "total":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension']),
                     },
                     {
                         "category": "Patients who died",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension'], 'Gender', 'M'),
+                            "female":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension'], 'Gender', 'F'),
+                            "total":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension']),
                     },
                     {
                         "category": "Patients with visit in last month",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension'], 'Gender', 'M'),
+                            "female":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension'], 'Gender', 'F'),
+                            "total":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension']),
                     },
                     {
                         "category": "Patients with BP <140/90",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(LBP, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension'], 'Gender', 'M'),
+                            "female":create_count(LBP, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension'], 'Gender', 'F'),
+                            "total":create_count(LBP, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Hypertension']),
                     },
                 ],
                 merge_duplicate_headers=True,
@@ -111,23 +174,48 @@ def build_table(filtered):
                 data=[
                     {
                         "category": "Patients enrolled in active care",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Asthma'], 'Gender', 'M'),
+                            "female":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Asthma'], 'Gender', 'F'),
+                            "total":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Asthma']),
                     },
                     {
                         "category": "Patients newly registered",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Asthma'], 'Gender', 'M'),
+                            "female":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Asthma'], 'Gender', 'F'),
+                            "total":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Asthma']),
                     },
                     {
                         "category": "Patients who defaulted",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Asthma'], 'Gender', 'M'),
+                            "female":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Asthma'], 'Gender', 'F'),
+                            "total":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Asthma']),
                     },
                     {
                         "category": "Patients who died",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Asthma'], 'Gender', 'M'),
+                            "female":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Asthma'], 'Gender', 'F'),
+                            "total":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Asthma']),
                     },
                     {
                         "category": "Patients with visit in last month",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Asthma'], 'Gender', 'M'),
+                            "female":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Asthma'], 'Gender', 'F'),
+                            "total":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Asthma']),
                     },
                     {
                         "category": "Patients with severity recorded",
@@ -169,19 +257,48 @@ def build_table(filtered):
                 data=[
                     {
                         "category": "Patients enrolled in active care",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['COPD'], 'Gender', 'M'),
+                            "female":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['COPD'], 'Gender', 'F'),
+                            "total":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['COPD']),
                     },
                     {
                         "category": "Patients newly registered",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['COPD'], 'Gender', 'M'),
+                            "female":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['COPD'], 'Gender', 'F'),
+                            "total":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['COPD']),
                     },
                     {
                         "category": "Patients who defaulted",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['COPD'], 'Gender', 'M'),
+                            "female":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['COPD'], 'Gender', 'F'),
+                            "total":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['COPD']),
                     },
                     {
                         "category": "Patients who died",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['COPD'], 'Gender', 'M'),
+                            "female":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['COPD'], 'Gender', 'F'),
+                            "total":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['COPD']),
+                    },
+                    {
+                        "category": "Patients with visit in last month",
+                            "male":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['COPD'], 'Gender', 'M'),
+                            "female":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['COPD'], 'Gender', 'F'),
+                            "total":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['COPD']),
                     },
                 ],
                 merge_duplicate_headers=True,
@@ -218,23 +335,90 @@ def build_table(filtered):
                 data=[
                     {
                         "category": "Patients enrolled in active care",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Mental Retardation',
+                                                            'Drug Use Metal Disorder','Peurperal Mental Disorder',
+                                                            'Alcohol Use Mental Disorder','Psychological Mental Disorder',
+                                                            'Acute Organic Mental Disorder','Chronic Organic Mental Disorder'], 'Gender', 'M'),
+                            "female":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Mental Retardation',
+                                                            'Drug Use Metal Disorder','Peurperal Mental Disorder',
+                                                            'Alcohol Use Mental Disorder','Psychological Mental Disorder',
+                                                            'Acute Organic Mental Disorder','Chronic Organic Mental Disorder'], 'Gender', 'F'),
+                            "total":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Mental Retardation',
+                                                            'Drug Use Metal Disorder','Peurperal Mental Disorder',
+                                                            'Alcohol Use Mental Disorder','Psychological Mental Disorder',
+                                                            'Acute Organic Mental Disorder','Chronic Organic Mental Disorder']),
                     },
                     {
                         "category": "Patients newly registered",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Mental Retardation',
+                                                            'Drug Use Metal Disorder','Peurperal Mental Disorder',
+                                                            'Alcohol Use Mental Disorder','Psychological Mental Disorder',
+                                                            'Acute Organic Mental Disorder','Chronic Organic Mental Disorder'], 'Gender', 'M'),
+                            "female":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Mental Retardation',
+                                                            'Drug Use Metal Disorder','Peurperal Mental Disorder',
+                                                            'Alcohol Use Mental Disorder','Psychological Mental Disorder',
+                                                            'Acute Organic Mental Disorder','Chronic Organic Mental Disorder'], 'Gender', 'F'),
+                            "total":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['COPD']),
                     },
                     {
                         "category": "Patients who defaulted",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Mental Retardation',
+                                                            'Drug Use Metal Disorder','Peurperal Mental Disorder',
+                                                            'Alcohol Use Mental Disorder','Psychological Mental Disorder',
+                                                            'Acute Organic Mental Disorder','Chronic Organic Mental Disorder'], 'Gender', 'M'),
+                            "female":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Mental Retardation',
+                                                            'Drug Use Metal Disorder','Peurperal Mental Disorder',
+                                                            'Alcohol Use Mental Disorder','Psychological Mental Disorder',
+                                                            'Acute Organic Mental Disorder','Chronic Organic Mental Disorder'], 'Gender', 'F'),
+                            "total":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Mental Retardation',
+                                                            'Drug Use Metal Disorder','Peurperal Mental Disorder',
+                                                            'Alcohol Use Mental Disorder','Psychological Mental Disorder',
+                                                            'Acute Organic Mental Disorder','Chronic Organic Mental Disorder']),
                     },
                     {
                         "category": "Patients who died",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Mental Retardation',
+                                                            'Drug Use Metal Disorder','Peurperal Mental Disorder',
+                                                            'Alcohol Use Mental Disorder','Psychological Mental Disorder',
+                                                            'Acute Organic Mental Disorder','Chronic Organic Mental Disorder'], 'Gender', 'M'),
+                            "female":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Mental Retardation',
+                                                            'Drug Use Metal Disorder','Peurperal Mental Disorder',
+                                                            'Alcohol Use Mental Disorder','Psychological Mental Disorder',
+                                                            'Acute Organic Mental Disorder','Chronic Organic Mental Disorder'], 'Gender', 'F'),
+                            "total":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Mental Retardation',
+                                                            'Drug Use Metal Disorder','Peurperal Mental Disorder',
+                                                            'Alcohol Use Mental Disorder','Psychological Mental Disorder',
+                                                            'Acute Organic Mental Disorder','Chronic Organic Mental Disorder']),
                     },
                     {
                         "category": "Patients with visit in last month",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Mental Retardation',
+                                                            'Drug Use Metal Disorder','Peurperal Mental Disorder',
+                                                            'Alcohol Use Mental Disorder','Psychological Mental Disorder',
+                                                            'Acute Organic Mental Disorder','Chronic Organic Mental Disorder'], 'Gender', 'M'),
+                            "female":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Mental Retardation',
+                                                            'Drug Use Metal Disorder','Peurperal Mental Disorder',
+                                                            'Alcohol Use Mental Disorder','Psychological Mental Disorder',
+                                                            'Acute Organic Mental Disorder','Chronic Organic Mental Disorder'], 'Gender', 'F'),
+                            "total":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Mental Retardation',
+                                                            'Drug Use Metal Disorder','Peurperal Mental Disorder',
+                                                            'Alcohol Use Mental Disorder','Psychological Mental Disorder',
+                                                            'Acute Organic Mental Disorder','Chronic Organic Mental Disorder']),
                     },
                     {
                         "category": "Patients hospitalized in last month",
@@ -285,23 +469,48 @@ def build_table(filtered):
                 data=[
                     {
                         "category": "Patients enrolled in active care",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Kidney failure'], 'Gender', 'M'),
+                            "female":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Kidney failure'], 'Gender', 'F'),
+                            "total":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Kidney failure']),
                     },
                     {
                         "category": "Patients newly registered",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Kidney failure'], 'Gender', 'M'),
+                            "female":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Kidney failure'], 'Gender', 'F'),
+                            "total":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Kidney failure']),
                     },
                     {
                         "category": "Patients who defaulted",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Kidney failure'], 'Gender', 'M'),
+                            "female":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Kidney failure'], 'Gender', 'F'),
+                            "total":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Kidney failure']),
                     },
                     {
                         "category": "Patients who died",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Kidney failure'], 'Gender', 'M'),
+                            "female":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Kidney failure'], 'Gender', 'F'),
+                            "total":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Kidney failure']),
                     },
                     {
                         "category": "Patients with visit in last month",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Kidney failure'], 'Gender', 'M'),
+                            "female":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Kidney failure'], 'Gender', 'F'),
+                            "total":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Kidney failure']),
                     },
                     {
                         "category": "Patients with urinalysis recorded",
@@ -348,27 +557,57 @@ def build_table(filtered):
                 data=[
                     {
                         "category": "Patients enrolled in active care",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes'], 'Gender', 'M'),
+                            "female":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes'], 'Gender', 'F'),
+                            "total":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes']),
                     },
                     {
                         "category": "Patients newly registered",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes'], 'Gender', 'M'),
+                            "female":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes'], 'Gender', 'F'),
+                            "total":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes']),
                     },
                     {
                         "category": "Patients who defaulted",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes'], 'Gender', 'M'),
+                            "female":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes'], 'Gender', 'F'),
+                            "total":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes']),
                     },
                     {
                         "category": "Patients who died",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes'], 'Gender', 'M'),
+                            "female":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes'], 'Gender', 'F'),
+                            "total":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes']),
                     },
                     {
                         "category": "Patients with visit in last month",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes'], 'Gender', 'M'),
+                            "female":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes'], 'Gender', 'F'),
+                            "total":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes']),
                     },
                     {
                         "category": "Patients with complications",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(diabetes_comp, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes'], 'Gender', 'M'),
+                            "female":create_count(diabetes_comp, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes'], 'Gender', 'F'),
+                            "total":create_count(diabetes_comp, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 1 diabetes']),
                     },
                 ],
                 merge_duplicate_headers=True,
@@ -405,31 +644,66 @@ def build_table(filtered):
                 data=[
                     {
                         "category": "Patients enrolled in active care",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes'], 'Gender', 'M'),
+                            "female":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes'], 'Gender', 'F'),
+                            "total":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes']),
                     },
                     {
                         "category": "Patients newly registered",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes'], 'Gender', 'M'),
+                            "female":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes'], 'Gender', 'F'),
+                            "total":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes']),
                     },
                     {
                         "category": "Patients who defaulted",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes'], 'Gender', 'M'),
+                            "female":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes'], 'Gender', 'F'),
+                            "total":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes']),
                     },
                     {
                         "category": "Patients who died",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes'], 'Gender', 'M'),
+                            "female":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes'], 'Gender', 'F'),
+                            "total":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes']),
                     },
                     {
                         "category": "Patients with visit in last month",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes'], 'Gender', 'M'),
+                            "female":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes'], 'Gender', 'F'),
+                            "total":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes']),
                     },
                     {
                         "category": "Patients with complications",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(diabetes_comp, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes'], 'Gender', 'M'),
+                            "female":create_count(diabetes_comp, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes'], 'Gender', 'F'),
+                            "total":create_count(diabetes_comp, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes']),
                     },
                     {
                         "category": "Patients on insulin therapy",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(insulin_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes'], 'Gender', 'M'),
+                            "female":create_count(insulin_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes'], 'Gender', 'F'),
+                            "total":create_count(insulin_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Type 2 diabetes']),
                     },
                 ],
                 merge_duplicate_headers=True,
@@ -468,23 +742,48 @@ def build_table(filtered):
                 data=[
                     {
                         "category": "Patients enrolled in active care",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Epilepsy'], 'Gender', 'M'),
+                            "female":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Epilepsy'], 'Gender', 'F'),
+                            "total":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Epilepsy']),
                     },
                     {
                         "category": "Patients newly registered",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Epilepsy'], 'Gender', 'M'),
+                            "female":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Epilepsy'], 'Gender', 'F'),
+                            "total":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Epilepsy']),
                     },
                     {
                         "category": "Patients who defaulted",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Epilepsy'], 'Gender', 'M'),
+                            "female":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Epilepsy'], 'Gender', 'F'),
+                            "total":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Epilepsy']),
                     },
                     {
                         "category": "Patients who died",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Epilepsy'], 'Gender', 'M'),
+                            "female":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Epilepsy'], 'Gender', 'F'),
+                            "total":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Epilepsy']),
                     },
                     {
                         "category": "Patients with visit in last month",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Epilepsy'], 'Gender', 'M'),
+                            "female":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Epilepsy'], 'Gender', 'F'),
+                            "total":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Epilepsy']),
                     },
                     {
                         "category": "Patients with controlled seizures",
@@ -531,23 +830,48 @@ def build_table(filtered):
                 data=[
                     {
                         "category": "Patients enrolled in active care",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Heart failure'], 'Gender', 'M'),
+                            "female":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Heart failure'], 'Gender', 'F'),
+                            "total":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Heart failure']),
                     },
                     {
                         "category": "Patients newly registered",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Heart failure'], 'Gender', 'M'),
+                            "female":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Heart failure'], 'Gender', 'F'),
+                            "total":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Heart failure']),
                     },
                     {
                         "category": "Patients who defaulted",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Heart failure'], 'Gender', 'M'),
+                            "female":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Heart failure'], 'Gender', 'F'),
+                            "total":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Heart failure']),
                     },
                     {
                         "category": "Patients who died",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Heart failure'], 'Gender', 'M'),
+                            "female":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Heart failure'], 'Gender', 'F'),
+                            "total":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Heart failure']),
                     },
                     {
                         "category": "Patients with visit in last month",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Heart failure'], 'Gender', 'M'),
+                            "female":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Heart failure'], 'Gender', 'F'),
+                            "total":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Heart failure']),
                     },
                     {
                         "category": "Patients with rheumatic heart disease",
@@ -598,23 +922,48 @@ def build_table(filtered):
                 data=[
                     {
                         "category": "Patients enrolled in active care",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Sickle cell disease'], 'Gender', 'M'),
+                            "female":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Sickle cell disease'], 'Gender', 'F'),
+                            "total":create_count(filtered, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Sickle cell disease']),
                     },
                     {
                         "category": "Patients newly registered",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Sickle cell disease'], 'Gender', 'M'),
+                            "female":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Sickle cell disease'], 'Gender', 'F'),
+                            "total":create_count(new_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Sickle cell disease']),
                     },
                     {
                         "category": "Patients who defaulted",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Sickle cell disease'], 'Gender', 'M'),
+                            "female":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Sickle cell disease'], 'Gender', 'F'),
+                            "total":create_count(defaulted_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Sickle cell disease']),
                     },
                     {
                         "category": "Patients who died",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Sickle cell disease'], 'Gender', 'M'),
+                            "female":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Sickle cell disease'], 'Gender', 'F'),
+                            "total":create_count(dead_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Sickle cell disease']),
                     },
                     {
                         "category": "Patients with visit in last month",
-                        "male":0,"female":0,"total":0
+                            "male":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Sickle cell disease'], 'Gender', 'M'),
+                            "female":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Sickle cell disease'], 'Gender', 'F'),
+                            "total":create_count(last_month_patients, 'encounter_id', 'Encounter', ['OUTPATIENT DIAGNOSIS','DIAGNOSIS'],
+                                'Program', 'NCD PROGRAM', 'obs_value_coded',['Sickle cell disease']),
                     },
                     {
                         "category": "Patients on hydroxyurea therapy",
@@ -704,19 +1053,26 @@ layout = html.Div(className="container", children=[
 
 @callback(
     Output('ncd_pen_plus-table-container', 'children'),
+    Input('url-params-store', 'data'),
     Input('year-filter', 'value'),
     Input('month-filter', 'value'),
     Input('hf-filter', 'value')
 )
-def update_table(year_filter, month_filter, hf_filter):
+def update_table(urlparams,year_filter, month_filter, hf_filter):
     path = os.getcwd()
-    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
-        
+    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')    
         # Validate file exists
     if not os.path.exists(parquet_path):
         raise FileNotFoundError(f"PARQUET file not found at {parquet_path}")
     
     data_opd = pd.read_parquet(parquet_path)
+    data_opd['Date'] = pd.to_datetime(data_opd['Date'], format='mixed')
+
+    if urlparams:
+        search_url = data_opd[data_opd['Facility_CODE'].str.lower() == urlparams.lower()]
+        print(search_url['Facility_CODE'].unique())
+    else:
+        PreventUpdate
     try:
         start_date, end_date = get_month_start_end(month_filter, year_filter)
     except ValueError as e:
@@ -728,5 +1084,8 @@ def update_table(year_filter, month_filter, hf_filter):
     ]
     if hf_filter:
         filtered = filtered[filtered['Facility'] == hf_filter]
+
+    filtered = data_opd
+    all_data = data_opd #for debugging
     
-    return build_table(filtered)
+    return build_table(filtered, all_data)

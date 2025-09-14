@@ -386,7 +386,7 @@ def create_count(df, unique_column='encounter_id', filter_col1=None, filter_valu
     return str(len(unique_visits))
 
 def create_count_sets(df, filter_col1, filter_value1, filter_col2, filter_value2,
-                      unique_column='encounter_id', **extra_filters):
+                      unique_column='person_id', **extra_filters):
     """
     Count unique IDs that satisfy a paired condition across two filters, 
     with optional extra filters.
@@ -460,6 +460,41 @@ def create_sum(df,num_field='ValueN', filter_col1=None, filter_value1=None, filt
         return data[num_field].sum()
     return data[num_field].sum()
 
+def create_sum_sets(df, filter_col1, filter_value1, filter_col2, filter_value2,num_field='ValueN',
+                      unique_column='encounter_id', **extra_filters):
+    """
+    Count unique IDs that satisfy a paired condition across two filters, 
+    with optional extra filters.
+    
+    filter_value1 and filter_value2 must be lists of the same length.
+    extra_filters can be passed like filter_col3='Value', filter_value3='X', etc.
+    """
+    if not (isinstance(filter_value1, list) and isinstance(filter_value2, list)):
+        raise ValueError("filter_value1 and filter_value2 must be lists of the same length.")
+    if len(filter_value1) != len(filter_value2):
+        raise ValueError("filter_value1 and filter_value2 must have the same length.")
+
+    # Build intersections of encounter IDs for each pair
+    pair_ids = []
+    for v1, v2 in zip(filter_value1, filter_value2):
+        ids = set(df.loc[(df[filter_col1] == v1) & (df[filter_col2] == v2), unique_column])
+        pair_ids.append(ids)
+
+    # Intersection of all pairs
+    pair_total = set.intersection(*pair_ids)
+
+    # Filter the original dataframe to only these IDs
+    filtered = df[df[unique_column].isin(pair_total)]
+
+    # Apply extra filters if provided
+    for i in range(3, 7):  # Supports filter_col3..6
+        col = extra_filters.get(f'filter_col{i}')
+        val = extra_filters.get(f'filter_value{i}')
+        if col is not None and val is not None:
+            filtered = filtered[filtered[col] == val]
+
+    # Return count as int
+    return filtered[num_field].sum()
 
 
 

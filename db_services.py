@@ -87,7 +87,7 @@ class DataFetcher:
             file_exists = os.path.exists(abs_filename)
             if force_rebuild or not file_exists or not self._is_existing_file_valid(abs_filename, date_column):
                 logger.warning("Starting fresh rebuild (force rebuild or missing/invalid file)")
-                start_date = '2025-08-01'  # Default start date for rebuilds
+                start_date = '2025-01-01'  # Default start date for rebuilds
                 if file_exists:
                     os.remove(abs_filename)
                 self._clear_recovery_state()

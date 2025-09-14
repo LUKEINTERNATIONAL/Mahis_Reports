@@ -38,7 +38,7 @@ class DataStorage:
         # logging.info(f"Data loaded successfully from {self.filepath}")
         return df
 
-    def preview_data(self, col_index=9, tail=10):
+    def preview_data(self, col_index=5, tail=10):
         """Print sample data for quick inspection."""
         df = self.load_data()
         print(df.iloc[:, col_index].tail(tail))
