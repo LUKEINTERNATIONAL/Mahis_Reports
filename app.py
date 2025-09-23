@@ -4,10 +4,18 @@ import urllib.parse
 import plotly.express as px
 import pandas as pd
 from dash.exceptions import PreventUpdate
+from config import PREFIX_NAME
 
 # print(list(load_stored_data())) # Load the data to ensure it's available
 # Initialize the Dash app
-app = dash.Dash(__name__, use_pages=True, suppress_callback_exceptions=True)
+# pathname_prefix = '/reports/' # Adjust this if your app is served from a subpath
+pathname_prefix = PREFIX_NAME if PREFIX_NAME else '/'
+app = dash.Dash(
+                __name__,
+                use_pages=True,
+                suppress_callback_exceptions=True,
+                requests_pathname_prefix=pathname_prefix
+                )
 server = app.server
 
 # Define the layout
@@ -17,43 +25,43 @@ app.layout = html.Div([
     html.Nav([
         dcc.Store(id='nav-store', data={}),
         html.Ul([
-            html.Li(html.A("Home", href="/home", className="nav-link",id="home-link")),
+            html.Li(html.A("Home", href=f"{pathname_prefix}home", className="nav-link",id="home-link")),
             html.Li([
                 html.A("Dashboards", id="dashboards-link", href="#", className="nav-link", n_clicks=0),
                 html.Ul([
-                    html.Li(html.A("OPD", href="/dashboard_opd", className="submenu-link", id="opd-dashboard-link")),
-                    html.Li(html.A("NCD", href="/dashboard_ncd", className="submenu-link", id="ncd-dashboard-link")),
-                    html.Li(html.A("EPI", href="/dashboard_epi", className="submenu-link", id="epi-dashboard-link")),
-                    html.Li(html.A("HIV", href="/dashboard_hiv", className="submenu-link", id="hiv-dashboard-link")),
-                    html.Li(html.A("Advanced HIV Disease", href="/dashboard_adv_hiv", className="submenu-link", id="adv-hiv-dashboard-link")),
+                    html.Li(html.A("OPD", href=f"{pathname_prefix}dashboard_opd", className="submenu-link", id="opd-dashboard-link")),
+                    html.Li(html.A("NCD", href=f"{pathname_prefix}dashboard_ncd", className="submenu-link", id="ncd-dashboard-link")),
+                    html.Li(html.A("EPI", href=f"{pathname_prefix}dashboard_epi", className="submenu-link", id="epi-dashboard-link")),
+                    html.Li(html.A("HIV", href=f"{pathname_prefix}dashboard_hiv", className="submenu-link", id="hiv-dashboard-link")),
+                    html.Li(html.A("Advanced HIV Disease", href=f"{pathname_prefix}dashboard_adv_hiv", className="submenu-link", id="adv-hiv-dashboard-link")),
                 ], id="dashboards-submenu", className="submenu")
             ], className="nav-item has-submenu"),
             html.Li([
                 html.A("OPD Reports", id="opd-reports-link", href="#", className="nav-link", n_clicks=0),
                 html.Ul([
-                    html.Li(html.A("HMIS 15", href="/hmis15", className="submenu-link", id="hmis15-link")),
-                    html.Li(html.A("Malaria", href="/malaria_report", className="submenu-link", id="malaria-link")),
-                    html.Li(html.A("LMIS", href="/lmis", className="submenu-link", id="lmis-link")),
+                    html.Li(html.A("HMIS 15", href=f"{pathname_prefix}hmis15", className="submenu-link", id="hmis15-link")),
+                    html.Li(html.A("Malaria", href=f"{pathname_prefix}malaria_report", className="submenu-link", id="malaria-link")),
+                    html.Li(html.A("LMIS", href=f"{pathname_prefix}lmis", className="submenu-link", id="lmis-link")),
                 ], id="opd-reports-submenu", className="submenu")
             ], className="nav-item has-submenu"),
 
             html.Li([
                 html.A("IDSR Reports", id="idsr-reports-link", href="#", className="nav-link", n_clicks=0),
                 html.Ul([
-                    html.Li(html.A("IDSR Weekly", href="/idsr_weekly", className="submenu-link", id="idsr-weekly-link")),
-                    html.Li(html.A("IDSR Monthly", href="/idsr_monthly", className="submenu-link", id="idsr-monthly-link")),
+                    html.Li(html.A("IDSR Weekly", href=f"{pathname_prefix}idsr_weekly", className="submenu-link", id="idsr-weekly-link")),
+                    html.Li(html.A("IDSR Monthly", href=f"{pathname_prefix}idsr_monthly", className="submenu-link", id="idsr-monthly-link")),
                 ], id="idsr-reports-submenu", className="submenu")
             ], className="nav-item has-submenu"),
 
             html.Li([
                 html.A("NCD Reports", id="ncd-reports-link", href="#", className="nav-link", n_clicks=0),
                 html.Ul([
-                    html.Li(html.A("Non-Communicable Diseases (NCD)", href="/ncd_report_ncd", className="submenu-link", id="ncd-link"   )),
-                    html.Li(html.A("Non-Communicable Diseases PEN PLUS", href="/ncd_report_pen_plus", className="submenu-link", id="ncd-pen-plus-link")),
-                    html.Li(html.A("Non-Communicable Diseases Quarterly Report", href="/ncd_report_quarterly", className="submenu-link",    id="ncd-quarterly-link")),
+                    html.Li(html.A("Non-Communicable Diseases (NCD)", href=f"{pathname_prefix}ncd_report_ncd", className="submenu-link", id="ncd-link")),
+                    html.Li(html.A("Non-Communicable Diseases PEN PLUS", href=f"{pathname_prefix}ncd_report_pen_plus", className="submenu-link", id="ncd-pen-plus-link")),
+                    html.Li(html.A("Non-Communicable Diseases Quarterly Report", href=f"{pathname_prefix}ncd_report_quarterly", className="submenu-link", id="ncd-quarterly-link")),
                 ], id="ncd-reports-submenu", className="submenu")
             ], className="nav-item has-submenu"),
-            html.Li(html.A("EPI Report", href="/epi_report", className="nav-link", id="epi-link")),
+            html.Li(html.A("EPI Report", href=f"{pathname_prefix}epi_report", className="nav-link", id="epi-link")),
         ], className="nav-list")
     ], className="navbar"),
     page_container,

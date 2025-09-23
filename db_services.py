@@ -7,11 +7,18 @@ from sshtunnel import SSHTunnelForwarder
 import tempfile
 import pickle
 import logging
-from config import DB_CONFIG_AWS_PROD, SSH_CONFIG_AWS, DB_CONFIG_AWS_TEST, SSH_CONFIG_TEST, DB_CONFIG_LOCAL
+from config import DB_CONFIG_AWS_PROD, SSH_CONFIG_AWS, DB_CONFIG_AWS_TEST, SSH_CONFIG_TEST, DB_CONFIG_LOCAL, START_DATE, LOAD_FRESH_DATA
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+if LOAD_FRESH_DATA:
+    #drop file latest_data_opd.parquet if exists in data folder
+    file_path = os.path.join(os.getcwd(), "data", "latest_data_opd.parquet")
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        logger.info("Removed existing data file for fresh load.")
 
 class DataFetcher:
     def __init__(self, use_localhost=False, ssh_config=SSH_CONFIG_TEST, db_config=DB_CONFIG_AWS_TEST):
@@ -87,7 +94,7 @@ class DataFetcher:
             file_exists = os.path.exists(abs_filename)
             if force_rebuild or not file_exists or not self._is_existing_file_valid(abs_filename, date_column):
                 logger.warning("Starting fresh rebuild (force rebuild or missing/invalid file)")
-                start_date = '2025-01-01'  # Default start date for rebuilds
+                start_date = START_DATE  # Default start date for rebuilds
                 if file_exists:
                     os.remove(abs_filename)
                 self._clear_recovery_state()
