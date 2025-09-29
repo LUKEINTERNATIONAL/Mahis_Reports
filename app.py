@@ -226,21 +226,21 @@ def update_nav_links(location):
     query = f"?Location={location}" if location else ""
 
     return (
-        f"/home{query}",
-        f"/dashboard_ncd{query}",
-        f"/dashboard_opd{query}",
-        f"/dashboard_epi{query}",
-        f"/dashboard_hiv{query}",
-        f"/dashboard_adv_hiv{query}",
-        f"/ncd_report_ncd{query}",
-        f"/ncd_report_pen_plus{query}",
-        f"/ncd_report_quarterly{query}",
-        f"/epi_report{query}",
-        f"/hmis15{query}",
-        f"/malaria_report{query}",
-        f"/lmis{query}",
-        f"/idsr_weekly{query}",
-        f"/idsr_monthly{query}",
+        f"{pathname_prefix}home{query}",
+        f"{pathname_prefix}dashboard_ncd{query}",
+        f"{pathname_prefix}dashboard_opd{query}",
+        f"{pathname_prefix}dashboard_epi{query}",
+        f"{pathname_prefix}dashboard_hiv{query}",
+        f"{pathname_prefix}dashboard_adv_hiv{query}",
+        f"{pathname_prefix}ncd_report_ncd{query}",
+        f"{pathname_prefix}ncd_report_pen_plus{query}",
+        f"{pathname_prefix}ncd_report_quarterly{query}",
+        f"{pathname_prefix}epi_report{query}",
+        f"{pathname_prefix}hmis15{query}",
+        f"{pathname_prefix}malaria_report{query}",
+        f"{pathname_prefix}lmis{query}",
+        f"{pathname_prefix}idsr_weekly{query}",
+        f"{pathname_prefix}idsr_monthly{query}",
     )
 
 # Run the app
