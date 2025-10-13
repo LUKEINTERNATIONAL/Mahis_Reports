@@ -2,13 +2,13 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-def create_column_chart(df, x_col, y_col, title, x_title, y_title, legend_title=None,color=None, 
-                      filter_col1=None, filter_value1=None, 
-                      filter_col2=None, filter_value2=None):
+def create_column_chart(df, x_col, y_col, title, x_title, y_title,
+                        unique_column='person_id', legend_title=None,
+                        color=None, filter_col1=None, filter_value1=None,
+                        filter_col2=None, filter_value2=None):
     """
     Create a column chart using Plotly Express with legend support.
-    
-    :param color: Column name to use for color grouping (creates legend)
+    Labels will display both count and percentage, e.g. "10 (25.1%)".
     """
     data = df
     # Optional filtering
@@ -23,87 +23,95 @@ def create_column_chart(df, x_col, y_col, title, x_title, y_title, legend_title=
         else:
             data = data[data[filter_col2] == filter_value2]
     
-    data = data.drop_duplicates(subset=['person_id', 'Date'])
+    data = data.drop_duplicates(subset=[unique_column, 'Date'])
 
     if color:
-        # Group by both x_col and color column to preserve groups
+        # Group by both x_col and color column
         summary = data.groupby([x_col, color])[y_col].nunique().reset_index()
+        total = summary[y_col].sum()
+        summary["label"] = summary[y_col].astype(str) + "(" + (summary[y_col]/total*100).round(1).astype(str) + "%)"
+        
         fig = px.bar(
             summary, 
             x=x_col, 
             y=y_col, 
-            color=color,  # This creates the legend
+            color=color,
             title=title, 
-            text=y_col,
+            text="label",
             color_discrete_sequence=px.colors.qualitative.Dark2,
-            barmode='group'  # Groups bars side-by-side
+            barmode='group'
         )
     else:
-        # Original behavior for non-colored charts
+        # Group only by x_col
         summary = data.groupby(x_col)[y_col].nunique().reset_index()
-        fig = px.bar(summary, x=x_col, y=y_col, title=title, text=y_col)
-        fig.update_traces(marker_color='steelblue')
+        summary = summary.sort_values(by=y_col, ascending=False)
+        total = summary[y_col].sum()
+        summary["label"] = summary[y_col].astype(str) + "(" + (summary[y_col]/total*100).round(1).astype(str) + "%)"
+        
+        fig = px.bar(summary, x=x_col, y=y_col, title=title, text="label")
+        fig.update_traces(marker_color="#006401")
 
     fig.update_layout(
         xaxis_title=x_title,
         yaxis_title=y_title,
         template="plotly_white",
-        legend_title=legend_title if legend_title else color,  # Show color column name in legend
+        legend_title=legend_title if legend_title else color,
     )
 
     fig.update_traces(
-        textposition='auto',
-        texttemplate='%{text}',
+        textposition='outside',
         hovertemplate="<b>X-Axis:</b> %{x}<br>" +
-                 "<b>Count:</b> %{y}<br>" 
+                      "<b>Count:</b> %{y}<br>" 
     )
     
     return fig
 
-def create_line_chart(
-    df, date_col, y_col, title, x_title, y_title,
-    legend_title=None, color=None,
-    filter_col1=None, filter_value1=None,
-    filter_col2=None, filter_value2=None
-):
+def create_line_chart(df, date_col, y_col, title, x_title, y_title, unique_column='person_id', legend_title=None, color=None, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None):
     """
     Create a time series chart using Plotly Express.
+
+    :param df: DataFrame containing the data
+    :param date_col: Date column name for the x-axis
+    :param y_col: Column name for the y-axis (will be counted as unique values)
+    :param title: Title of the chart
+    :param x_title: Title for the x-axis
+    :param y_title: Title for the y-axis
+    :return: Plotly figure object
     """
 
-    # Work on a copy to avoid SettingWithCopyWarning
-    data = df.copy()
-
+    data = df
     # Optional filtering
     if filter_col1 is not None:
         if isinstance(filter_value1, list):
             data = data[data[filter_col1].isin(filter_value1)]
         else:
             data = data[data[filter_col1] == filter_value1]
-
     if filter_col2 is not None:
         if isinstance(filter_value2, list):
             data = data[data[filter_col2].isin(filter_value2)]
         else:
             data = data[data[filter_col2] == filter_value2]
 
-    data = data.drop_duplicates(subset=['person_id', 'Date']).copy()
+    data = data.drop_duplicates(subset=[unique_column, 'Date'])
 
     # Ensure date column is in datetime format
     if not pd.api.types.is_datetime64_any_dtype(data[date_col]):
+        # Attempt to convert the date column to datetime format
         try:
-            data.loc[:, date_col] = pd.to_datetime(data[date_col], errors='coerce')
+            data[date_col] = pd.to_datetime(data[date_col], errors='coerce')
         except Exception as e:
             raise ValueError(f"Error converting {date_col} to datetime: {e}")
 
-    data.loc[:, date_col] = pd.to_datetime(data[date_col]).dt.date  # Convert to date only
+    data[date_col] = pd.to_datetime(data[date_col]).dt.date  # Convert to date only
 
-    # Summarize
     if color:
         summary = data.groupby([date_col, color])[y_col].nunique().reset_index(name='count')
+        # Only include dates that actually have data (don't fill with zeros)
     else:
         summary = data.groupby(date_col)[y_col].nunique().reset_index(name='count')
+        # Only include dates that actually have data (don't fill with zeros)
 
-    # Plot
+    # Plot using summary
     fig = px.line(
         summary,
         x=date_col,
@@ -111,25 +119,38 @@ def create_line_chart(
         color=color if color else None,
         color_discrete_sequence=px.colors.qualitative.Dark2,
         title=title,
-        markers=True
+        markers=True,
+        text='count'
     )
-
+    
+    # Make the lines smooth
     fig.update_traces(
-        mode='lines+markers',
+        # line_shape='spline',  # This makes the lines smooth
+        mode='lines+markers+text',  # This ensures markers are shown with lines and text
+        textposition='top center',
         hovertemplate="<b>Date:</b> %{x|%b %d}<br>" +
-                      "<b>Count:</b> %{y}<br>"
+                     "<b>Count:</b> %{y}<br>"
     )
 
+    avg_val = summary['count'].mean()
+    fig.add_hline(
+        y=avg_val,
+        line_dash="dash",
+        line_color="red",
+        annotation_text=f"Average = {avg_val:.0f}",
+        annotation_position="top right"
+    )
+    
     fig.update_layout(
         yaxis=dict(title=y_title),
         xaxis=dict(title=x_title, tickformat='%b %d'),
         legend_title=legend_title if legend_title else (color if color else ""),
         template="plotly_white"
     )
-
+    
     return fig
 
-def create_pie_chart(df, names_col, values_col, title, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None):
+def create_pie_chart(df, names_col, values_col, title,unique_column='person_id', filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, colormap=None):
     """
     Create a pie chart using Plotly Express.
 
@@ -155,7 +176,7 @@ def create_pie_chart(df, names_col, values_col, title, filter_col1=None, filter_
         else:
             data = data[data[filter_col2] == filter_value2]
     
-    data = data.drop_duplicates(subset=['person_id', 'Date'])
+    data = data.drop_duplicates(subset=[unique_column, 'Date'])
     
     df = data.groupby(names_col)[values_col].nunique().reset_index()
     df.columns = [names_col, values_col]
@@ -164,8 +185,20 @@ def create_pie_chart(df, names_col, values_col, title, filter_col1=None, filter_
                  names=names_col, 
                  values=values_col, 
                  title=title, hole=0.5, 
-                 color_discrete_sequence=px.colors.qualitative.Dark2
+                 color_discrete_map=px.colors.qualitative.Dark2 if colormap is None else colormap
                  )
+    
+    # Apply custom colors if colormap is provided
+    if colormap:
+        # Get the category names from the dataframe
+        categories = df[names_col].tolist()
+        
+        # Create a list of colors in the same order as categories
+        colors = [colormap.get(cat, None) for cat in categories]
+        
+        # Update the trace with custom colors
+        fig.update_traces(marker=dict(colors=colors))
+    
     fig.update_traces(textposition='inside', 
                       textinfo='percent+label',
                       hovertemplate="<b>Category:</b> %{label}<br>" +
@@ -174,9 +207,10 @@ def create_pie_chart(df, names_col, values_col, title, filter_col1=None, filter_
                  )
     return fig
 
-def create_pivot_table(df, index_col1,columns_col1, values_col, title,aggfunc='sum',
+def create_pivot_table(df, index_col1, columns_col1, values_col, title, unique_column='person_id', aggfunc='sum',
                      filter_col1=None, filter_value1=None, 
-                     filter_col2=None, filter_value2=None):
+                     filter_col2=None, filter_value2=None,
+                     xaxis_title=None, yaxis_title=None, show_axes=False):
     """
     Create a pivot table from the DataFrame.
     Returns a DataFrame (not a Graph object)
@@ -193,14 +227,22 @@ def create_pivot_table(df, index_col1,columns_col1, values_col, title,aggfunc='s
         else:
             data = data[data[filter_col2] == filter_value2]
 
-    data = data.drop_duplicates(subset=['person_id', 'Date'])
+    data = data.drop_duplicates(subset=[unique_column,'Date'])
 
-    pivot = data.pivot_table(
-                index=index_col1,
-                columns=columns_col1,
-                values= values_col,
-                aggfunc=aggfunc
-            ).reset_index()
+    if aggfunc == 'concat':
+        pivot = data.pivot_table(
+            index=index_col1,
+            columns=columns_col1,
+            values=values_col,
+            aggfunc=lambda x: ', '.join(sorted(set(str(v) for v in x if str(v) != ''))),
+        ).reset_index()
+    else:
+        pivot = data.pivot_table(
+            index=index_col1,
+            columns=columns_col1,
+            values=values_col,
+            aggfunc=aggfunc
+        ).reset_index()
     
     rowEvenColor = 'lightgrey'
     rowOddColor = 'white'
@@ -221,8 +263,9 @@ def create_pivot_table(df, index_col1,columns_col1, values_col, title,aggfunc='s
             font=dict(size=11,color = 'darkslategray',))
     )])
 
-    fig.update_layout(
-        title=dict(
+    # Add axis titles if provided
+    layout_updates = {
+        'title': dict(
             text=title,
             y=0.95,
             x=0.5,
@@ -230,10 +273,18 @@ def create_pivot_table(df, index_col1,columns_col1, values_col, title,aggfunc='s
             yanchor='top',
             font=dict(size=14)
         ),
-        margin=dict(l=20, r=20, b=20, t=80),
-        height=400  # Fixed height for better display
-    )
+        'margin': dict(l=20, r=20, b=20, t=80),
+        'height': 400
+    }
+    
+    # Add axis configurations if show_axes is True
+    if show_axes:
+        layout_updates['xaxis'] = {'title': xaxis_title or 'X Axis'}
+        layout_updates['yaxis'] = {'title': yaxis_title or 'Y Axis'}
+    
+    fig.update_layout(**layout_updates)
     return fig
+
 
 def create_age_gender_histogram(df, age_col, gender_col, title, xtitle, ytitle, bin_size,
                                  filter_col1=None, filter_value1=None, 

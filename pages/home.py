@@ -30,7 +30,6 @@ layout = html.Div([
     # html.H1("MaHIS Dashboard", style={'textAlign': 'center', 'marginTop': '40px'}, className="header"),
     # html.P("This page displays the visualizations relating to MaHIS OPD, EIR and NCD", style={'textAlign': 'center', 'color': 'gray'}),
     html.P(id='last-refreshed-display', style={'textAlign': 'center', 'color': 'gray'}),
-
     # html.Div with children that are filters starting with Date Range picker and a filter for program
     html.Div([
         html.Div(className="filter-container", children=[
@@ -67,7 +66,7 @@ layout = html.Div([
                     id='hf-filter',
                     options=[
                         {'label': hf, 'value': hf}
-                        for hf in mahis_facilities()
+                        for hf in []
                     ],
                     value=None,
                     clearable=True
@@ -167,7 +166,7 @@ layout = html.Div([
             )
         ]
     ),
-    dcc.Interval(id='interval-update-today',interval=60*1000, n_intervals=0)  # every minute
+    dcc.Interval(id='interval-update-today',interval=10*60*1000, n_intervals=0)  # every 10 minutes
 
 ])
 
@@ -182,6 +181,7 @@ layout = html.Div([
      Output('patients-by-date', 'figure'),
      Output('patients-statistics-visit-type', 'figure'),
      Output('patients-statistics-village', 'figure'),
+     Output('hf-filter', 'options'),
      ],
     [
         Input('url-params-store', 'data'),
@@ -190,20 +190,25 @@ layout = html.Div([
         Input('program-filter', 'value'),
         Input('hf-filter', 'value'),
         Input('age-filter', 'value')
-     ]
+     ],
+     prevent_initial_call=True
 )
 def update_dashboard(urlparams, start_date, end_date, program, hf, age):
-
+    start_date = pd.to_datetime(start_date).replace(hour=0, minute=0, second=0, microsecond=0)
+    end_date = pd.to_datetime(end_date).replace(hour=23, minute=59, second=59, microsecond=0)
+    delta_days = (end_date - start_date).days
+    delta_days = 7 if delta_days <=0 else delta_days
+    
     path = os.getcwd()
-    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
-        
+    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')  
         # Validate file exists
     if not os.path.exists(parquet_path):
         raise FileNotFoundError(f"PARQUET file not found at {parquet_path}")
     
     data_opd = pd.read_parquet(parquet_path)
     data_opd['Date'] = pd.to_datetime(data_opd['Date'], format='mixed')
-    
+    data_opd['Gender'] = data_opd['Gender'].replace({"M":"Male","F":"Female"})
+
 
     if urlparams:
         search_url = data_opd[data_opd['Facility_CODE'].str.lower() == urlparams.lower()]
@@ -230,8 +235,8 @@ def update_dashboard(urlparams, start_date, end_date, program, hf, age):
         
         # Update counts
     total_count = create_count(filtered_data,'encounter_id')
-    male_count = create_count(filtered_data,'encounter_id', 'Gender', 'M')
-    female_count = create_count(filtered_data,'encounter_id', 'Gender', 'F')
+    male_count = create_count(filtered_data,'encounter_id', 'Gender', 'Male')
+    female_count = create_count(filtered_data,'encounter_id', 'Gender', 'Female')
     over5_count = create_count(filtered_data,'encounter_id', 'Age_Group', 'Over 5')
     under5_count = create_count(filtered_data,'encounter_id', 'Age_Group', 'Under 5')
         
@@ -239,11 +244,15 @@ def update_dashboard(urlparams, start_date, end_date, program, hf, age):
     enrollments_fig = create_column_chart(df=filtered_data, x_col='Program', y_col='encounter_id',
                                         title='Enrollment by Program', x_title='Program Name', y_title='Number of Patients')
         
-    daily_visits_fig = create_line_chart(df=filtered_data_no_date[filtered_data_no_date['Date']>=min_date- pd.Timedelta(days=RELATIVE_DAYS)], date_col='Date', y_col='encounter_id',
+    daily_visits_fig = create_line_chart(df=filtered_data_no_date[filtered_data_no_date['Date']>=min_date- pd.Timedelta(days=delta_days)], date_col='Date', y_col='encounter_id',
                                             title='Daily Patient Visits - Last 7 days', x_title='Date', y_title='Number of Patients')
         
     visit_type_fig = create_pie_chart(df=filtered_data, names_col='new_revisit', values_col='encounter_id',
-                                        title='Patient Visit Type')
+                                        title='Patient Visit Type',colormap={
+                                                                        'New': "#292D79",
+                                                                        'Revisit': "#FE1AD0"
+                                                                    }
+                        )
         
     age_dist_fig = create_age_gender_histogram(df=filtered_data, age_col='Age', gender_col='Gender',
                                                 title='Age Distribution', xtitle='Age', ytitle='Number of patients', bin_size=5)
@@ -251,7 +260,7 @@ def update_dashboard(urlparams, start_date, end_date, program, hf, age):
     return (total_count, male_count, female_count, over5_count, under5_count,
                 enrollments_fig,
                 daily_visits_fig, 
-                visit_type_fig, age_dist_fig
+                visit_type_fig, age_dist_fig, filtered_data['Facility'].sort_values().unique().tolist()
                 )
 
 @callback(

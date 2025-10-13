@@ -3,6 +3,7 @@ from dash import html, dcc, Input, Output, callback
 import pandas as pd
 import plotly.express as px
 import os
+import numpy as np
 from dash.exceptions import PreventUpdate
 import os
 from visualizations import (create_column_chart, 
@@ -28,8 +29,81 @@ max_date = datetime.now().replace(hour=23, minute=59, second=59, microsecond=0)
 path = os.getcwd()
 last_refreshed = pd.read_csv(f'{path}/data/TimeStamp.csv')['saving_time'].to_list()[0]
 
-def build_charts(filtered, data_opd):
+def build_charts(filtered, data_opd, delta_days):
+    filtered['Residence'] = filtered['Home_district'] + ', TA-' + filtered['TA'] + ', ' + filtered['Village']
+    delta_days = 7 if delta_days <=0 else delta_days
+
     return html.Div([
+        html.Div(
+        className="card-container-5",
+        children=[
+            html.Div(
+                html.Div([
+                    html.H2(create_count(filtered,'person_id'), className="metric-value"),
+                    html.H4("OPD Attendance", className="metric-title"),
+                ], className="card")
+            ),
+            html.Div(
+                html.Div([
+                    html.H2(create_count(filtered,'person_id','Gender', 'M'), className="metric-value"),
+                    html.H4("Attendance Male", className="metric-title"),
+                ], className="card")
+            ),
+            html.Div(
+                html.Div([
+                    html.H2(create_count(filtered,'person_id','Gender', 'F'), className="metric-value"),
+                    html.H4("Attendance Female", className="metric-title"),
+                ], className="card")
+            ),
+            html.Div(
+                html.Div([
+                    html.H2(create_count(filtered,'encounter_id', 'Age_Group', 'Over 5'), className="metric-value"),
+                    html.H4("Attendance Over5", className="metric-title"),
+                ], className="card")
+            ),
+            html.Div(
+                html.Div([
+                    html.H2(create_count(filtered,'encounter_id', 'Age_Group', 'Under 5'), className="metric-value"),
+                    html.H4("Attendance Under5", className="metric-title"),
+                ], className="card")
+            ),
+        ],
+    ),  
+        html.Div(
+        className="card-container-5",
+        children=[
+            html.Div(
+                html.Div([
+                    html.H2(create_count(filtered,'person_id','obs_value_coded','Malaria Screening'), className="metric-value"),
+                    html.H4("Malaria Tests", className="metric-title"),
+                ], className="card")
+            ),
+            html.Div(
+                html.Div([
+                    html.H2(create_count(filtered,'person_id','concept_name',['Malaria film','MRDT'],'Value','Positive'), className="metric-value"),
+                    html.H4("Malaria Cases", className="metric-title"),
+                ], className="card")
+            ),
+            html.Div(
+                html.Div([
+                    html.H2(create_count(filtered,'person_id','concept_name', 'Discharged home'), className="metric-value"),
+                    html.H4("Discharge Home", className="metric-title"),
+                ], className="card")
+            ),
+            html.Div(
+                html.Div([
+                    html.H2(create_count(filtered,'encounter_id', 'concept_name', 'Admitted'), className="metric-value"),
+                    html.H4("Admissions", className="metric-title"),
+                ], className="card")
+            ),
+            html.Div(
+                html.Div([
+                    html.H2(create_count(filtered,'encounter_id', 'concept_name', 'Died'), className="metric-value"),
+                    html.H4("Deaths", className="metric-title"),
+                ], className="card")
+            ),
+        ],
+    ),
         # OPD Attendance Section
         html.Div([
             html.H2("OPD Attendance",style={'textAlign': 'left', 'color': 'gray'}),
@@ -38,7 +112,7 @@ def build_charts(filtered, data_opd):
                 children=[
                     dcc.Graph(
                         id='daily-opd-attendance',
-                        figure=create_line_chart(df=data_opd[data_opd['Date']>=str(datetime.now()- pd.Timedelta(days=RELATIVE_DAYS))], date_col='Date', y_col='encounter_id',
+                        figure=create_line_chart(df=data_opd[data_opd['Date']>=str(datetime.now()- pd.Timedelta(days=delta_days))], date_col='Date', y_col='encounter_id',
                                           title='Daily OPD Attendance - Last 7 days', x_title='Date', y_title='Number of Patients',legend_title="Legend",
                                           ),
                         className="card-2"
@@ -46,11 +120,31 @@ def build_charts(filtered, data_opd):
                     dcc.Graph(
                         id='new-returning-visits',
                         figure=create_pie_chart(df=filtered, names_col='new_revisit', values_col='encounter_id',
-                                        title='Aggregate Patient Visit Type (New or Revisit)'),
+                                        title='Aggregate Patient Visit Type (New or Revisit)',colormap={
+                                                                        'New': "#292D79",
+                                                                        'Revisit': "#FE1AD0"
+                                                                    }),
+                        className="card-2"
+                    ),
+                ]
+            ),
+            html.Div(
+                className="card-container-2",
+                children=[
+                    dcc.Graph(
+                        id='daily-opd-attendance',
+                        figure=create_age_gender_histogram(df=filtered, age_col='Age', gender_col='Gender',
+                                                title='Age Distribution', xtitle='Age', ytitle='Number of patients', bin_size=5),
+                        className="card-2"
+                    ),
+                    dcc.Graph(
+                        id='new-returning-visits',
+                        figure=create_pivot_table(filtered.replace('OPD Program', 'Number of Patients'),['Residence'],'Program','person_id','Home Locations','person_id','count'),
                         className="card-2"
                     ),
                 ]
             )
+
         ]),
         
         # Malaria Section
@@ -61,14 +155,14 @@ def build_charts(filtered, data_opd):
                 children=[
                     dcc.Graph(
                         id='daily-fever-malaria-cases',
-                        figure=create_column_chart(df=data_opd[data_opd['Date']>=str(datetime.now()- pd.Timedelta(days=RELATIVE_DAYS))], x_col='Date', y_col='encounter_id',
+                        figure=create_column_chart(df=data_opd[data_opd['Date']>=str(datetime.now()- pd.Timedelta(days=delta_days))], x_col='Date', y_col='encounter_id',
                                           title='Daily Fever and Malaria Cases - Last 7 days', x_title='Date', y_title='Number of Patients',
                                           filter_col1='obs_value_coded',filter_value1=['Fever','Malaria'],color='obs_value_coded',legend_title="Legend"),
                         className="card-2"
                     ),
                     dcc.Graph(
                         id='daily-lab-fever-tests',
-                        figure=create_column_chart(df=data_opd[data_opd['Date']>=str(datetime.now()- pd.Timedelta(days=RELATIVE_DAYS))], x_col='Date', y_col='encounter_id',
+                        figure=create_column_chart(df=data_opd[data_opd['Date']>=str(datetime.now()- pd.Timedelta(days=delta_days))], x_col='Date', y_col='encounter_id',
                                           title='Daily MRDT Tests - Last 7 days', x_title='Date', y_title='Number of Patients',
                                           filter_col1='concept_name',filter_value1=['MRDT'],color='Value',legend_title="Legend"
                                           ),
@@ -196,14 +290,15 @@ layout = html.Div(className="container", children=[
     html.Div(id='opd-dashboard-container'),   
     dcc.Interval(
         id='opd-interval-update-today',
-        interval=1*60*1000,  # in milliseconds
+        interval=10*60*1000,  # in milliseconds
         n_intervals=0
     ),     
 ])
 
 # Callback to update all components based on date range
 @callback(
-    Output('opd-dashboard-container', 'children'),
+    [Output('opd-dashboard-container', 'children'),
+     Output('opd-hf-filter', 'options')],
     [
         Input('url-params-store', 'data'),
         Input('opd-date-range-picker', 'start_date'),
@@ -214,7 +309,9 @@ layout = html.Div(className="container", children=[
     ]
 )
 def update_dashboard(urlparams, start_date, end_date, visit_type, hf, age):
-
+    start_date = pd.to_datetime(start_date).replace(hour=0, minute=0, second=0, microsecond=0)
+    end_date = pd.to_datetime(end_date).replace(hour=23, minute=59, second=59, microsecond=0)
+    delta_days = (end_date - start_date).days
     path = os.getcwd()
     parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')    
         # Validate file exists
@@ -223,6 +320,7 @@ def update_dashboard(urlparams, start_date, end_date, visit_type, hf, age):
     
     data_opd = pd.read_parquet(parquet_path)
     data_opd['Date'] = pd.to_datetime(data_opd['Date'], format='mixed')
+    data_opd = data_opd[data_opd['Program']=='OPD Program']
     
 
     if urlparams:
@@ -245,7 +343,7 @@ def update_dashboard(urlparams, start_date, end_date, visit_type, hf, age):
         (pd.to_datetime(filtered_data['Date']) <= pd.to_datetime(end_date))
     ]
     
-    return build_charts(filtered_data_date, filtered_data)
+    return build_charts(filtered_data_date, filtered_data, delta_days), filtered_data['Facility'].sort_values().unique().tolist()
 
 @callback(
     [Output('opd-date-range-picker', 'start_date'),

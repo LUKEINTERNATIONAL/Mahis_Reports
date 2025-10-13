@@ -31,8 +31,8 @@ app.layout = html.Div([
                 html.Ul([
                     html.Li(html.A("OPD", href=f"{pathname_prefix}dashboard_opd", className="submenu-link", id="opd-dashboard-link")),
                     html.Li(html.A("NCD", href=f"{pathname_prefix}dashboard_ncd", className="submenu-link", id="ncd-dashboard-link")),
-                    html.Li(html.A("EPI", href=f"{pathname_prefix}dashboard_epi", className="submenu-link", id="epi-dashboard-link")),
                     html.Li(html.A("HIV", href=f"{pathname_prefix}dashboard_hiv", className="submenu-link", id="hiv-dashboard-link")),
+                    html.Li(html.A("EPI", href=f"{pathname_prefix}dashboard_epi", className="submenu-link", id="epi-dashboard-link")),
                     html.Li(html.A("Advanced HIV Disease", href=f"{pathname_prefix}dashboard_adv_hiv", className="submenu-link", id="adv-hiv-dashboard-link")),
                 ], id="dashboards-submenu", className="submenu")
             ], className="nav-item has-submenu"),
@@ -41,7 +41,7 @@ app.layout = html.Div([
                 html.Ul([
                     html.Li(html.A("HMIS 15", href=f"{pathname_prefix}hmis15", className="submenu-link", id="hmis15-link")),
                     html.Li(html.A("Malaria", href=f"{pathname_prefix}malaria_report", className="submenu-link", id="malaria-link")),
-                    html.Li(html.A("LMIS", href=f"{pathname_prefix}lmis", className="submenu-link", id="lmis-link")),
+                    html.Li(html.A("Other", href=f"{pathname_prefix}lmis", className="submenu-link", id="lmis-link")),
                 ], id="opd-reports-submenu", className="submenu")
             ], className="nav-item has-submenu"),
 
@@ -61,6 +61,19 @@ app.layout = html.Div([
                     html.Li(html.A("Non-Communicable Diseases Quarterly Report", href=f"{pathname_prefix}ncd_report_quarterly", className="submenu-link", id="ncd-quarterly-link")),
                 ], id="ncd-reports-submenu", className="submenu")
             ], className="nav-item has-submenu"),
+
+            # New HIV Reports submenu
+            html.Li([
+                html.A("HIV Reports", id="hiv-reports-link", href="#", className="nav-link", n_clicks=0),
+                html.Ul([
+                    html.Li(html.A("HIV Testing Summary", href=f"{pathname_prefix}hts_report", className="submenu-link", id="hts-link")),
+                    html.Li(html.A("HTC Health Facility Report", href=f"{pathname_prefix}htc_health_facility_report", className="submenu-link", id="hiv-facility-link")),
+                    html.Li(html.A("DHA Integrated Rapid Testing Monthly Report", href=f"{pathname_prefix}integrated_testing_report", className="submenu-link", id="hiv-integrated-link")),
+                    html.Li(html.A("DHA Integrated Rapid Testing HIV Testing Summary", href=f"{pathname_prefix}integrated_testing_summary_report", className="submenu-link", id="hiv-integrated-summary-link")),
+                    html.Li(html.A("DHA Integrated Initial Testing Register", href=f"{pathname_prefix}integrated_testing_register", className="submenu-link", id="hiv-integrated-register-link")),
+                ], id="hiv-reports-submenu", className="submenu")
+            ], className="nav-item has-submenu"),
+
             html.Li(html.A("EPI Report", href=f"{pathname_prefix}epi_report", className="nav-link", id="epi-link")),
         ], className="nav-list")
     ], className="navbar"),
@@ -75,12 +88,15 @@ app.layout = html.Div([
      Output("idsr-reports-link", "className"),
      Output("ncd-reports-submenu", "className"),
      Output("ncd-reports-link", "className"),
+     Output("hiv-reports-submenu", "className"),
+     Output("hiv-reports-link", "className"),
      Output("dashboards-submenu", "className"),
      Output("dashboards-link", "className"),
      ],
     [Input("opd-reports-link", "n_clicks"),
      Input("idsr-reports-link", "n_clicks"),
      Input("ncd-reports-link", "n_clicks"),
+     Input("hiv-reports-link", "n_clicks"),
      Input("dashboards-link", "n_clicks"),
      ],
     [State("opd-reports-submenu", "className"),
@@ -89,20 +105,23 @@ app.layout = html.Div([
      State("idsr-reports-link", "className"),
      State("ncd-reports-submenu", "className"),
      State("ncd-reports-link", "className"),
+     State("hiv-reports-submenu", "className"),
+     State("hiv-reports-link", "className"),
      State("dashboards-submenu", "className"),
      State("dashboards-link", "className"),
      ],
 )
 
-def toggle_submenu(opd_clicks, idsr_clicks, ncd_clicks, dashboards_clicks,
+def toggle_submenu(opd_clicks, idsr_clicks, ncd_clicks, hiv_clicks, dashboards_clicks,
                   opd_submenu_class, opd_link_class,
                   idsr_submenu_class, idsr_link_class,
                   ncd_submenu_class, ncd_link_class,
+                  hiv_submenu_class, hiv_link_class,
                   dashboards_submenu_class, dashboards_link_class):
     ctx = dash.callback_context
     
     if not ctx.triggered:
-        return [dash.no_update] * 8
+        return [dash.no_update] * 10
     
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
     
@@ -113,11 +132,13 @@ def toggle_submenu(opd_clicks, idsr_clicks, ncd_clicks, dashboards_clicks,
                 "submenu", opd_link_class.replace(" show-submenu", ""),
                 dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update
             )
         else:
             return (
                 "submenu show", opd_link_class + " show-submenu",
+                dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update
@@ -130,12 +151,14 @@ def toggle_submenu(opd_clicks, idsr_clicks, ncd_clicks, dashboards_clicks,
                 dash.no_update, dash.no_update,
                 "submenu", idsr_link_class.replace(" show-submenu", ""),
                 dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update
             )
         else:
             return (
                 dash.no_update, dash.no_update,
                 "submenu show", idsr_link_class + " show-submenu",
+                dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update
             )
@@ -147,6 +170,7 @@ def toggle_submenu(opd_clicks, idsr_clicks, ncd_clicks, dashboards_clicks,
                 dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update,
                 "submenu", ncd_link_class.replace(" show-submenu", ""),
+                dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update
             )
         else:
@@ -154,6 +178,26 @@ def toggle_submenu(opd_clicks, idsr_clicks, ncd_clicks, dashboards_clicks,
                 dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update,
                 "submenu show", ncd_link_class + " show-submenu",
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update
+            )
+    
+    # HIV Reports toggle
+    elif triggered_id == "hiv-reports-link":
+        if "show" in hiv_submenu_class:
+            return (
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
+                "submenu", hiv_link_class.replace(" show-submenu", ""),
+                dash.no_update, dash.no_update
+            )
+        else:
+            return (
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
+                "submenu show", hiv_link_class + " show-submenu",
                 dash.no_update, dash.no_update
             )
     
@@ -164,6 +208,7 @@ def toggle_submenu(opd_clicks, idsr_clicks, ncd_clicks, dashboards_clicks,
                 dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
                 "submenu", dashboards_link_class.replace(" show-submenu", "")
             )
         else:
@@ -171,10 +216,11 @@ def toggle_submenu(opd_clicks, idsr_clicks, ncd_clicks, dashboards_clicks,
                 dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
                 "submenu show", dashboards_link_class + " show-submenu"
             )
     
-    return [dash.no_update] * 8
+    return [dash.no_update] * 10
 
 # Callback to extract and store URL parameters
 @callback(
@@ -212,6 +258,8 @@ def redirect_to_home(pathname):
      Output('ncd-link', 'href'),
      Output('ncd-pen-plus-link', 'href'),
      Output('ncd-quarterly-link', 'href'),
+     Output('hts-link', 'href'),
+     Output('hiv-facility-link', 'href'),
      Output('epi-link', 'href'),
      Output('hmis15-link', 'href'),
      Output('malaria-link', 'href'),
@@ -235,6 +283,8 @@ def update_nav_links(location):
         f"{pathname_prefix}ncd_report_ncd{query}",
         f"{pathname_prefix}ncd_report_pen_plus{query}",
         f"{pathname_prefix}ncd_report_quarterly{query}",
+        f"{pathname_prefix}hiv_report_monthly{query}",
+        f"{pathname_prefix}htc_health_facility_report{query}",
         f"{pathname_prefix}epi_report{query}",
         f"{pathname_prefix}hmis15{query}",
         f"{pathname_prefix}malaria_report{query}",
