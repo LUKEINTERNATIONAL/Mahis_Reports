@@ -1,0 +1,662 @@
+[
+  {
+    "report_id": "1",
+    "report_name": "Summary",
+    "date_created": "2025-11-26",
+    "visualization_types": {
+      "counts": [
+        {
+          "id": "registered",
+          "name": "Total Registrations",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id"
+          }
+        },
+        {
+          "id": "registered_m",
+          "name": "Registered Male",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Gender",
+            "value1": "Male"
+          }
+        },
+        {
+          "id": "registered_f",
+          "name": "Registered Female",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Gender",
+            "value1": "Female"
+          }
+        },
+        {
+          "id": "registered_o",
+          "name": "Registered Over 5",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Age_Group",
+            "value1": "Over 5"
+          }
+        },
+        {
+          "id": "registered_u",
+          "name": "Registered Under 5",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Age_Group",
+            "value1": "Under 5"
+          }
+        }
+      ],
+      "charts": {
+        "sections": [
+          {
+            "section_name": "",
+            "items": [
+              {
+                "id": "chart1",
+                "name": "Enrollment by Prgram",
+                "type": "Column",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "x_col": "Program",
+                  "y_col": "encounter_id",
+                  "title": "Enrollment Type",
+                  "x_title": "Program",
+                  "y_title": "Number of Patients",
+                  "unique_column": "person_id",
+                  "legend_title": "Legend",
+                  "color": "",
+                  "filter_col1": "",
+                  "filter_val1": "",
+                  "filter_col2": "",
+                  "filter_val2": "",
+                  "filter_col3": "",
+                  "filter_val3": ""
+                }
+              },
+              {
+                "id": "chart1",
+                "name": "Daily OPD Attendance - Last 7 Days",
+                "type": "Line",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "7days",
+                  "date_col": "Date",
+                  "y_col": "encounter_id",
+                  "title": "Daily OPD Attendance - Last 7 Days",
+                  "x_title": "Date",
+                  "y_title": "Number of Patients",
+                  "unique_column": "person_id",
+                  "legend_title": "Legend",
+                  "color": "",
+                  "filter_col1": "",
+                  "filter_val1": "",
+                  "filter_col2": "",
+                  "filter_val2": "",
+                  "filter_col3": "",
+                  "filter_val3": ""
+                }
+              },
+              {
+                "id": "chart2",
+                "name": "Patient Visit Type",
+                "type": "Pie",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "names_col": "new_revisit",
+                  "values_col": "encounter_id",
+                  "title": "Patient Visit Type",
+                  "unique_column": "person_id",
+                  "filter_col1": "",
+                  "filter_val1": "",
+                  "filter_col2": "",
+                  "filter_val2": "",
+                  "filter_col3": "",
+                  "filter_val3": "",
+                  "colormap": {
+                    "New": "#292D79",
+                    "Revisit": "#FE1AD0"
+                  }
+                }
+              },
+              {
+                "id": "chart1",
+                "name": "Age Gender Disaggregation",
+                "type": "Histogram",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "age_col": "Age",
+                  "gender_col": "Gender",
+                  "title": "Age Gender Disaggregation",
+                  "x_title": "Program",
+                  "y_title": "Number of Patients",
+                  "bin_size": 5,
+                  "filter_col1": "",
+                  "filter_val1": "",
+                  "filter_col2": "",
+                  "filter_val2": "",
+                  "filter_col3": "",
+                  "filter_val3": ""
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "report_id": "2",
+    "report_name": "OutPatient (OPD)",
+    "date_created": "2025-11-26",
+    "visualization_types": {
+      "counts": [
+        {
+          "id": "registered",
+          "name": "Total Registrations",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "OPD Program"
+          }
+        },
+        {
+          "id": "registered_m",
+          "name": "Registered Male",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "OPD Program",
+            "variable2": "Gender",
+            "value2": "Male"
+          }
+        },
+        {
+          "id": "registered_f",
+          "name": "Registered Female",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "OPD Program",
+            "variable2": "Gender",
+            "value2": "Female"
+          }
+        },
+        {
+          "id": "registered_o",
+          "name": "Registered Over 5",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "OPD Program",
+            "variable2": "Age_Group",
+            "value2": "Over 5"
+          }
+        },
+        {
+          "id": "registered_u",
+          "name": "Registered Under 5",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "OPD Program",
+            "variable2": "Age_Group",
+            "value2": "Under 5"
+          }
+        },
+        {
+          "id": "malaria_t",
+          "name": "Malaria Tests",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "OPD Program",
+            "variable2": "obs_value_coded",
+            "value2": "Malaria Screening"
+          }
+        },
+        {
+          "id": "malaria_c",
+          "name": "Malaria Cases",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "OPD Program",
+            "variable2": "obs_value_coded",
+            "value2": "Malaria"
+          }
+        },
+        {
+          "id": "discharge",
+          "name": "Discharges",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "OPD Program",
+            "variable2": "concept_name",
+            "value2": "Discharged home"
+          }
+        },
+        {
+          "id": "admission",
+          "name": "Admitted",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "OPD Program",
+            "variable2": "concept_name",
+            "value2": "Admitted"
+          }
+        },
+        {
+          "id": "referral",
+          "name": "Referred Out",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "OPD Program",
+            "variable2": "concept_name",
+            "value2": "Referred Out"
+          }
+        }
+      ],
+      "charts": {
+        "sections": [
+          {
+            "section_name": "OPD Attendance",
+            "items": [
+              {
+                "id": "chart1",
+                "name": "Daily OPD Attendance - Last 7 Days",
+                "type": "Line",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "7days",
+                  "date_col": "Date",
+                  "y_col": "encounter_id",
+                  "title": "Daily OPD Attendance - Last 7 Days",
+                  "x_title": "Date",
+                  "y_title": "Number of Patients",
+                  "unique_column": "person_id",
+                  "legend_title": "Legend",
+                  "color": "",
+                  "filter_col1": "Program",
+                  "filter_val1": "OPD Program",
+                  "filter_col2": "",
+                  "filter_val2": "",
+                  "filter_col3": "",
+                  "filter_val3": ""
+                }
+              },
+              {
+                "id": "chart2",
+                "name": "Patient Visit Type",
+                "type": "Pie",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "names_col": "new_revisit",
+                  "values_col": "encounter_id",
+                  "title": "Patient Visit Type",
+                  "unique_column": "person_id",
+                  "filter_col1": "Program",
+                  "filter_val1": "OPD Program",
+                  "filter_col2": "",
+                  "filter_val2": "",
+                  "filter_col3": "",
+                  "filter_val3": "",
+                  "colormap": {
+                    "New": "#292D79",
+                    "Revisit": "#FE1AD0"
+                  }
+                }
+              },
+              {
+                "id": "chart1",
+                "name": "Age Gender Disaggregation",
+                "type": "Histogram",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "age_col": "Age",
+                  "gender_col": "Gender",
+                  "title": "Age Gender Disaggregation",
+                  "x_title": "Program",
+                  "y_title": "Number of Patients",
+                  "bin_size": 5,
+                  "filter_col1": "Program",
+                  "filter_val1": "OPD Program",
+                  "filter_col2": "",
+                  "filter_val2": "",
+                  "filter_col3": "",
+                  "filter_val3": ""
+                }
+              },
+              {
+                "id": "chart1",
+                "name": "Top Presenting complaints",
+                "type": "Bar",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "label_col": "obs_value_coded",
+                  "value_col": "encounter_id",
+                  "title": "Top presenting Complaints",
+                  "x_title": "",
+                  "y_title": "",
+                  "top_n": 10,
+                  "filter_col1": "Program",
+                  "filter_val1": "OPD Program",
+                  "filter_col2": "Encounter",
+                  "filter_val2": "PRESENTING COMPLAINTS",
+                  "filter_col3": "concept_name",
+                  "filter_val3": "Presenting complaint"
+                }
+              },
+              {
+                "id": "chart1",
+                "name": "Lab Tests conducted at the health facility",
+                "type": "Column",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "x_col": "obs_value_coded",
+                  "y_col": "encounter_id",
+                  "title": "Lab Tests conducted at the health facility",
+                  "x_title": "Investigation",
+                  "y_title": "Number of Patients",
+                  "unique_column": "person_id",
+                  "legend_title": "Legend",
+                  "color": "",
+                  "filter_col1": "Program",
+                  "filter_val1": "OPD Program",
+                  "filter_col2": "Encounter",
+                  "filter_val2": "LAB ORDERS",
+                  "filter_col3": "concept_name",
+                  "filter_val3": "Test type"
+                }
+              },
+              {
+                "id": "chart1",
+                "name": "Diagnoses",
+                "type": "PivotTable",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "index_col1": "obs_value_coded",
+                  "columns": "Age_Group",
+                  "values_col": "encounter_id",
+                  "title": "Diseases diagnosed at the health facility",
+                  "unique_column": "person_id",
+                  "aggfunc": "count",
+                  "filter_col1": "Program",
+                  "filter_val1": "OPD Program",
+                  "filter_col2": "Encounter",
+                  "filter_val2": "DIAGNOSIS",
+                  "filter_col3": "concept_name",
+                  "filter_val3": "Primary diagnosis",
+                  "x_title": "",
+                  "y_title": ""
+                }
+              }
+            ]
+          },
+          {
+            "section_name": "Malaria",
+            "items": [
+              {
+                "id": "chart1",
+                "name": "Medications dispensed",
+                "type": "PivotTable",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "index_col1": "DrugName",
+                  "columns": "Program",
+                  "values_col": "ValueN",
+                  "title": "Medications dispensed",
+                  "unique_column": "person_id",
+                  "aggfunc": "sum",
+                  "filter_col1": "Program",
+                  "filter_val1": "OPD Program",
+                  "filter_col2": "Encounter",
+                  "filter_val2": "DISPENSING",
+                  "filter_col3": "",
+                  "filter_val3": "",
+                  "x_title": "",
+                  "y_title": ""
+                }
+              },
+              {
+                "id": "chart1",
+                "name": "Alcohol Behaviour",
+                "type": "Bar",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "label_col": "DrugName",
+                  "value_col": "Program",
+                  "title": "Medications dispensed",
+                  "x_title": "",
+                  "y_title": "",
+                  "top_n": 10,
+                  "filter_col1": "Program",
+                  "filter_val1": "OPD Program",
+                  "filter_col2": "Encounter",
+                  "filter_val2": "DISPENSING",
+                  "filter_col3": "",
+                  "filter_val3": ""
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "report_id": "report_defd6302",
+    "report_name": "NCD Program",
+    "date_created": "2025-11-29",
+    "visualization_types": {
+      "counts": [
+        {
+          "id": "count_e55b4178",
+          "name": "Total Attendance",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "NCD PROGRAM"
+          }
+        },
+        {
+          "id": "count_e55b4178",
+          "name": "Attendance Male",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "NCD PROGRAM",
+            "variable2": "Gender",
+            "value2": "Male"
+          }
+        },
+        {
+          "id": "count_e55b4178",
+          "name": "Attendance Female",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "NCD PROGRAM",
+            "variable2": "Gender",
+            "value2": "Female"
+          }
+        },
+        {
+          "id": "count_e55b4178",
+          "name": "Attendance Under 5",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "NCD PROGRAM",
+            "variable2": "Age_Group",
+            "value2": "Under 5"
+          }
+        },
+        {
+          "id": "count_e55b4178",
+          "name": "Attendance Over 5",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "NCD PROGRAM",
+            "variable2": "Age_Group",
+            "value2": "Over 5"
+          }
+        },
+        {
+          "id": "count_e55b4178",
+          "name": "Diabetes Cases",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "NCD PROGRAM",
+            "variable2": "Encounter",
+            "value2": "['OUTPATIENT DIAGNOSIS','DIAGNOSIS']",
+            "variable3": "obs_value_coded",
+            "value3": "['Diabetes','Type 1 diabetes','Type 2 diabetes','Diabetes mellitus']"
+          }
+        }
+        ,
+        {
+          "id": "count_e55b4178",
+          "name": "Diabetes Type 1 Cases",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "NCD PROGRAM",
+            "variable2": "Encounter",
+            "value2": "['OUTPATIENT DIAGNOSIS','DIAGNOSIS']",
+            "variable3": "obs_value_coded",
+            "value3": "['Type 1 diabetes']"
+          }
+        },
+        {
+          "id": "count_e55b4178",
+          "name": "Diabetes Type 2 Cases",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "NCD PROGRAM",
+            "variable2": "Encounter",
+            "value2": "['OUTPATIENT DIAGNOSIS','DIAGNOSIS']",
+            "variable3": "obs_value_coded",
+            "value3": "['Type 2 diabetes']"
+          }
+        },
+        {
+          "id": "count_e55b4178",
+          "name": "Hypertension Cases",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": "NCD PROGRAM",
+            "variable2": "Encounter",
+            "value2": "['OUTPATIENT DIAGNOSIS','DIAGNOSIS']",
+            "variable3": "obs_value_coded",
+            "value3": "['Hypertension']"
+          }
+        }
+      ],
+      "charts": {
+        "sections": [
+          
+        ]
+      }
+    }
+  },
+  {
+    "report_id": "report_defd6302",
+    "report_name": "Immunisation Program",
+    "date_created": "2025-11-29",
+    "visualization_types": {
+      "counts": [],
+      "charts": {
+        "sections": []
+      }
+    }
+  },
+  {
+    "report_id": "report_defd6302",
+    "report_name": "HIV Testing (Result Returns)",
+    "date_created": "2025-11-29",
+    "visualization_types": {
+      "counts": [],
+      "charts": {
+        "sections": []
+      }
+    }
+  },
+  {
+    "report_id": "report_defd6302",
+    "report_name": "ART",
+    "date_created": "2025-11-29",
+    "visualization_types": {
+      "counts": [],
+      "charts": {
+        "sections": []
+      }
+    }
+  },
+  {
+    "report_id": "report_d7c51c88",
+    "report_name": "Advanced HIV Disease",
+    "date_created": "2025-11-29",
+    "visualization_types": {
+      "counts": [],
+      "charts": {
+        "sections": []
+      }
+    }
+  }
+]
