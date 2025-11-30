@@ -45,26 +45,26 @@ class DataStorage:
         print(f"Total records: {len(df)}")
         return df
 
-data = DataStorage()
+data = ''
 def mahis_programs():
     """Get unique programs from the data."""
-    df = data.load_data()
-    return df['Program'].unique().tolist()
+    df = data
+    return ''
 
 def mahis_facilities():
     """Get unique facilities from the data."""
-    df = data.load_data()
-    return df['Facility'].unique().tolist()
+    df = data
+    return ''
 
 def age_groups():
     """Get unique age groups from the data."""
-    df = data.load_data()
-    return df['Age_Group'].unique().tolist()
+    df = data
+    return ''
 
 def new_revisit():
     """Get unique new/revisit categories from the data."""
-    df = data.load_data()
-    return df['new_revisit'].unique().tolist()
+    df = data
+    return ''
 
 if __name__ == "__main__":
     storage = DataStorage(query=QERY_OPD_TEST)

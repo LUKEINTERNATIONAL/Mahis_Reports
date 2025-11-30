@@ -31,3 +31,4 @@ def fetch_and_store_data(query, filename="latest_data_opd.csv"):
         logger.error(f"Data fetch operation failed: {e}")
     
     # Store the fetched data in a CSV file
+

@@ -27,6 +27,8 @@
     pip install isoweek
     pip install gunicorn
     pip install pyarrow
+    pip install dash-bootstrap-components
+    pip install --upgrade typing_extensions
     ```
 
     Set the app directory:

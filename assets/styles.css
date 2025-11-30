@@ -95,7 +95,9 @@
 /* malaria report */
 /* Main container */
 .container {
-    margin: 20px;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-top: 0px;
     font-family: Arial, sans-serif;
 }
 
@@ -103,7 +105,7 @@
 .header {
     text-align: center;
     color: #2c3e50;
-    margin-bottom: 30px;
+    margin-bottom: 0px;
 }
 
 /* Table styles */
@@ -149,6 +151,14 @@
 .card-container-2 {
     display: grid;
     grid-template-columns: repeat(2, 1fr);  /* 2 equal columns */
+    gap: 20px;                              /* space between cards */
+    margin-bottom: 30px;
+    width: 100%;
+    justify-items: stretch;                 /* cards stretch to fill column */
+}
+.card-container-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);  /* 2 equal columns */
     gap: 20px;                              /* space between cards */
     margin-bottom: 30px;
     width: 100%;
@@ -326,5 +336,541 @@
 .has-submenu.show-submenu > a {
     color: #0066cc;
     font-weight: 500;
+}
+
+/* -------- TABLE STYLING FOR REPORTS -------- */
+
+.report-table {
+    width: 90%;
+    margin: 20px auto;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+    font-family: Arial, sans-serif;
+    font-size: 15px;
+}
+
+/* Table Headers */
+.report-table th {
+    padding: 12px 15px;
+    background: #f7f7f7;
+    font-weight: bold;
+    border-bottom: 2px solid #ddd;
+    text-align: center;
+}
+
+/* Table Cells */
+.report-table td {
+    padding: 12px 15px;
+    background: white;
+    border-top: 1px solid #eee;
+    text-align: center;
+}
+
+/* Row Hover Effect */
+.report-table tr:hover td {
+    background: #f1f1f1;
+    transition: 0.2s;
+}
+
+/* -------- ACTION BUTTONS -------- */
+
+.report-action-btn {
+    margin-right: 6px;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    border: none;
+    color: white;
+    font-size: 13px;
+}
+
+/* Edit button */
+.edit-btn {
+    background-color: #007bff;
+}
+
+/* Archive button */
+.archive-btn {
+    background-color: #dc3545;
+}
+
+/* Optional: smooth hover */
+.report-action-btn:hover {
+    opacity: 0.85;
+    transition: 0.2s;
+}
+
+/*  */
+/* Horizontal scroll container */
+.horizontal-scroll {
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+    gap: 16px;
+    padding: 14px;
+    background: #ffffff;
+    border-bottom: 1px solid #ffffff;
+
+    /* Hide scrollbar on Firefox + Edge */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Hide scrollbar on Chrome + Safari */
+.horizontal-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+/* Menu button design */
+.menu-btn {
+    flex: 0 0 auto;
+    padding: 12px 16px;
+    font-size: 14px;
+    background-color: #006401;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.menu-btn:hover {
+    background-color: #6f6f6f;
+}
+
+.menu-btn.active {
+    background-color: #6f6f6f; /* Grey when clicked */
+    color: white;
+}
+
+/* Global Styles */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+/* Page Layout */
+.page-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-title {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    border-bottom: 3px solid #007bff;
+    padding-bottom: 10px;
+    font-size: 2rem;
+}
+
+/* Card Styles */
+.card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 12px 16px;
+    margin: -16px -16px 16px -16px;
+    border-radius: 8px 8px 0 0;
+}
+
+.card-header-title {
+    margin: 0;
+    color: #495057;
+    font-size: 1.2rem;
+}
+
+.card-body {
+    padding: 10px 0;
+}
+
+.card-body-flex {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.card-col {
+    flex: 1;
+    min-width: 300px;
+}
+
+.card-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Form Elements */
+.form-label {
+    font-weight: bold;
+    margin-bottom: 4px;
+    display: block;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.dropdown {
+    margin-bottom: 15px;
+}
+
+/* Button Styles */
+.btn-primary {
+    background-color: #198754;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 4px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background-color: #198754;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 4px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background-color: #545b62;
+    transform: translateY(-1px);
+}
+
+.btn-success {
+    background-color: #198754;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 4px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.btn-success:hover {
+    background-color: #1e7e34;
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 4px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    transform: translateY(-1px);
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+
+.btn-large {
+    padding: 12px 24px;
+    font-size: 1rem;
+}
+
+/* Control Buttons */
+.control-buttons {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.action-buttons {
+    text-align: center;
+    padding: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+/* Count Items */
+.count-item {
+    border: 1px solid #007bff;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    background-color: #f8fbff;
+}
+
+.count-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.count-col {
+    flex: 1;
+    min-width: 200px;
+}
+
+/* Chart Items */
+.chart-item {
+    border: 1px solid #28a745;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    background-color: #f8fff9;
+}
+
+.chart-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.chart-col {
+    flex: 1;
+    min-width: 150px;
+}
+
+/* Section Items */
+.section-item {
+    border: 2px solid #6f42c1;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    background-color: white;
+}
+
+.section-header {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.section-col {
+    flex: 1;
+    min-width: 300px;
+}
+
+.charts-container {
+    margin-top: 10px;
+}
+
+/* Overview Cards */
+.overview-cards {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.overview-card {
+    text-align: center;
+    flex: 1;
+    min-width: 200px;
+    border-radius: 8px;
+    padding: 20px;
+    border-top: 4px solid;
+}
+
+.overview-card-counts {
+    border-top-color: #007bff;
+    background: linear-gradient(135deg, #f8fbff, #e3f2fd);
+}
+
+.overview-card-sections {
+    border-top-color: #28a745;
+    background: linear-gradient(135deg, #f8fff9, #e8f5e8);
+}
+
+.overview-card-charts {
+    border-top-color: #ffc107;
+    background: linear-gradient(135deg, #fffbf0, #fff3cd);
+}
+
+.overview-number {
+    color: #2c3e50;
+    font-size: 2.5em;
+    margin: 10px 0;
+    font-weight: bold;
+}
+
+.overview-label {
+    color: #6c757d;
+    font-weight: bold;
+    margin: 0;
+}
+
+/* Modal Styles */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1000;
+    display: none;
+}
+
+.modal-content {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 1001;
+    width: 90%;
+    max-width: 1200px;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.modal-title {
+    margin-bottom: 20px;
+    color: #2c3e50;
+    border-bottom: 2px solid #000000;
+    padding-bottom: 10px;
+    font-size: 1.3rem;
+}
+
+/* JSON Display */
+.json-details {
+    cursor: pointer;
+    width: 100%;
+}
+
+.json-summary {
+    font-weight: bold;
+    font-size: 16px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.json-pre {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    overflow: auto;
+    max-height: 400px;
+    border: 1px solid #ddd;
+    margin-top: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    color: #6c757d;
+    padding: 20px;
+    font-style: italic;
+}
+
+/* Dropdown Improvements */
+.Select-control {
+    border-radius: 4px;
+    border: 1px solid #ddd !important;
+}
+
+.Select-menu-outer {
+    border-radius: 4px;
+    border: 1px solid #ddd !important;
+    z-index: 1002;
+}
+
+.Select-option.is-focused {
+    background-color: #e3f2fd;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .page-container {
+        padding: 10px;
+    }
+    
+    .card-body-flex,
+    .count-row,
+    .chart-row,
+    .section-header {
+        flex-direction: column;
+    }
+    
+    .card-col,
+    .count-col,
+    .chart-col,
+    .section-col {
+        min-width: 100%;
+    }
+    
+    .overview-cards {
+        flex-direction: column;
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: 15px;
+    }
+    
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .action-buttons button {
+        width: 100%;
+    }
 }
 

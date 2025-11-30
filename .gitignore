@@ -1,5 +1,6 @@
 config.py
-data/
+data/latest_data_opd.parquet
+data/archive
 test.ipynb
 ssh/
 __pycache__/
@@ -7,3 +8,5 @@ pages/__pycache__/
 assets/__pycache__/
 venv/
 app copy.py
+dashboards.json
+pages/archived

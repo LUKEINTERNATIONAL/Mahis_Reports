@@ -5,7 +5,8 @@ import plotly.graph_objects as go
 def create_column_chart(df, x_col, y_col, title, x_title, y_title,
                         unique_column='person_id', legend_title=None,
                         color=None, filter_col1=None, filter_value1=None,
-                        filter_col2=None, filter_value2=None):
+                        filter_col2=None, filter_value2=None,
+                        filter_col3=None, filter_value3=None):
     """
     Create a column chart using Plotly Express with legend support.
     Labels will display both count and percentage, e.g. "10 (25.1%)".
@@ -22,6 +23,11 @@ def create_column_chart(df, x_col, y_col, title, x_title, y_title,
             data = data[data[filter_col2].isin(filter_value2)]
         else:
             data = data[data[filter_col2] == filter_value2]
+    if filter_col3 is not None:
+        if isinstance(filter_value3, list):
+            data = data[data[filter_col3].isin(filter_value3)]
+        else:
+            data = data[data[filter_col3] == filter_value3]
     
     data = data.drop_duplicates(subset=[unique_column, 'Date'])
 
@@ -66,7 +72,7 @@ def create_column_chart(df, x_col, y_col, title, x_title, y_title,
     
     return fig
 
-def create_line_chart(df, date_col, y_col, title, x_title, y_title, unique_column='person_id', legend_title=None, color=None, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None):
+def create_line_chart(df, date_col, y_col, title, x_title, y_title, unique_column='person_id', legend_title=None, color=None, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, filter_col3=None, filter_value3=None):
     """
     Create a time series chart using Plotly Express.
 
@@ -91,6 +97,11 @@ def create_line_chart(df, date_col, y_col, title, x_title, y_title, unique_colum
             data = data[data[filter_col2].isin(filter_value2)]
         else:
             data = data[data[filter_col2] == filter_value2]
+    if filter_col3 is not None:
+        if isinstance(filter_value3, list):
+            data = data[data[filter_col3].isin(filter_value3)]
+        else:
+            data = data[data[filter_col3] == filter_value3]
 
     data = data.drop_duplicates(subset=[unique_column, 'Date'])
 
@@ -102,7 +113,8 @@ def create_line_chart(df, date_col, y_col, title, x_title, y_title, unique_colum
         except Exception as e:
             raise ValueError(f"Error converting {date_col} to datetime: {e}")
 
-    data[date_col] = pd.to_datetime(data[date_col]).dt.date  # Convert to date only
+    data = data.copy()
+    data[date_col] = pd.to_datetime(data[date_col]).dt.date
 
     if color:
         summary = data.groupby([date_col, color])[y_col].nunique().reset_index(name='count')
@@ -150,7 +162,7 @@ def create_line_chart(df, date_col, y_col, title, x_title, y_title, unique_colum
     
     return fig
 
-def create_pie_chart(df, names_col, values_col, title,unique_column='person_id', filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, colormap=None):
+def create_pie_chart(df, names_col, values_col, title,unique_column='person_id', filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, filter_col3=None, filter_value3=None, colormap=None):
     """
     Create a pie chart using Plotly Express.
 
@@ -175,6 +187,11 @@ def create_pie_chart(df, names_col, values_col, title,unique_column='person_id',
             data = data[data[filter_col2].isin(filter_value2)]
         else:
             data = data[data[filter_col2] == filter_value2]
+    if filter_col3 is not None:
+        if isinstance(filter_value3, list):
+            data = data[data[filter_col3].isin(filter_value3)]
+        else:
+            data = data[data[filter_col3] == filter_value3]
     
     data = data.drop_duplicates(subset=[unique_column, 'Date'])
     
@@ -210,6 +227,7 @@ def create_pie_chart(df, names_col, values_col, title,unique_column='person_id',
 def create_pivot_table(df, index_col1, columns_col1, values_col, title, unique_column='person_id', aggfunc='sum',
                      filter_col1=None, filter_value1=None, 
                      filter_col2=None, filter_value2=None,
+                     filter_col3=None, filter_value3=None,
                      xaxis_title=None, yaxis_title=None, show_axes=False):
     """
     Create a pivot table from the DataFrame.
@@ -226,6 +244,11 @@ def create_pivot_table(df, index_col1, columns_col1, values_col, title, unique_c
             data = data[data[filter_col2].isin(filter_value2)]
         else:
             data = data[data[filter_col2] == filter_value2]
+    if filter_col3 is not None:
+        if isinstance(filter_value3, list):
+            data = data[data[filter_col3].isin(filter_value3)]
+        else:
+            data = data[data[filter_col3] == filter_value3]
 
     data = data.drop_duplicates(subset=[unique_column,'Date'])
 
@@ -288,7 +311,8 @@ def create_pivot_table(df, index_col1, columns_col1, values_col, title, unique_c
 
 def create_age_gender_histogram(df, age_col, gender_col, title, xtitle, ytitle, bin_size,
                                  filter_col1=None, filter_value1=None, 
-                                filter_col2=None, filter_value2=None):
+                                filter_col2=None, filter_value2=None,
+                                filter_col3=None, filter_value3=None):
     """
     Create a histogram of age distribution grouped by gender (side-by-side bars).
 
@@ -315,6 +339,11 @@ def create_age_gender_histogram(df, age_col, gender_col, title, xtitle, ytitle, 
             data = data[data[filter_col2].isin(filter_value2)]
         else:
             data = data[data[filter_col2] == filter_value2]
+    if filter_col3 is not None:
+        if isinstance(filter_value3, list):
+            data = data[data[filter_col3].isin(filter_value3)]
+        else:
+            data = data[data[filter_col3] == filter_value3]
 
     df_unique = data.drop_duplicates(subset=['person_id', 'Date'])
 
@@ -339,7 +368,8 @@ def create_age_gender_histogram(df, age_col, gender_col, title, xtitle, ytitle, 
         return fig
 
 def create_horizontal_bar_chart(df, label_col, value_col, title, x_title, y_title, top_n=10,
-                                 filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None):
+                                 filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None,
+                                 filter_col3=None, filter_value3=None):
     """
     Create a horizontal bar chart showing the top N items by value.
 
@@ -366,6 +396,11 @@ def create_horizontal_bar_chart(df, label_col, value_col, title, x_title, y_titl
             data = data[data[filter_col2].isin(filter_value2)]
         else:
             data = data[data[filter_col2] == filter_value2]
+    if filter_col3 is not None:
+        if isinstance(filter_value3, list):
+            data = data[data[filter_col3].isin(filter_value3)]
+        else:
+            data = data[data[filter_col3] == filter_value3]
 
     df_unique = data.drop_duplicates(subset=['person_id', 'Date'])
 
@@ -393,7 +428,7 @@ def create_horizontal_bar_chart(df, label_col, value_col, title, x_title, y_titl
     fig.update_layout(
         xaxis_title=x_title,
         yaxis_title=y_title,
-        color_discrete_sequence=px.colors.qualitative.Dark2,
+        # color_discrete_sequence=px.colors.qualitative.Dark2,
         yaxis=dict(autorange='reversed')  # to show highest on top
     )
 
@@ -436,8 +471,8 @@ def create_count(df, unique_column='encounter_id', filter_col1=None, filter_valu
     unique_visits = data.drop_duplicates(subset=['person_id', 'Date'])
     return str(len(unique_visits))
 
-def create_count_sets(df, filter_col1, filter_value1, filter_col2, filter_value2,
-                      unique_column='person_id', **extra_filters):
+def create_count_sets(df,unique_column='person_id', filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None,filter_col3=None, filter_value3=None,
+                       **extra_filters):
     """
     Count unique IDs that satisfy a paired condition across two filters, 
     with optional extra filters.
@@ -445,15 +480,22 @@ def create_count_sets(df, filter_col1, filter_value1, filter_col2, filter_value2
     filter_value1 and filter_value2 must be lists of the same length.
     extra_filters can be passed like filter_col3='Value', filter_value3='X', etc.
     """
-    if not (isinstance(filter_value1, list) and isinstance(filter_value2, list)):
+    data = df
+    if filter_col1 is not None:
+        if isinstance(filter_value1, list):
+            data = data[data[filter_col1].isin(filter_value1)]
+        else:
+            data = data[data[filter_col1] == filter_value1]
+
+    if not (isinstance(filter_value2, list) and isinstance(filter_value3, list)):
         raise ValueError("filter_value1 and filter_value2 must be lists of the same length.")
-    if len(filter_value1) != len(filter_value2):
+    if len(filter_value2) != len(filter_value3):
         raise ValueError("filter_value1 and filter_value2 must have the same length.")
 
     # Build intersections of encounter IDs for each pair
     pair_ids = []
-    for v1, v2 in zip(filter_value1, filter_value2):
-        ids = set(df.loc[(df[filter_col1] == v1) & (df[filter_col2] == v2), unique_column])
+    for v1, v2 in zip(filter_value2, filter_value3):
+        ids = set(df.loc[(df[filter_col2] == v1) & (df[filter_col3] == v2), unique_column])
         pair_ids.append(ids)
 
     # Intersection of all pairs
@@ -463,7 +505,7 @@ def create_count_sets(df, filter_col1, filter_value1, filter_col2, filter_value2
     filtered = df[df[unique_column].isin(pair_total)]
 
     # Apply extra filters if provided
-    for i in range(3, 7):  # Supports filter_col3..6
+    for i in range(4, 7):  # Supports filter_col3..6
         col = extra_filters.get(f'filter_col{i}')
         val = extra_filters.get(f'filter_value{i}')
         if col is not None and val is not None:

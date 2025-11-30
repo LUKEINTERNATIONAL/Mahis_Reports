@@ -1,0 +1,56 @@
+{
+  "reports": [
+    {
+      "report_id": 1,
+      "report_name": "Daily Admissions Report",
+      "date_created": "2025-01-01",
+      "creator": "Admin",
+      "date_updated": "2025-11-21",
+      "kind": "dataset",
+      "page_name": "admissions_report",
+      "archived": "False"
+    },
+    {
+      "report_id": 2,
+      "report_name": "HIV Services Summary",
+      "date_created": "2025-02-01",
+      "creator": "Innocent Wowa",
+      "date_updated": "2025-11-21",
+      "kind": "dataset",
+      "page_name": "hiv_services_report",
+      "archived": "True"
+    },
+    {
+      "report_id": 3,
+      "report_name": "Malaria Report",
+      "date_created": "2025-11-20",
+      "creator": "dataset",
+      "date_updated": "2025-11-30",
+      "kind": "dataset",
+      "page_name": "malaria_report",
+      "archived": "True",
+      "updated_by": "admin"
+    },
+    {
+      "report_id": 4,
+      "report_name": "Malaria Report",
+      "date_created": "2025-11-25",
+      "creator": "dataset",
+      "date_updated": "2025-11-30",
+      "kind": "dataset",
+      "page_name": "malaria_report2",
+      "archived": "True",
+      "updated_by": "admin"
+    },
+    {
+      "report_id": 5,
+      "report_name": "Malaria Report",
+      "date_created": "2025-11-29",
+      "creator": "admin",
+      "date_updated": "2025-11-29",
+      "updated_by": "admin",
+      "page_name": "malaria_report3",
+      "archived": "False"
+    }
+  ]
+}
