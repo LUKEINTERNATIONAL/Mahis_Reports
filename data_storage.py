@@ -4,6 +4,7 @@ from config import DB_CONFIG_AWS_TEST, QERY_OPD_TEST, QERY_OPD_PROD
 from models import fetch_and_store_data
 from datetime import datetime
 import logging
+import json
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -16,6 +17,7 @@ class DataStorage:
         self.data_dir = os.path.join(self.script_dir, data_dir)
         os.makedirs(self.data_dir, exist_ok=True)
         self.filepath = os.path.join(self.data_dir, filename)
+        self.dropdown_filepath = os.path.join(self.data_dir, 'dcc_dropdown_json', 'dropdowns.json')
 
     def fetch_and_save(self):
         """Fetch fresh data from DB and save to Parquet."""
@@ -37,7 +39,17 @@ class DataStorage:
         df = df[df['Date'] <= datetime.now()]
         # logging.info(f"Data loaded successfully from {self.filepath}")
         return df
-
+    def save_dcc_dropdown_json(self):
+        if not os.path.exists(self.dropdown_filepath):
+            logging.error("Parquet file not found, fetching fresh data...")
+            self.fetch_and_save()
+        df = pd.read_parquet(self.filepath)
+        dropdown_json = {"programs":sorted(df.Program.dropna().unique().tolist()),
+                         "encounters":sorted(df.Encounter.dropna().unique().tolist()),
+                         "concepts":sorted(df.concept_name.dropna().unique().tolist())
+                         }
+        with open(self.dropdown_filepath, 'w') as r:
+            json.dump(dropdown_json, r, indent=2)
     def preview_data(self, col_index=5, tail=10):
         """Print sample data for quick inspection."""
         df = self.load_data()
@@ -70,3 +82,4 @@ if __name__ == "__main__":
     storage = DataStorage(query=QERY_OPD_TEST)
     storage.fetch_and_save()
     storage.preview_data()
+    storage.save_dcc_dropdown_json()

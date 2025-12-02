@@ -12,7 +12,7 @@ from .modal_functions import (validate_excel_file, load_reports_data, save_repor
                         save_excel_file, update_report_metadata, archive_report, load_preview_data,
                         create_count_item,create_chart_item, create_section,create_chart_fields,CHART_TEMPLATES)
 
-dash.register_page(__name__, path="/admin/configurations", title="Admin Dashboard")
+dash.register_page(__name__, path="/reports_config/configurations", title="Admin Dashboard")
 
 DASHBOARD_SCHEMA = {
     "type": "object",
@@ -1456,6 +1456,10 @@ def update_chart_fields(chart_type):
      State({"type": "count-val1", "index": dash.ALL}, "value"),
      State({"type": "count-var2", "index": dash.ALL}, "value"),
      State({"type": "count-val2", "index": dash.ALL}, "value"),
+     State({"type": "count-var3", "index": dash.ALL}, "value"),
+     State({"type": "count-val3", "index": dash.ALL}, "value"),
+     State({"type": "count-var4", "index": dash.ALL}, "value"),
+     State({"type": "count-val4", "index": dash.ALL}, "value"),
      State({"type": "section-name", "index": dash.ALL}, "value"),
      # Chart basic info
      State({"type": "chart-id", "section": dash.ALL, "index": dash.ALL}, "value"),
@@ -1494,7 +1498,7 @@ def update_chart_fields(chart_type):
 )
 def save_dashboard(save_clicks, current_index, report_name, report_id, date_created, 
                   counts_children, sections_children, count_ids, count_names, count_uniques,
-                  count_vars1, count_vals1, count_vars2, count_vals2, section_names,
+                  count_vars1, count_vals1, count_vars2, count_vals2,count_vars3, count_vals3,count_vars4, count_vals4, section_names,
                   chart_ids, chart_names, chart_types, chart_titles,
                   chart_date_cols, chart_y_cols, chart_x_titles, chart_y_titles,
                   chart_unique_columns, chart_legend_titles, chart_colors,
@@ -1534,6 +1538,16 @@ def save_dashboard(save_clicks, current_index, report_name, report_id, date_crea
                         i < len(count_vals2) and count_vals2[i]):
                         count_data["filters"]["variable2"] = count_vars2[i]
                         count_data["filters"]["value2"] = count_vals2[i]
+                    
+                    if (i < len(count_vars3) and count_vars3[i] and 
+                        i < len(count_vals3) and count_vals3[i]):
+                        count_data["filters"]["variable3"] = count_vars3[i]
+                        count_data["filters"]["value3"] = count_vals3[i]
+
+                    if (i < len(count_vars2) and count_vars4[i] and 
+                        i < len(count_vals2) and count_vals4[i]):
+                        count_data["filters"]["variable4"] = count_vars4[i]
+                        count_data["filters"]["value4"] = count_vals4[i]
                     
                     counts_data.append(count_data)
         

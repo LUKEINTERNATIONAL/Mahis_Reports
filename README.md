@@ -25,6 +25,7 @@
     pip install plotly
     pip install dash
     pip install isoweek
+    pip install openpyxl
     pip install gunicorn
     pip install pyarrow
     pip install dash-bootstrap-components

@@ -7,6 +7,8 @@ from dash.exceptions import PreventUpdate
 from config import PREFIX_NAME
 import os
 
+external_stylesheets = ['https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css']
+
 # print(list(load_stored_data())) # Load the data to ensure it's available
 # Initialize the Dash app
 # pathname_prefix = '/reports/' # Adjust this if your app is served from a subpath
@@ -38,7 +40,7 @@ app.layout = html.Div([
             #     ], id="dashboards-submenu", className="submenu")
             # ], className="nav-item has-submenu"),
             html.Li(html.A("DataSet Reports", href=f"{pathname_prefix}reports", className="nav-link",id="reports-link")),
-            html.Li(html.A("Configure Reports", href=f"{pathname_prefix}admin/login", className="nav-link",id="admin-link")),
+            html.Li(html.A("Configure Reports", href=f"{pathname_prefix}reports_config/login", className="nav-link",id="admin-link")),
             html.Div("Last updated: Today", style={"color":"grey","font-size":"0.9rem","margin-top":"5px","font-style":"italic"}, id='last_updated')
         ], className="nav-list")
     ], className="navbar"),
@@ -130,7 +132,7 @@ def update_nav_links(location):
         # f"{pathname_prefix}dashboard_epi{query}",
         # f"{pathname_prefix}dashboard_hiv{query}",
         # f"{pathname_prefix}dashboard_adv_hiv{query}",
-        f"{pathname_prefix}admin/login{query}",
+        f"{pathname_prefix}reports_config/login{query}",
         f"Last updated on: {last_updated}"
     )
 

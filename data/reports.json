@@ -51,6 +51,16 @@
       "updated_by": "admin",
       "page_name": "malaria_report3",
       "archived": "False"
+    },
+    {
+      "report_id": 6,
+      "report_name": "Training Report",
+      "date_created": "2025-12-01",
+      "creator": "admin",
+      "date_updated": "2025-12-02",
+      "updated_by": "admin",
+      "page_name": "test_report_training",
+      "archived": "False"
     }
   ]
 }

@@ -519,10 +519,10 @@ body {
 /* Form Elements */
 .form-label {
     font-weight: bold;
-    margin-bottom: 4px;
+    margin-bottom: 0px;
     display: block;
     color: #333;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
 }
 
 .form-input {
@@ -530,8 +530,8 @@ body {
     padding: 8px 12px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    margin-bottom: 8px;
-    font-size: 0.9rem;
+    margin-bottom: 0px;
+    font-size: 0.8rem;
 }
 
 .form-input:focus {

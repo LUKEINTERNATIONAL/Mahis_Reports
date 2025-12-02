@@ -8,6 +8,15 @@ import base64
 import io
 import uuid
 
+path = os.getcwd()
+path_dcc_json = os.path.join(path, 'data', 'dcc_dropdown_json','dropdowns.json')
+with open(path_dcc_json) as r:
+    dcc_json = json.load(r)
+
+drop_down_programs = dcc_json['programs']
+drop_down_encounters = dcc_json['encounters']
+drop_down_concepts = dcc_json['concepts']
+
 # DATASET
 def validate_excel_file(contents):
     """Validate the uploaded Excel file"""
@@ -283,7 +292,26 @@ def create_chart_fields(chart_type, chart_data=None, section_index=None, chart_i
     return html.Div(className="chart-fields-container", children=rows)
 
 def create_count_item(count_data=None, index=None):
+    def ensure_list(value):
+        if value is None:
+            return []
+
+        if isinstance(value, list):
+            return value
+
+        if isinstance(value, str):
+            return [value]
+
+        try:
+            return list(value)
+        except TypeError:
+            return [value]
     count_data = count_data or {}
+    value1 =  ensure_list(count_data.get('filters', {}).get('value1', []))
+    value2 = ensure_list(count_data.get('filters', {}).get('value2', []))
+    value3 = ensure_list(count_data.get('filters', {}).get('value3', []))
+
+
     return html.Div(className="count-item", children=[
         html.Div(className="count-row", children=[
             html.Div(className="count-col", children=[
@@ -326,17 +354,21 @@ def create_count_item(count_data=None, index=None):
                 html.Label("Filter Variable 1", className="form-label"),
                 dcc.Input(
                     id={"type": "count-var1", "index": index},
-                    value=count_data.get('filters', {}).get('variable1', ''),
-                    placeholder="e.g Gender",
+                    value=count_data.get('filters', {}).get('variable1', 'Program'),
+                    placeholder='',
                     className="form-input"
                 ),
             ]),
             html.Div(className="count-col", children=[
                 html.Label("Filter Value 1", className="form-label"),
-                dcc.Input(
+                dcc.Dropdown(
                     id={"type": "count-val1", "index": index},
-                    value=count_data.get('filters', {}).get('value1', ''),
-                    placeholder="e.g. Male",
+                    value=value1,
+                    multi=True,
+                    options=[
+                        {'label': item, 'value': item}
+                        for item in drop_down_programs
+                    ],
                     className="form-input"
                 ),
             ]),
@@ -345,15 +377,61 @@ def create_count_item(count_data=None, index=None):
                 dcc.Input(
                     id={"type": "count-var2", "index": index},
                     value=count_data.get('filters', {}).get('variable2', ''),
-                    placeholder="e.g. Age_Group",
+                    placeholder="Encounter",
                     className="form-input"
                 ),
             ]),
             html.Div(className="count-col", children=[
                 html.Label("Filter Value 2", className="form-label"),
-                dcc.Input(
+                dcc.Dropdown(
                     id={"type": "count-val2", "index": index},
-                    value=count_data.get('filters', {}).get('value2', ''),
+                    value=value2,
+                    multi=True,
+                    options=[
+                        {'label': item, 'value': item}
+                        for item in drop_down_encounters
+                    ],
+                    placeholder="",
+                    className="form-input"
+                ),
+            ]),
+            html.Div(className="count-col", children=[
+                html.Label("Filter Variable 3", className="form-label"),
+                dcc.Input(
+                    id={"type": "count-var3", "index": index},
+                    value=count_data.get('filters', {}).get('variable3', ''),
+                    placeholder="concept_name",
+                    className="form-input"
+                ),
+            ]),
+            html.Div(className="count-col", children=[
+                html.Label("Filter Value 3", className="form-label"),
+                dcc.Dropdown(
+                    id={"type": "count-val3", "index": index},
+                    value=value3,
+                    multi=True,
+                    options=[
+                        {'label': item, 'value': item}
+                        for item in drop_down_concepts
+                    ],
+                    className="form-input"
+                ),
+            ])
+            ,
+            html.Div(className="count-col", children=[
+                html.Label("Filter Variable 4", className="form-label"),
+                dcc.Input(
+                    id={"type": "count-var4", "index": index},
+                    value=count_data.get('filters', {}).get('variable4', ''),
+                    placeholder="e.g. Age_Group",
+                    className="form-input"
+                ),
+            ]),
+            html.Div(className="count-col", children=[
+                html.Label("Filter Value 4", className="form-label"),
+                dcc.Input(
+                    id={"type": "count-val4", "index": index},
+                    value=count_data.get('filters', {}).get('value4', ''),
                     placeholder="e.g. Over 5",
                     className="form-input"
                 ),

@@ -60,31 +60,36 @@ def parse_filter_value(filter_val):
 
 def create_count_from_config(df, filters):
     """Create count based on JSON filter configuration"""
-    # Extract filter parameters
+
     unique_col = filters.get("unique", "")
-    variable1 = filters.get("variable1", "")
-    value1 = parse_filter_value(filters.get("value1", ""))
-    variable2 = filters.get("variable2", "")
-    value2 = parse_filter_value(filters.get("value2", ""))
-    variable3 = filters.get("variable3", "")
-    value3 = parse_filter_value(filters.get("value3", ""))
-    variable4 = filters.get("variable4", "")
-    value4 = parse_filter_value(filters.get("value4", ""))
-    
-    # Handle different filter combinations
-    if variable1 and value1:
-        if variable2 and value2:
-            if variable3 and value3:
-                if variable4 and value4:
-                    return create_count(df, unique_col, variable1, value1, variable2, value2, variable3, value3, variable4, value4)
-                else:
-                    return create_count(df, unique_col, variable1, value1, variable2, value2, variable3, value3)
-            else:
-                return create_count(df, unique_col, variable1, value1, variable2, value2)
-        else:
-            return create_count(df, unique_col, variable1, value1)
-    else:
+
+    # Extract variables and values
+    variables = [
+        filters.get("variable1", ""),
+        filters.get("variable2", ""),
+        filters.get("variable3", ""),
+        filters.get("variable4", "")
+    ]
+
+    values = [
+        parse_filter_value(filters.get("value1", "")),
+        parse_filter_value(filters.get("value2", "")),
+        parse_filter_value(filters.get("value3", "")),
+        parse_filter_value(filters.get("value4", ""))
+    ]
+    active_filters = []
+    for var, val in zip(variables, values):
+        if var and val:
+            active_filters.append((var, val))
+    if not active_filters:
         return create_count(df, unique_col)
+
+    if active_filters[0][0] != filters.get("variable1"):
+        return create_count(df, unique_col)  # failsafe
+    args = []
+    for var, val in active_filters:
+        args.extend([var, val])
+    return create_count(df, unique_col, *args)
 
 def build_charts_section(filtered, data_opd, delta_days, sections_config):
     """Build chart sections from JSON configuration"""
@@ -485,7 +490,7 @@ layout = html.Div(className="container", children=[
     html.Div(id='dashboard-container'),   
     dcc.Interval(
         id='dashboard-interval-update-today',
-        interval=10*60*1000,  # in milliseconds
+        interval=60*60*1000,  # in milliseconds
         n_intervals=0
     ),     
 ])

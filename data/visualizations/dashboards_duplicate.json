@@ -559,12 +559,9 @@
             "variable1": "Program",
             "value1": "NCD PROGRAM",
             "variable2": "Encounter",
-            "value2": "['OUTPATIENT DIAGNOSIS','DIAGNOSIS']",
-            "variable3": "obs_value_coded",
-            "value3": "['Diabetes','Type 1 diabetes','Type 2 diabetes','Diabetes mellitus']"
+            "value2": "['OUTPATIENT DIAGNOSIS','DIAGNOSIS']"
           }
-        }
-        ,
+        },
         {
           "id": "count_e55b4178",
           "name": "Diabetes Type 1 Cases",
@@ -574,9 +571,7 @@
             "variable1": "Program",
             "value1": "NCD PROGRAM",
             "variable2": "Encounter",
-            "value2": "['OUTPATIENT DIAGNOSIS','DIAGNOSIS']",
-            "variable3": "obs_value_coded",
-            "value3": "['Type 1 diabetes']"
+            "value2": "['OUTPATIENT DIAGNOSIS','DIAGNOSIS']"
           }
         },
         {
@@ -588,9 +583,7 @@
             "variable1": "Program",
             "value1": "NCD PROGRAM",
             "variable2": "Encounter",
-            "value2": "['OUTPATIENT DIAGNOSIS','DIAGNOSIS']",
-            "variable3": "obs_value_coded",
-            "value3": "['Type 2 diabetes']"
+            "value2": "['OUTPATIENT DIAGNOSIS','DIAGNOSIS']"
           }
         },
         {
@@ -602,14 +595,237 @@
             "variable1": "Program",
             "value1": "NCD PROGRAM",
             "variable2": "Encounter",
-            "value2": "['OUTPATIENT DIAGNOSIS','DIAGNOSIS']",
-            "variable3": "obs_value_coded",
-            "value3": "['Hypertension']"
+            "value2": "['OUTPATIENT DIAGNOSIS','DIAGNOSIS']"
           }
         }
       ],
       "charts": {
-        "sections": []
+        "sections": [
+          {
+            "section_name": "General",
+            "items": [
+              {
+                "id": "chart1",
+                "name": "Daily NCD Attendance - Last 7 Days",
+                "type": "Line",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "7days",
+                  "date_col": "Date",
+                  "y_col": "encounter_id",
+                  "title": "Daily NCD Attendance - Last 7 Days",
+                  "x_title": "Date",
+                  "y_title": "Number of Patients",
+                  "unique_column": "person_id",
+                  "legend_title": "Legend",
+                  "color": "",
+                  "filter_col1": "Program",
+                  "filter_val1": "NCD PROGRAM",
+                  "filter_col2": "",
+                  "filter_val2": "",
+                  "filter_col3": "",
+                  "filter_val3": ""
+                }
+              },
+              {
+                "id": "chart1",
+                "name": "Age Distribution of NCD Patients",
+                "type": "Histogram",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "age_col": "Age",
+                  "gender_col": "Gender",
+                  "title": "Age Distribution of NCD Patients",
+                  "x_title": "Program",
+                  "y_title": "Number of Patients",
+                  "bin_size": 5,
+                  "filter_col1": "Program",
+                  "filter_val1": "NCD PROGRAM",
+                  "filter_col2": "",
+                  "filter_val2": "",
+                  "filter_col3": "",
+                  "filter_val3": ""
+                }
+              },
+              {
+                "id": "chart2",
+                "name": "Alcohol Risk Factor",
+                "type": "Pie",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "names_col": "obs_value_coded",
+                  "values_col": "encounter_id",
+                  "title": "Alcohol Risk Factor",
+                  "unique_column": "encounter_id",
+                  "filter_col1": "Program",
+                  "filter_val1": "NCD PROGRAM",
+                  "filter_col2": "concept_name",
+                  "filter_val2": "Does the patient drink alcohol?",
+                  "filter_col3": "",
+                  "filter_val3": "",
+                  "colormap": {
+                    "New": "#292D79",
+                    "Revisit": "#FE1AD0"
+                  }
+                }
+              },
+              {
+                "id": "chart2",
+                "name": "Smoking Risk Factor",
+                "type": "Pie",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "names_col": "obs_value_coded",
+                  "values_col": "encounter_id",
+                  "title": "Smoking Risk Factor",
+                  "unique_column": "encounter_id",
+                  "filter_col1": "Program",
+                  "filter_val1": "NCD PROGRAM",
+                  "filter_col2": "concept_name",
+                  "filter_val2": "Smoking history",
+                  "filter_col3": "",
+                  "filter_val3": "",
+                  "colormap": {
+                    "New": "#292D79",
+                    "Revisit": "#FE1AD0"
+                  }
+                }
+              },
+              {
+                "id": "chart1",
+                "name": "Locations",
+                "type": "PivotTable",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "index_col1": "Village",
+                  "columns": "Program",
+                  "values_col": "person_id",
+                  "title": "Patient Locations",
+                  "unique_column": "person_id",
+                  "aggfunc": "count",
+                  "filter_col1": "Program",
+                  "filter_val1": "NCD PROGRAM",
+                  "filter_col2": "",
+                  "filter_val2": "",
+                  "filter_col3": "",
+                  "filter_val3": "",
+                  "x_title": "",
+                  "y_title": ""
+                }
+              }
+            ]
+          },
+          {
+            "section_name": "Diagnoses, Complications and Treatment",
+            "items": [
+              {
+                "id": "chart1",
+                "name": "NCD Type for New Patients",
+                "type": "Column",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "x_col": "obs_value_coded",
+                  "y_col": "encounter_id",
+                  "title": "NCD Type for New Patients",
+                  "x_title": "NCD Type",
+                  "y_title": "Number of Patients",
+                  "unique_column": "person_id",
+                  "legend_title": "Legend",
+                  "color": "",
+                  "filter_col1": "Program",
+                  "filter_val1": "NCD PROGRAM",
+                  "filter_col2": "Encounter",
+                  "filter_val2": "[OUTPATIENT DIAGNOSIS','DIAGNOSIS]",
+                  "filter_col3": "new_revisit",
+                  "filter_val3": "New"
+                }
+              },
+              {
+                "id": "chart1",
+                "name": "NCD Type for All Patients",
+                "type": "Column",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "x_col": "obs_value_coded",
+                  "y_col": "encounter_id",
+                  "title": "NCD Type for All Patients",
+                  "x_title": "NCD Type for New Patients",
+                  "y_title": "Number of Patients",
+                  "unique_column": "person_id",
+                  "legend_title": "Legend",
+                  "color": "",
+                  "filter_col1": "Program",
+                  "filter_val1": "NCD PROGRAM",
+                  "filter_col2": "Encounter",
+                  "filter_val2": "[OUTPATIENT DIAGNOSIS','DIAGNOSIS]",
+                  "filter_col3": "",
+                  "filter_val3": ""
+                }
+              },
+              {
+                "id": "chart2",
+                "name": "NCD Complications Foot",
+                "type": "Pie",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "names_col": "obs_value_coded",
+                  "values_col": "encounter_id",
+                  "title": "NCD Complications Foot",
+                  "unique_column": "encounter_id",
+                  "filter_col1": "Program",
+                  "filter_val1": "NCD PROGRAM",
+                  "filter_col2": "concept_name",
+                  "filter_val2": "['Peripheral neuropathy','Deformity','Ulcers']",
+                  "filter_col3": "",
+                  "filter_val3": "",
+                  "colormap": {
+                    "New": "#292D79",
+                    "Revisit": "#FE1AD0"
+                  }
+                }
+              },
+              {
+                "id": "chart1",
+                "name": "Aggregate NCD Drugs Dispensed",
+                "type": "PivotTable",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "index_col1": "DrugName",
+                  "columns": "Program",
+                  "values_col": "person_id",
+                  "title": "Aggregate NCD Drugs Dispensed",
+                  "unique_column": "person_id",
+                  "aggfunc": "sum",
+                  "filter_col1": "Program",
+                  "filter_val1": "NCD PROGRAM",
+                  "filter_col2": "Encounter",
+                  "filter_val2": "DISPENSING",
+                  "filter_col3": "",
+                  "filter_val3": "",
+                  "x_title": "",
+                  "y_title": ""
+                }
+              }
+            ]
+          }
+        ]
       }
     }
   },
