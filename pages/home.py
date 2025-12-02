@@ -594,7 +594,7 @@ def update_dashboard(urlparams, start_date, end_date, visit_type, hf, age,n_clic
     filtered_data = search_url[mask].copy()
 
     filtered_data_date = filtered_data[
-        # (pd.to_datetime(filtered_data['Date']) >= pd.to_datetime(start_date)) & 
+        (pd.to_datetime(filtered_data['Date']) >= pd.to_datetime(start_date)) & 
         (pd.to_datetime(filtered_data['Date']) <= pd.to_datetime(end_date))
     ]
     
