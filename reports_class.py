@@ -13,7 +13,7 @@ class ReportTableBuilder:
         self.filters_map: Dict[str, Any] = {}
         self._value_cache: Dict[str, str] = {}
         self._errors: List[str] = []
-        self.design_df: pd.DataFrame | None = None
+        self.report_name: pd.DataFrame | None = None
 
     def load_spec(self) -> None:
         xls = pd.ExcelFile(self.excel_path, engine="openpyxl")
@@ -23,8 +23,8 @@ class ReportTableBuilder:
         self.filters_df.columns = [str(c).strip() for c in self.filters_df.columns]
         self.vars_df = self.vars_df.fillna("")
         self.filters_df = self.filters_df.fillna("")
-        self.design_df = pd.read_excel(xls, sheet_name="DESIGN", engine="openpyxl")
-        self.design_df.columns = [str(c).strip() for c in self.design_df.columns]
+        self.report_name = pd.read_excel(xls, sheet_name="REPORT_NAME", engine="openpyxl")
+        self.report_name.columns = [str(c).strip() for c in self.report_name.columns]
         self._build_filters_map()
 
     def _build_filters_map(self) -> None:
@@ -105,9 +105,9 @@ class ReportTableBuilder:
     def _collect_value_columns(self) -> List[str]:
         return sorted([c for c in self.vars_df.columns if c.lower().startswith("value_")])
     def _title(self) -> str:
-        if self.design_df is None or "Title" not in self.design_df.columns:
+        if self.report_name is None or "name" not in self.report_name.columns:
             return "Report"
-        vals = [str(v).strip() for v in self.design_df["Title"].tolist() if str(v).strip()]
+        vals = [str(v).strip() for v in self.report_name["name"].tolist() if str(v).strip()]
         return vals[0] if vals else "Report"
 
     def build_section_tables(self) -> List[Tuple[str, pd.DataFrame]]:

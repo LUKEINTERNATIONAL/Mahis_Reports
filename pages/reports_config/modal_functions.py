@@ -32,46 +32,46 @@ def validate_excel_file(contents):
         missing_sheets = [sheet for sheet in required_sheets if sheet not in excel_file.sheet_names]
         
         if missing_sheets:
-            return False, f"Missing required sheets: {', '.join(missing_sheets)}", None
+            return False, f"Missing required sheets: {', '.join(missing_sheets)}", None, None
         
         # Check REPORT_NAME sheet for id and name columns
         report_name_df = pd.read_excel(excel_file, sheet_name='REPORT_NAME')
         if 'id' not in report_name_df.columns:
-            return False, "REPORT_NAME sheet is missing 'id' column", None
+            return False, "REPORT_NAME sheet is missing 'id' column", None, None
         
         if 'name' not in report_name_df.columns:
-            return False, "REPORT_NAME sheet is missing 'name' column", None
+            return False, "REPORT_NAME sheet is missing 'name' column", None, None
         
         if report_name_df.empty or pd.isna(report_name_df['id'].iloc[0]):
-            return False, "REPORT_NAME id column is empty", None
+            return False, "REPORT_NAME id column is empty", None, None
         
         if report_name_df.empty or pd.isna(report_name_df['name'].iloc[0]):
-            return False, "REPORT_NAME name column is empty", None
+            return False, "REPORT_NAME name column is empty", None, None
         
         # Check if sheet name VARIABLE_NAMES and FILTERS has at least on row
         variable_names_df = pd.read_excel(excel_file, sheet_name='VARIABLE_NAMES')
         if 'type' in variable_names_df.columns:
             variable_names_df = variable_names_df[variable_names_df['type']!='section']
         if variable_names_df.empty:
-            return False, "VARIABLE_NAMES sheet is empty, add atleast 1 variable", None
+            return False, "VARIABLE_NAMES sheet is empty, add atleast 1 variable", None, None
         filters_df = pd.read_excel(excel_file, sheet_name='FILTERS')
         if filters_df.empty:
-            return False, "FILTERS sheet is empty, add atleast 1 filter", None
+            return False, "FILTERS sheet is empty, add atleast 1 filter", None,None
         
         # Check if all filters from Column B to K of VARIABLE_NAMES exist in FILTERS Column A
         variable_filters = variable_names_df.iloc[:, 1:20].values.flatten()
         variable_filters = [str(item).strip() for item in variable_filters if pd.notna(item) and str(item).strip() != '']
         filters_list = filters_df.iloc[:, 0].astype(str).str.strip().tolist()
         missing_filters = [vf for vf in variable_filters if vf not in filters_list]
-        print(missing_filters)
-        if missing_filters:
-            return False, f"The following filters from VARIABLE_NAMES are missing in FILTERS sheet: {', '.join(missing_filters)}", None
+        # print(missing_filters)
+        if len(missing_filters)>0:
+            return False, f"The following filters from VARIABLE_NAMES are missing in FILTERS sheet: {', '.join(missing_filters)}", None, None
         
 
         return True, "File validation successful", report_name_df, filters_df
         
     except Exception as e:
-        return False, f"Error reading file: {str(e)}", None
+        return False, f"Error reading file: {str(e)}", None, None
     
 def load_reports_data():
     """Load reports from reports.json"""
