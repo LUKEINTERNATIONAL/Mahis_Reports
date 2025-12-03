@@ -575,7 +575,7 @@ def update_dashboard(urlparams, start_date, end_date, visit_type, hf, age,n_clic
     data_opd['Date'] = pd.to_datetime(data_opd['Date'], format='mixed')
     data_opd['Gender'] = data_opd['Gender'].replace({"M":"Male","F":"Female"})
     # data_opd = data_opd[data_opd['Program']=='OPD Program']
-    data_opd.to_excel('data/archive/hmis.xlsx')
+    # data_opd.to_excel('data/archive/hmis.xlsx')
     
 
     if urlparams:
