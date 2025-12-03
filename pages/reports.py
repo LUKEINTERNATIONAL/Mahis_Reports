@@ -184,6 +184,18 @@ layout = html.Div(className="container", children=[
                 )
             ], className="filter-input"),
             html.Div([
+                html.Label("Program (some reports may not need program filter)"),
+                dcc.Dropdown(
+                    id='program_filter',
+                    options=[
+                        {'label': item, 'value': item}
+                        for item in ["OPD","IPD"]
+                    ],
+                    value=dt.now().strftime("%B"),
+                    clearable=True
+                )
+            ], className="filter-input"),
+            html.Div([
             html.Button(
                 "Generate Report",
                 id="generate-btn",
@@ -272,10 +284,11 @@ def update_table(clicks, urlparams, period_type, year_filter, month_filter, repo
     
     data_opd = pd.read_parquet(parquet_path)
     data_opd['Date'] = pd.to_datetime(data_opd['Date'], format='mixed')
+    data_opd['Gender'] = data_opd['Gender'].replace({"M":"Male","F":"Female"})
     data_opd["DateValue"] = pd.to_datetime(data_opd["Date"]).dt.date
     today = dt.today().date()
     data_opd["months"] = data_opd["DateValue"].apply(lambda d: (today - d).days // 30)
-    data_opd.to_csv('data/archive/hmis.csv')
+    # data_opd.to_csv('data/archive/hmis.csv')
 
     if urlparams:
         search_url = data_opd[data_opd['Facility_CODE'].str.lower() == urlparams.lower()]

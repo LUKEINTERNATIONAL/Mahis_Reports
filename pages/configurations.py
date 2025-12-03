@@ -7,12 +7,12 @@ import pandas as pd
 from datetime import datetime
 import base64
 import io
-from .modal_functions import (validate_excel_file, load_reports_data, save_reports_data, 
+from modal_functions import (validate_excel_file, load_reports_data, save_reports_data, 
                         check_existing_report, get_next_report_id, update_or_create_report,load_excel_file,
                         save_excel_file, update_report_metadata, archive_report, load_preview_data,
                         create_count_item,create_chart_item, create_section,create_chart_fields,CHART_TEMPLATES)
 
-dash.register_page(__name__, path="/reports_config/configurations", title="Admin Dashboard")
+dash.register_page(__name__, path="/configurations", title="Admin Dashboard")
 
 DASHBOARD_SCHEMA = {
     "type": "object",

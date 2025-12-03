@@ -346,7 +346,7 @@
     border-collapse: separate;
     border-spacing: 0 10px;
     font-family: Arial, sans-serif;
-    font-size: 15px;
+    font-size: 14px;
 }
 
 /* Table Headers */
@@ -363,7 +363,7 @@
     padding: 12px 15px;
     background: white;
     border-top: 1px solid #eee;
-    text-align: center;
+    text-align: left;
 }
 
 /* Row Hover Effect */

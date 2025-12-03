@@ -2,7 +2,7 @@ import dash
 from dash import html, dcc, Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
-dash.register_page(__name__, path="/reports_config/login", title="Admin Login")
+dash.register_page(__name__, path="/login", title="Admin Login")
 
 layout = html.Div([
     dcc.Location(id='url-login', refresh=True),
@@ -98,7 +98,7 @@ def login_user(n_clicks, username, password):
     for user in valid_users:
         if user["username"] == username and user["password"] == password:
             n_clicks = 0
-            return "/reports_config/configurations", html.Div("Login successful!", style={'color': 'green'})
+            return "/configurations", html.Div("Login successful!", style={'color': 'green'})
     
     return dash.no_update, html.Div("Invalid username or password", 
                                   style={'color': 'red'})
