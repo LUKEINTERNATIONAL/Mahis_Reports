@@ -14,7 +14,7 @@ from visualizations import create_count, create_sum, create_count_sets, create_s
 
 from data_storage import mahis_programs, mahis_facilities, age_groups
 
-dash.register_page(__name__, path="/reports")
+dash.register_page(__name__, path="/hmis_reports")
 
 relative_week = [str(week) for week in range(1, 53)]  # Can extend to 53 if needed
 relative_month = ['January', 'February', 'March', 'April', 'May', 'June','July', 'August', 'September', 'October', 'November', 'December',]
@@ -94,7 +94,7 @@ def get_quarter_start_end(quarter, year):
 def load_report_options():
     """Load reports from JSON and return concatenated options for dropdown"""
     try:
-        with open('data/reports.json', 'r') as f:
+        with open('data/hmis_reports.json', 'r') as f:
             data = json.load(f)
         
         # Create concatenated options: "ID - Report Name"
@@ -131,7 +131,7 @@ def build_table(filtered, page_name):
     return components
 
 layout = html.Div(className="container", children=[
-    html.H4("Select Report Parameters",style={'textAlign': 'center'}),
+    html.H4("Select Report Parameters",style={'textAlign': 'center',"color":"#006401",}),
     html.Div([
         html.Div(className="filter-container", children=[
             html.Div([
@@ -263,7 +263,7 @@ def update_table(clicks, urlparams, period_type, year_filter, month_filter, repo
     
     path = os.getcwd()
     parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
-    reports_json = os.path.join(path, 'data', 'reports.json')
+    reports_json = os.path.join(path, 'data', 'hmis_reports.json')
     with open(reports_json, "r") as f:
         json_data = json.load(f)
     target = report_filter

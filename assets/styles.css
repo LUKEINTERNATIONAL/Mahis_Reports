@@ -166,17 +166,18 @@
 }
 
 .card {
-    width: 85%;           /* Slightly smaller than column to avoid edge-to-edge stretch */
+    width: 100%;           /* Slightly smaller than column to avoid edge-to-edge stretch */
     max-width: 100%;     /* Prevents over-stretching on wide screens */
     /* min-width: 250px;     Optional: prevent too small on narrow screens */
-    max-height: 450px;
+    max-height: 600px;
     overflow-y: auto;
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    text-align: center;
-    box-shadow: 0 2px 3px rgba(0,0,0,0.1);
-    background-color: #fff;
+    /* padding: 15px; */
+    margin-top: 20px;
+    /* border: 1px solid #f4f4f4; */
+    /* border-radius: 5px; */
+    /* text-align: center; */
+    /* box-shadow: 0 2px 3px rgba(0,0,0,0.1); */
+    background-color: #ffffff;
 }
 
 .card-2 {
@@ -392,6 +393,10 @@
 /* Archive button */
 .archive-btn {
     background-color: #dc3545;
+}
+
+.download-btn {
+    background-color: #006401;
 }
 
 /* Optional: smooth hover */
@@ -906,5 +911,74 @@ body {
     align-items: center;
     z-index: 1000;
 }
+.nav-btn {
+    width: 100%;
+    padding: 10px 15px;
+    background: #f8f8f8;
+    color: rgb(0, 0, 0);
+    border: 1px;
+    border-color: #e6e5e5;
+    text-align: left;
+    margin-top: 10px;
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.nav-btn:hover {
+    background: #006401;
+    color: white;
+}
+
+.nav-btn:selected {
+    background: #006401;
+    color: white;
+}
+
+
+/* Common button style */
+.report-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* Edit button */
+.edit-btn-svg {
+  background-color: #2563eb; /* blue */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' viewBox='0 0 24 24'><path d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: 8px center;
+  background-size: 16px;
+  padding-left: 32px; /* space for icon */
+}
+
+/* Archive button */
+.archive-btn-svg {
+  background-color: #f59e0b; /* amber */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' viewBox='0 0 24 24'><path d='M20.54 5.23l-1.39-1.39C18.88 3.32 18.47 3 18 3H6c-.47 0-.88.32-1.15.84L3.46 5.23C3.17 5.62 3 6.09 3 6.58V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.58c0-.49-.17-.96-.46-1.35zM12 17l-4-4h3V9h2v4h3l-4 4z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: 8px center;
+  background-size: 16px;
+  padding-left: 32px;
+}
+
+/* Download button */
+.download-btn-svg {
+  background-color: #10b981; /* green */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' viewBox='0 0 24 24'><path d='M5 20h14v-2H5v2zm7-18l-5.5 5.5h4v6h3v-6h4L12 2z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: 8px center;
+  background-size: 16px;
+  padding-left: 32px;
+}
+
+
 
 

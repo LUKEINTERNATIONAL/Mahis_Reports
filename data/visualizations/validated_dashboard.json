@@ -1,0 +1,69 @@
+[
+  {
+    "report_id": "1",
+    "report_name": "Summary",
+    "date_created": "2025-11-26",
+    "visualization_types": {
+      "counts": [
+        {
+          "id": "registered",
+          "name": "Total Registrations",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id"
+          }
+        },
+        {
+          "id": "registered_m",
+          "name": "Registered Male",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Gender",
+            "value1": "Male"
+          }
+        },
+        {
+          "id": "registered_f",
+          "name": "Registered Female",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Gender",
+            "value1": "Female"
+          }
+        },
+        {
+          "id": "registered_o",
+          "name": "Registered Over 5",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Age_Group",
+            "value1": "Over 5"
+          }
+        },
+        {
+          "id": "registered_u",
+          "name": "Registered Under 5",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Age_Group",
+            "value1": "Under 5"
+          }
+        },
+        {
+          "id": "count_f3ce771b",
+          "name": "Total People",
+          "filters": {
+            "measure": "count",
+            "unique": "encounter_id"
+          }
+        }
+      ],
+      "charts": {
+        "sections": []
+      }
+    }
+  }]

@@ -73,9 +73,93 @@ def validate_excel_file(contents):
     except Exception as e:
         return False, f"Error reading file: {str(e)}", None, None
     
+def validate_dashboard_json(contents):
+    """
+    Validates that the uploaded JSON file:
+    - Is a list
+    - Contains objects with required keys
+    - visualization_types must have counts or charts
+    - counts objects must contain id, name, and filters
+    """
+
+    actual_keys_in_data = ['person_id', 'encounter_id', 
+                                       'Gender', 'Age', 'Age_Group', 
+                                       'Date', 'Program', 'Facility', 
+                                       'Facility_CODE', 'User', 'District', 
+                                       'Encounter', 'Home_district', 'TA', 
+                                       'Village', 'visit_days', 'obs_value_coded', 
+                                       'concept_name', 'Value', 
+                                       'ValueN', 'DrugName', 'Value_name', 'new_revisit','count','count_set','sum']
+    try:
+        data = json.loads(contents)
+
+        if not isinstance(data, list) or len(data) == 0:
+            return False, "JSON must be a non-empty list of dashboard objects."
+
+        for item in data:
+            required_keys = ["report_id", "report_name", "visualization_types"]
+            if not all(k in item for k in required_keys):
+                return False, "One or more dashboard objects are missing required keys."
+
+            vis = item.get("visualization_types", {})
+
+            if not isinstance(vis, dict):
+                return False, "'visualization_types' must be an object."
+
+            counts = vis.get("counts", [])
+            charts = vis.get("charts", [])
+            if len(counts) == 0 and len(charts) == 0:
+                return False, (
+                    "Each dashboard must contain at least one item under 'counts' or 'charts'."
+                )
+            for c in counts:
+                if not isinstance(c, dict):
+                    return False, "Each item in 'counts' must be an object."
+                required_count_keys = ["id", "name", "filters"]
+                if not all(k in c for k in required_count_keys):
+                    return False, (
+                        "Each item in 'counts' must contain 'id', 'name', and 'filters'."
+                    )
+                if not isinstance(c["filters"], dict):
+                    return False, "'filters' in counts must be a dict."
+                
+                # check if the values (data columns) are matching. I have indicated the list of known columns above
+                target_keys = ["measure","unique","variable1", "value1","variable2", "value2","variable3", "value3","variable4", "value4","variable5", "value5","variable6", "value6"]
+                
+                selected_values = []
+                for key in target_keys:
+                    if key in c["filters"]:
+                        selected_values.extend([key, c["filters"][key]])
+                print(selected_values)
+
+        return True, "Dry run successful! JSON structure is valid."
+
+    except Exception as e:
+        return False, f"Invalid JSON format: {e}"
+
+def upload_dashboard_json(contents):
+    if contents is None:
+        return "No file to upload"
+    dashboards_json_path = os.path.join(path, 'data','visualizations', 'validated_dashboard.json')
+    try:
+        content_type, content_string = contents.split(',')
+        decoded_bytes = base64.b64decode(content_string)
+    except Exception as e:
+        return f"Failed to decode file: {e}"
+    try:
+        json.loads(decoded_bytes.decode('utf-8'))
+    except Exception as e:
+        return f"JSON validation failed before saving: {e}"
+
+    # Save JSON file
+    with open(dashboards_json_path, 'wb') as f:
+        f.write(decoded_bytes)
+
+    return "Upload successful!"
+    
 def load_reports_data():
     """Load reports from reports.json"""
-    file_path = os.path.join("data", "reports.json")
+    file_path = os.path.join("data", "hmis_reports.json")
     
     if not os.path.exists(file_path):
         return {"reports": []}
@@ -86,7 +170,7 @@ def load_reports_data():
 
 def save_reports_data(data):
     """Save reports to reports.json"""
-    file_path = os.path.join("data", "reports.json")
+    file_path = os.path.join("data", "hmis_reports.json")
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     
     with open(file_path, "w") as f:
@@ -618,8 +702,6 @@ CHART_TEMPLATES = {
         "filter_val1": "",
         "filter_col2": "",
         "filter_val2": "",
-        "x_title": "",
-        "y_title": ""
     }
 }
 

@@ -98,7 +98,7 @@ def login_user(n_clicks, username, password):
     for user in valid_users:
         if user["username"] == username and user["password"] == password:
             n_clicks = 0
-            return "/configurations", html.Div("Login successful!", style={'color': 'green'})
+            return "/reports_config", html.Div("Login successful!", style={'color': 'green'})
     
     return dash.no_update, html.Div("Invalid username or password", 
                                   style={'color': 'red'})
@@ -110,6 +110,6 @@ def login_user(n_clicks, username, password):
     prevent_initial_call=True
 )
 def clear_inputs_on_navigation(pathname):
-    if pathname == "/reports_config/configurations":
+    if pathname == "/reports_config/reports_config":
         return "", ""  # Clear both inputs
     raise PreventUpdate

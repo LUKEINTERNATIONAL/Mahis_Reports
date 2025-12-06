@@ -1,6 +1,8 @@
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import dash
+from dash import dash_table, html
 import re
 from datetime import datetime, timedelta
 
@@ -232,75 +234,222 @@ def create_pie_chart(df, names_col, values_col, title, unique_column='person_id'
                                     "<b>Value:</b> %{value}<br>" +
                                     "<b>Percent:</b> %{percent}<br>" 
                  )
-    return fig
+    return fig 
 
-def create_pivot_table(df, index_col1, columns_col1, values_col, title, unique_column='person_id', aggfunc='sum',
+
+import plotly.graph_objects as go
+
+
+import plotly.graph_objects as go
+
+def create_pivot_table(df, index_col, columns_col, values_col, title, unique_column='person_id', aggfunc='sum',
                      filter_col1=None, filter_value1=None, 
                      filter_col2=None, filter_value2=None,
                      filter_col3=None, filter_value3=None,
-                     xaxis_title=None, yaxis_title=None, show_axes=False):
+                     rename={}, replace={}):
     """
     Create a pivot table from the DataFrame.
     """
     data = df
+    # Rename columns and replace content (explicit columns=)
     
     # Apply filters using the new helper function
     data = _apply_filter(data, filter_col1, filter_value1)
     data = _apply_filter(data, filter_col2, filter_value2)
     data = _apply_filter(data, filter_col3, filter_value3)
 
-    data = data.drop_duplicates(subset=[unique_column,'Date'])
+    data = data.drop_duplicates(subset=[unique_column, 'Date'])
 
+    # Build pivot
     if aggfunc == 'concat':
         pivot = data.pivot_table(
-            index=index_col1,
-            columns=columns_col1,
+            index=index_col,
+            columns=columns_col,
             values=values_col,
             aggfunc=lambda x: ', '.join(sorted(set(str(v) for v in x if str(v) != ''))),
         ).reset_index()
+        value_format = None  # strings → no numeric formatting
     else:
         pivot = data.pivot_table(
-            index=index_col1,
-            columns=columns_col1,
+            index=index_col,
+            columns=columns_col,
             values=values_col,
             aggfunc=aggfunc
         ).reset_index()
+        value_format = ",.0f"  # numeric formatting for value columns
 
+    num_index_cols = len(index_col) if isinstance(index_col, (list, tuple)) else 1
+
+    align_list = (['left'] * num_index_cols) + (['center'] * (len(pivot.columns) - num_index_cols))
+
+    if value_format is None:
+        format_list = [None] * len(pivot.columns)
+    else:
+        format_list = ([None] * num_index_cols) + ([value_format] * (len(pivot.columns) - num_index_cols))
+
+    pivot = pivot.rename(columns=rename).replace(replace)
     fig = go.Figure(data=[go.Table(
         header=dict(
             values=["<b>" + col + "</b>" for col in pivot.columns],
             fill_color='grey',
-            align='left',
+            align=align_list,
             font=dict(size=12, color='white')
         ),
         cells=dict(
             values=[pivot[col] for col in pivot.columns],
             fill_color='white',
-            align='left',
+            align=align_list,
             height=30,
-            format=[None] + [",.0f"]*(len(pivot.columns)-1),
-            font=dict(size=11,color = 'darkslategray',))
+            format=format_list,
+            font=dict(size=11, color='darkslategray')
+        )
     )])
+
+
+    row_height = 30
+    extra_space = 100
+    dynamic_height = row_height * len(pivot) + extra_space
+
 
     layout_updates = {
         'title': dict(
-            text=title,
+            text='<b>' + title + '</b>',
             y=0.95,
             x=0.5,
             xanchor='center',
             yanchor='top',
-            font=dict(size=14)
+            font=dict(size=18, color='black'),
         ),
-        'margin': dict(l=20, r=20, b=20, t=80),
-        'height': 400
+        'margin': dict(l=20, r=20, b=20, t=50),
+        'height': dynamic_height
     }
-    
-    if show_axes:
-        layout_updates['xaxis'] = {'title': xaxis_title or 'X Axis'}
-        layout_updates['yaxis'] = {'title': yaxis_title or 'Y Axis'}
     
     fig.update_layout(**layout_updates)
     return fig
+
+
+def create_crosstab_table(
+    df,
+    index_col,
+    columns_col,
+    title,
+    values_col=None,
+    aggfunc='count',
+    normalize=None,
+    unique_column='person_id',
+    filter_col1=None, filter_value1=None,
+    filter_col2=None, filter_value2=None,
+    filter_col3=None, filter_value3=None,
+    rename={}, replace={}
+):
+    """
+    Create a crosstab table with multilayer column headers using Dash DataTable.
+    """
+
+    data = df.copy()
+
+    # Apply filters
+    data = _apply_filter(data, filter_col1, filter_value1)
+    data = _apply_filter(data, filter_col2, filter_value2)
+    data = _apply_filter(data, filter_col3, filter_value3)
+
+    # Deduplicate by person + date
+    if 'Date' in data.columns:
+        data = data.drop_duplicates(subset=[unique_column, 'Date'])
+
+    # Helper: support multi-axis for crosstab
+    def _axis_arg(arg):
+        if isinstance(arg, (list, tuple)):
+            return [data[c] for c in arg]
+        return data[arg]
+
+    index_arg = _axis_arg(index_col)
+    columns_arg = _axis_arg(columns_col)
+
+    # Handle normalization
+    norm = False
+    if normalize is True:
+        norm = 'all'
+    elif normalize in ('all', 'index', 'columns'):
+        norm = normalize
+
+    # Build the crosstab
+    if values_col is None:
+        ct = pd.crosstab(index=index_arg, columns=columns_arg, normalize=norm)
+    else:
+        if aggfunc == 'concat':
+            ct = pd.crosstab(
+                index=index_arg,
+                columns=columns_arg,
+                values=data[values_col],
+                aggfunc=lambda x: ', '.join(sorted(set(str(v) for v in x if pd.notna(v) and v != '')))
+            )
+        else:
+            ct = pd.crosstab(
+                index=index_arg,
+                columns=columns_arg,
+                values=data[values_col],
+                aggfunc=aggfunc,
+                normalize=norm
+            )
+
+    ct = ct.reset_index()
+
+    ct = ct.rename(columns=rename).replace(replace)
+
+    dash_columns = []
+    for col in ct.columns:
+        if isinstance(col, tuple):
+            dash_columns.append({
+                "name": [str(c) for c in col],
+                "id": "|".join([str(c) for c in col])
+            })
+        else:
+            dash_columns.append({
+                "name": [str(col)],
+                "id": str(col)
+            })
+
+    ct_flat = ct.copy()
+    ct_flat.columns = [
+        "|".join(str(c) for c in col) if isinstance(col, tuple) else str(col)
+        for col in ct.columns
+    ]
+
+    # Format options
+    percent_format = "{:.1%}"
+    int_format = "{:,.0f}"
+
+    # Data formatting
+    data_records = ct_flat.to_dict("records")
+
+
+    table = html.Div([
+        html.H4(title, style={"textAlign":"center"}),
+        dash_table.DataTable(
+            id="crosstab-table",
+            columns=dash_columns,
+            data=data_records,
+            merge_duplicate_headers=False,
+            style_header={
+                "backgroundColor": "rgb(70,70,70)",
+                "color": "white",
+                "fontWeight": "bold",
+                "textAlign": "center",
+                "fontSize": "13px",
+            },
+            style_cell={
+                "padding": "6px",
+                "textAlign": "center",
+                "fontSize": "12px",
+            },
+            style_table={"overflowX": "scroll"},
+            page_size=50,
+        )
+    ])
+
+    return table
+
 
 def create_age_gender_histogram(df, age_col, gender_col, title, xtitle, ytitle, bin_size,
                                  filter_col1=None, filter_value1=None, 
@@ -376,7 +525,9 @@ def create_horizontal_bar_chart(df, label_col, value_col, title, x_title, y_titl
 
 def create_count(df, unique_column='encounter_id', filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, 
                  filter_col3=None, filter_value3=None, filter_col4=None, filter_value4=None,
-                 filter_col5=None, filter_value5=None, filter_col6=None, filter_value6=None):
+                 filter_col5=None, filter_value5=None, filter_col6=None, filter_value6=None, 
+                 filter_col7=None, filter_value7=None, filter_col8=None, filter_value8=None,
+                 filter_col9=None, filter_value9=None, filter_col10=None, filter_value10=None):
     data = df
     
     # Apply all filters using the helper function
@@ -386,12 +537,19 @@ def create_count(df, unique_column='encounter_id', filter_col1=None, filter_valu
     data = _apply_filter(data, filter_col4, filter_value4)
     data = _apply_filter(data, filter_col5, filter_value5)
     data = _apply_filter(data, filter_col6, filter_value6)
+    data = _apply_filter(data, filter_col7, filter_value7)
+    data = _apply_filter(data, filter_col8, filter_value8)
+    data = _apply_filter(data, filter_col9, filter_value9)
+    data = _apply_filter(data, filter_col10, filter_value10)
     
     unique_visits = data.drop_duplicates(subset=['person_id', 'Date'])
     return str(len(unique_visits))
 
 def create_count_sets(df, unique_column='person_id', filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None,
-                      filter_col3=None, filter_value3=None, **extra_filters):
+                      filter_col3=None, filter_value3=None, filter_col4=None, filter_value4=None,
+                 filter_col5=None, filter_value5=None, filter_col6=None, filter_value6=None, 
+                 filter_col7=None, filter_value7=None, filter_col8=None, filter_value8=None,
+                 filter_col9=None, filter_value9=None, filter_col10=None, filter_value10=None):
     """
     Count unique IDs that satisfy a paired condition across two filters.
     """
@@ -414,14 +572,17 @@ def create_count_sets(df, unique_column='person_id', filter_col1=None, filter_va
     pair_total = set.intersection(*pair_ids)
     filtered = df[df[unique_column].isin(pair_total)]
 
-    # Apply extra filters if provided
-    for i in range(4, 7):
-        col = extra_filters.get(f'filter_col{i}')
-        val = extra_filters.get(f'filter_value{i}')
-        if col is not None and val is not None:
-            filtered = _apply_filter(filtered, col, val)
+    data = _apply_filter(filtered, filter_col4, filter_value4)
+    data = _apply_filter(data, filter_col5, filter_value5)
+    data = _apply_filter(data, filter_col6, filter_value6)
+    data = _apply_filter(data, filter_col7, filter_value7)
+    data = _apply_filter(data, filter_col8, filter_value8)
+    data = _apply_filter(data, filter_col9, filter_value9)
+    data = _apply_filter(data, filter_col10, filter_value10)
 
-    return len(filtered[unique_column].unique())
+    # Apply extra filters if provided
+    
+    return len(data[unique_column].unique())
 
 def create_count_unique(df, unique_column='person_id', filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, 
                  filter_col3=None, filter_value3=None, filter_col4=None, filter_value4=None,

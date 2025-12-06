@@ -2,13 +2,14 @@
   "reports": [
     {
       "report_id": 1,
-      "report_name": "Daily Admissions Report",
+      "report_name": "Blank Report",
       "date_created": "2025-01-01",
       "creator": "Admin",
-      "date_updated": "2025-11-21",
+      "date_updated": "2025-12-03",
       "kind": "dataset",
       "page_name": "admissions_report",
-      "archived": "False"
+      "archived": "False",
+      "updated_by": "admin"
     },
     {
       "report_id": 2,
@@ -150,6 +151,36 @@
       "date_updated": "2025-12-03",
       "updated_by": "admin",
       "page_name": "ahd_screening",
+      "archived": "False"
+    },
+    {
+      "report_id": 16,
+      "report_name": "ADVANCE HIV DISEASE QUARTERY REPORT",
+      "date_created": "2025-12-03",
+      "creator": "admin",
+      "date_updated": "2025-12-03",
+      "updated_by": "admin",
+      "page_name": "ahd_screening_eliza",
+      "archived": "False"
+    },
+    {
+      "report_id": 17,
+      "report_name": "Mental healthNCD",
+      "date_created": "2025-12-03",
+      "creator": "admin",
+      "date_updated": "2025-12-03",
+      "updated_by": "admin",
+      "page_name": "NCD_Mental_Health",
+      "archived": "False"
+    },
+    {
+      "report_id": 18,
+      "report_name": "Eye Monthly Reporting Form",
+      "date_created": "2025-12-04",
+      "creator": "admin",
+      "date_updated": "2025-12-04",
+      "updated_by": "admin",
+      "page_name": "Eye Monthly Reporting Form",
       "archived": "False"
     }
   ]

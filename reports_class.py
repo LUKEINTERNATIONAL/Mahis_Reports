@@ -37,7 +37,7 @@ class ReportTableBuilder:
             num_field = str(row.get("num_field", "ValueN")).strip()
             unique_column = str(row.get("unique_column", "encounter_id")).strip()
             pairs: List[Tuple[str, Any]] = []
-            for i in range(1, 7):
+            for i in range(1, 10):
                 fcol = str(row.get(f"variable{i}", "")).strip()
                 if not fcol:
                     continue

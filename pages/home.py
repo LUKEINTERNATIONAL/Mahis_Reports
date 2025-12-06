@@ -13,7 +13,7 @@ from visualizations import (create_column_chart,
                           create_line_chart,
                           create_age_gender_histogram,
                           create_horizontal_bar_chart,
-                          create_pivot_table)
+                          create_pivot_table,create_crosstab_table)
 from datetime import datetime, timedelta
 
 dash.register_page(__name__, path="/home")
@@ -68,14 +68,26 @@ def create_count_from_config(df, filters):
         filters.get("variable1", ""),
         filters.get("variable2", ""),
         filters.get("variable3", ""),
-        filters.get("variable4", "")
+        filters.get("variable4", ""),
+        filters.get("variable5", ""),
+        filters.get("variable6", ""),
+        filters.get("variable7", ""),
+        filters.get("variable8", ""),
+        filters.get("variable9", ""),
+        filters.get("variable10", "")
     ]
 
     values = [
         parse_filter_value(filters.get("value1", "")),
         parse_filter_value(filters.get("value2", "")),
         parse_filter_value(filters.get("value3", "")),
-        parse_filter_value(filters.get("value4", ""))
+        parse_filter_value(filters.get("value4", "")),
+        parse_filter_value(filters.get("value5", "")),
+        parse_filter_value(filters.get("value6", "")),
+        parse_filter_value(filters.get("value7", "")),
+        parse_filter_value(filters.get("value8", "")),
+        parse_filter_value(filters.get("value9", "")),
+        parse_filter_value(filters.get("value10", ""))
     ]
     active_filters = []
     for var, val in zip(variables, values):
@@ -122,7 +134,7 @@ def build_section_items(filtered, data_opd, delta_days, items_config):
     
     return html.Div(items)
 
-def build_single_chart(filtered, data_opd, delta_days, item_config):
+def build_single_chart(filtered, data_opd, delta_days, item_config, style = "card-2"):
     """Build a single chart based on configuration"""
     chart_type = item_config["type"]
     filters = item_config["filters"]
@@ -139,15 +151,19 @@ def build_single_chart(filtered, data_opd, delta_days, item_config):
         figure = create_histogram_from_config(filtered, filters)
     elif chart_type == "PivotTable":
         figure = create_pivot_table_from_config(filtered, filters)
+    elif chart_type == "CrossTab":
+        figure = create_crosstab_from_config(filtered, filters)
     else:
         # Default empty figure for unknown chart types
         figure = create_empty_figure()
-    
-    return dcc.Graph(
-        id=item_config["filters"]["unique"],
-        figure=figure,
-        className="card-2"
-    )
+    if chart_type in ["Line","Pie","Column","Bar","Histogram","PivotTable"]:
+        return dcc.Graph(
+            id=item_config["filters"]["unique"],
+            figure=figure,
+            className=style
+        )
+    else:
+        return figure
 
 
 def create_line_chart_from_config(data_opd, delta_days, filters):
@@ -370,9 +386,9 @@ def create_pivot_table_from_config(filtered, filters):
                 "x_title": "",
                 "y_title": ""
     """
-    index_col1    = filters.get("index_col1")
+    index_col    = filters.get("index_col1")
     columns       = filters.get("columns")
-    values_col    = filters.get("values_col")
+    values_co    = filters.get("values_col")
     title         = filters.get('title')
     unique_column = filters.get('unique_column')
     aggfunc       = filters.get("aggfunc") or "sum"
@@ -384,9 +400,77 @@ def create_pivot_table_from_config(filtered, filters):
     filter_val3    = parse_filter_value(filters.get('filter_val3'))
 
     return create_pivot_table(
-        filtered, index_col1, columns, values_col, title, unique_column, aggfunc,
+        filtered, index_col, columns, values_co, title, unique_column, aggfunc,
         filter_col1, filter_val1, filter_col2, filter_val2, filter_col3, filter_val3
     )
+
+
+def create_crosstab_from_config(filtered, filters):
+    """
+    Create crosstab table from JSON configuration.
+
+    Example config:
+        {
+            "measure": "crosstab",
+            "title": "Diagnosis × Gender × Age Group",
+            "unique_column": "person_id",
+            "index_col1": "DIAGNOSIS",                # rows
+            "columns": ["Gender", "Age_Group"],       # columns (can be string or list)
+            "values_col": null,                       # None → raw counts; or a field to aggregate
+            "aggfunc": "count",                       # 'count', 'sum', 'nunique', 'mean', 'concat'
+            "normalize": null,                        # null | true | "all" | "index" | "columns"
+            "rename": {"obs_value_coded": "DIAGNOSIS"},
+            "replace": {"Under Five": "Under5", "Over Five": "Over5"},
+
+            "filter_col1": "concept_name",
+            "filter_val1": "Primary diagnosis",
+            "filter_col2": null,
+            "filter_val2": null,
+            "filter_col3": null,
+            "filter_val3": null
+        }
+    """
+    # Helper to parse index/columns if they arrive as comma-separated strings
+    def _as_list_or_str(v):
+        if isinstance(v, str) and ',' in v:
+            return [s.strip() for s in v.split(',') if s.strip()]
+        return v
+
+    index_col     = _as_list_or_str(filters.get("index_col1") or filters.get("index"))
+    columns_col   = _as_list_or_str(filters.get("columns") or filters.get("columns_col"))
+    values_col    = filters.get("values_col") or None
+    title         = filters.get("title")
+    unique_column = filters.get("unique_column") or "person_id"
+    aggfunc       = filters.get("aggfunc") or ("count" if values_col is None else "count")
+    normalize     = filters.get("normalize")  # None | True | 'all' | 'index' | 'columns'
+
+    # Filters (up to three)
+    filter_col1   = filters.get("filter_col1") or None
+    filter_val1   = parse_filter_value(filters.get("filter_val1"))
+    filter_col2   = filters.get("filter_col2") or None
+    filter_val2   = parse_filter_value(filters.get("filter_val2"))
+    filter_col3   = filters.get("filter_col3") or None
+    filter_val3   = parse_filter_value(filters.get("filter_val3"))
+
+    # Optional rename/replace
+    rename        = filters.get("rename") or {}
+    replace       = filters.get("replace") or {}
+
+    return create_crosstab_table(
+        df=filtered,
+        index_col=index_col,
+        columns_col=columns_col,
+        title=title,
+        values_col=values_col,
+        aggfunc=aggfunc,
+        normalize=normalize,
+        unique_column=unique_column,
+        filter_col1=filter_col1, filter_value1=filter_val1,
+        filter_col2=filter_col2, filter_value2=filter_val2,
+        filter_col3=filter_col3, filter_value3=filter_val3,
+        rename=rename, replace=replace
+    )
+
 
 def create_empty_figure():
     """Create empty figure for unsupported chart types"""
@@ -540,7 +624,6 @@ def update_dashboard(urlparams, start_date, end_date, visit_type, hf, age,n_clic
     start_date = pd.to_datetime(start_date).replace(hour=0, minute=0, second=0, microsecond=0)
     end_date = pd.to_datetime(end_date).replace(hour=23, minute=59, second=59, microsecond=0)
     delta_days = (end_date - start_date).days
-
     
     path = os.getcwd()
     json_path = os.path.join(path, 'data','visualizations', 'dashboards.json') 
@@ -561,7 +644,6 @@ def update_dashboard(urlparams, start_date, end_date, visit_type, hf, age,n_clic
         if dashboard['report_name'] == clicked_name:
             dashboard_json = dashboard
  
-    path = os.getcwd()
     parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
     if not os.path.exists(parquet_path):
         raise FileNotFoundError(f"PARQUET file not found at {parquet_path}")
@@ -572,6 +654,7 @@ def update_dashboard(urlparams, start_date, end_date, visit_type, hf, age,n_clic
     
     
     data_opd = pd.read_parquet(parquet_path)
+    # print(sorted(list(data_opd)))
     data_opd['Date'] = pd.to_datetime(data_opd['Date'], format='mixed')
     data_opd['Gender'] = data_opd['Gender'].replace({"M":"Male","F":"Female"})
     # data_opd = data_opd[data_opd['Program']=='OPD Program']

@@ -1,0 +1,82 @@
+{"reports":[
+        {   "id":"1",
+            "report_name":"Health Facility OPD Diagnoses",
+            "program":"OPD Program",
+            "date_created":"2025-12-04",
+            "type":"PivotTable",
+            "filters":
+                {
+                "measure": "chart",
+                "unique": "any",
+                "duration_default": "any",
+                "index_col1": "obs_value_coded",
+                "columns": ["Gender"],
+                "values_col": "encounter_id",
+                "title": "Health Facility OPD Diagnoses",
+                "unique_column": "person_id",
+                "aggfunc": "count",
+                "filter_col1": "Program",
+                "filter_val1": "OPD Program",
+                "filter_col2": "Encounter",
+                "filter_val2": "DIAGNOSIS",
+                "filter_col3": "concept_name",
+                "filter_val3": "Primary diagnosis",
+                "x_title": "",
+                "y_title": ""
+            } 
+        },
+        {   "id":"2",
+            "report_name":"Lumefatrine Artemether Facility Report",
+            "program":"NCD PROGRAM",
+            "date_created":"2025-12-04",
+            "type":"PivotTable",
+            "filters":
+                {
+                "measure": "chart",
+                "unique": "any",
+                "duration_default": "any",
+                "index_col1": "obs_value_coded",
+                "columns": "Age_Group",
+                "values_col": "encounter_id",
+                "title": "Diseases diagnosed at the health facility",
+                "unique_column": "person_id",
+                "aggfunc": "count",
+                "filter_col1": "Program",
+                "filter_val1": "OPD Program",
+                "filter_col2": "Encounter",
+                "filter_val2": "DIAGNOSIS",
+                "filter_col3": "concept_name",
+                "filter_val3": "Primary diagnosis",
+                "x_title": "",
+                "y_title": ""
+            } 
+        },
+        {   "id":"2",
+            "report_name":"CrossTab Test Report",
+            "program":"OPD Program",
+            "date_created":"2025-12-04",
+            "type":"CrossTab",
+            "filters":
+                {
+                "measure": "chart",
+                "unique": "any",
+                "duration_default": "any",
+                "index_col1": "obs_value_coded",
+                "columns": ["Gender", "Age_Group"],
+                "values_col": "encounter_id",
+                "title": "CrossTab Test Report",
+                "unique_column": "person_id",
+                "aggfunc": "count",
+                "filter_col1": "Program",
+                "filter_val1": "OPD Program",
+                "filter_col2": "Encounter",
+                "filter_val2": "DIAGNOSIS",
+                "filter_col3": "concept_name",
+                "filter_val3": "Primary diagnosis",
+                "rename": {"obs_value_coded":"DIAGNOSIS"},
+                "replace": ""
+            } 
+        }
+    ]   
+ 
+}
