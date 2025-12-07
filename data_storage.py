@@ -1,7 +1,7 @@
 import os
 import pandas as pd
-from config import DB_CONFIG_AWS_TEST, QERY_OPD_TEST, QERY_OPD_PROD
-from models import fetch_and_store_data
+from config import QERY,USE_LOCALHOST
+from db_services import DataFetcher
 from datetime import datetime
 import logging
 import json
@@ -9,7 +9,7 @@ import json
 logging.basicConfig(level=logging.DEBUG)
 
 class DataStorage:
-    def __init__(self, query=QERY_OPD_TEST, data_dir="data", filename="latest_data_opd.parquet"):
+    def __init__(self, query=QERY, data_dir="data", filename="latest_data_opd.parquet"):
         self.query = query
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
         os.chdir(self.script_dir)
@@ -21,7 +21,13 @@ class DataStorage:
 
     def fetch_and_save(self):
         """Fetch fresh data from DB and save to Parquet."""
-        df = fetch_and_store_data(self.query)
+        fetcher = DataFetcher(use_localhost=USE_LOCALHOST)
+        df = fetcher.fetch_data(
+            self.query,
+            filename=self.filepath,
+            date_column='Date',
+            batch_size=50000,
+        )
         if df is not None and not df.empty:
             df.to_parquet(self.filepath, index=False)
             logging.info(f"Data saved to {self.filepath} (Parquet format)")
@@ -57,29 +63,29 @@ class DataStorage:
         print(f"Total records: {len(df)}")
         return df
 
-data = ''
-def mahis_programs():
-    """Get unique programs from the data."""
-    df = data
-    return ''
+# data = ''
+# def mahis_programs():
+#     """Get unique programs from the data."""
+#     df = data
+#     return ''
 
-def mahis_facilities():
-    """Get unique facilities from the data."""
-    df = data
-    return ''
+# def mahis_facilities():
+#     """Get unique facilities from the data."""
+#     df = data
+#     return ''
 
-def age_groups():
-    """Get unique age groups from the data."""
-    df = data
-    return ''
+# def age_groups():
+#     """Get unique age groups from the data."""
+#     df = data
+#     return ''
 
-def new_revisit():
-    """Get unique new/revisit categories from the data."""
-    df = data
-    return ''
+# def new_revisit():
+#     """Get unique new/revisit categories from the data."""
+#     df = data
+#     return ''
 
 if __name__ == "__main__":
-    storage = DataStorage(query=QERY_OPD_TEST)
+    storage = DataStorage(query=QERY)
     storage.fetch_and_save()
     storage.preview_data()
     storage.save_dcc_dropdown_json()

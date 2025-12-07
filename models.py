@@ -1,34 +1,34 @@
-import pandas as pd
-import os
-from db_services import DataFetcher
-from config import USE_LOCALHOST
-import logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# import pandas as pd
+# import os
+# from db_services import DataFetcher 
+# from config import USE_LOCALHOST
+# import logging
+# logging.basicConfig(level=logging.INFO)
+# logger = logging.getLogger(__name__)
 
-def fetch_and_store_data(query, filename="latest_data_opd.csv"):
-    """
-    Fetch data from the database using the provided query and store it in a CSV file.
+# def fetch_and_store_data(query, filename="latest_data_opd.csv"):
+#     """
+#     Fetch data from the database using the provided query and store it in a CSV file.
     
-    :param query: SQL query to fetch data
-    :param filename: Path to the CSV file where data will be stored
-    """
-    # Fetch data from the database
-    fetcher = DataFetcher(use_localhost=USE_LOCALHOST)
-    # Ensure the directory exists
-    path = os.getcwd()
-    data_dir = os.path.join(os.getcwd(), "data")
-    os.makedirs(data_dir, exist_ok=True)
+#     :param query: SQL query to fetch data
+#     :param filename: Path to the CSV file where data will be stored
+#     """
+#     # Fetch data from the database
+#     fetcher = DataFetcher(use_localhost=USE_LOCALHOST)
+#     # Ensure the directory exists
+#     path = os.getcwd()
+#     data_dir = os.path.join(os.getcwd(), "data")
+#     os.makedirs(data_dir, exist_ok=True)
 
-    try:
-        df = fetcher.fetch_data(
-            query,
-            filename=f'{path}/data/latest_data_opd.parquet',
-            date_column='Date',
-            batch_size=50000
-        )
-    except Exception as e:
-        logger.error(f"Data fetch operation failed: {e}")
+#     try:
+#         df = fetcher.fetch_data(
+#             query,
+#             filename=f'{path}/data/latest_data_opd.parquet',
+#             date_column='Date',
+#             batch_size=50000
+#         )
+#     except Exception as e:
+#         logger.error(f"Data fetch operation failed: {e}")
     
-    # Store the fetched data in a CSV file
+#     # Store the fetched data in a CSV file
 

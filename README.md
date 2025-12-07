@@ -16,26 +16,9 @@
 
 3. **Install dependencies**
     ```bash
-    pip install pandas
-    pip install numpy
-    pip install mysql-connector-python
-    pip install sshtunnel
-    pip install PyMySQL
-    pip install "paramiko<3.0"
-    pip install plotly
-    pip install dash
-    pip install isoweek
-    pip install openpyxl
-    pip install gunicorn
-    pip install pyarrow
-    pip install dash-bootstrap-components
-    pip install --upgrade typing_extensions
-    ```
-
-    Set the app directory:
-    ```bash
+    pip install -r requirements.txt
     export DASH_APP_DIR=/var/www/dash_plotly_mahis
-    ```
+    ```bash
 
 4. **Update configuration**  
    Edit the `config.py` file to point to your database.  

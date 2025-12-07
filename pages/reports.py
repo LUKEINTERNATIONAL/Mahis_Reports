@@ -12,8 +12,6 @@ from dash.exceptions import PreventUpdate
 from reports_class import ReportTableBuilder
 from visualizations import create_count, create_sum, create_count_sets, create_sum_sets
 
-from data_storage import mahis_programs, mahis_facilities, age_groups
-
 dash.register_page(__name__, path="/hmis_reports")
 
 relative_week = [str(week) for week in range(1, 53)]  # Can extend to 53 if needed
@@ -140,7 +138,7 @@ layout = html.Div(className="container", children=[
                     id='report_name',
                     options=[
                         {'label': hf, 'value': hf}
-                        for hf in mahis_facilities()
+                        for hf in []
                     ],
                     value=None,
                     clearable=True
