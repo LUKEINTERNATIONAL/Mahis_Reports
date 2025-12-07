@@ -11,4 +11,4 @@ openpyxl
 gunicorn
 pyarrow
 dash-bootstrap-components
---upgrade typing_extensions
+typing_extensions
