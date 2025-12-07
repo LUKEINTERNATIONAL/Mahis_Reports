@@ -1,0 +1,33 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  mahis-dash:
+    build: .
+    container_name: mahis-dash-plotly
+    ports:
+      - "8050:8050"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DASH_APP_DIR=/var/www/dash_plotly_mahis
+      - DASH_DEBUG=${DASH_DEBUG:-false}
+      - DATA_UPDATE_INTERVAL=${DATA_UPDATE_INTERVAL:-30}
+      - INITIAL_DATA_LOAD=${INITIAL_DATA_LOAD:-true}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config.py:/app/config.py:ro
+      - ./pages:/app/pages:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8050/_health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - mahis-network
+
+networks:
+  mahis-network:
+    driver: bridge

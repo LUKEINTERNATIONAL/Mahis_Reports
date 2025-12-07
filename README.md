@@ -8,7 +8,7 @@
     sudo apt-get update
     sudo apt-get install -y python3
     ```
-
+re
 2. **Install pip**
     ```bash
     sudo apt-get install -y python3-pip
@@ -16,6 +16,9 @@
 
 3. **Install dependencies**
     ```bash
+    <!-- VENV -->
+    python3 -m venv venv
+    source venv/bin/activate
     pip install -r requirements.txt
     export DASH_APP_DIR=/var/www/dash_plotly_mahis
     ```bash
@@ -44,10 +47,13 @@
     ```bash
     nohup python3 -m gunicorn --workers 4 --bind 0.0.0.0:8050 wsgi:server > gunicorn.log 2>&1 &
     ```
-
     To stop:
     ```bash
     pkill -9 gunicorn
+    ```
+    To deactivate venv:
+    ```bash
+    deactivate
     ```
 ### Modifying data in the pages
 To modify data, go to /pages/, select the file to modify and change the filters.
@@ -76,5 +82,45 @@ To modify data, go to /pages/, select the file to modify and change the filters.
     This is for summation of numerical fields.
     Requires to specify dataframe (df) and numerical column as mandatory field and filters as optional by specifying "column name" and "value name". It takes upto 6 optional columns and values
 
+## Using DOCKER
+1. Prerequisites
+    Docker
+    Docker Compose
+
+2. clone repo
+    ```bash
+    git clone <repository-url>
+    cd mahis-dash-plotly
+    ```bash
+
+3. copy configurations and update them
+    ```bash
+    cp config.example.py config.py
+    ```bash
+
+4. start app
+    ```bash
+    docker-compose up -d
+    ```bash
+5. try the application
+    ```text
+    http://localhost:8050
+    ```text
+
+6. Monitor
+    ```bash
+    # View logs
+    docker-compose logs -f
+
+    # View specific service logs
+    docker-compose logs -f mahis-dash
+
+    # Check service status
+    docker-compose ps
+
+    # View container health
+    docker-compose exec mahis-dash python -c "import requests; print(requests.get('http://localhost:8050/_health').text)"
+
+    ```bash
 
 ***
