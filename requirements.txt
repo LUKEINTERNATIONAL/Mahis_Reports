@@ -3,7 +3,7 @@ numpy
 mysql-connector-python
 sshtunnel
 PyMySQL
-"paramiko<3.0"
+paramiko<3.0
 plotly
 dash
 isoweek
