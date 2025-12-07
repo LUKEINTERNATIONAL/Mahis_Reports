@@ -88,7 +88,7 @@ def validate_dashboard_json(contents):
                                        'Facility_CODE', 'User', 'District', 
                                        'Encounter', 'Home_district', 'TA', 
                                        'Village', 'visit_days', 'obs_value_coded', 
-                                       'concept_name', 'Value', 
+                                       'concept_name', 'Value',"",
                                        'ValueN', 'DrugName', 'Value_name', 'new_revisit','count','count_set','sum']
     try:
         data = json.loads(contents)
@@ -124,17 +124,52 @@ def validate_dashboard_json(contents):
                     return False, "'filters' in counts must be a dict."
                 
                 # check if the values (data columns) are matching. I have indicated the list of known columns above
-                target_keys = ["measure","unique","variable1", "value1","variable2", "value2","variable3", "value3","variable4", "value4","variable5", "value5","variable6", "value6"]
+                target_keys = ["measure","unique","variable1","variable2","variable3","variable4","variable5","variable6"]
                 
                 selected_values = []
                 for key in target_keys:
                     if key in c["filters"]:
-                        selected_values.extend([key, c["filters"][key]])
-                print(selected_values)
-
+                       if c["filters"][key] not in actual_keys_in_data:
+                           if isinstance(ch["filters"][key], list):
+                                for v in ch["filters"][key]:
+                                    if v not in actual_keys_in_data:
+                                        selected_values.append(v)
+                                else:
+                                    selected_values.append(ch["filters"][key])
+                if len(selected_values)>0:
+                    return False, f"The following filter values in counts are invalid data columns: {', '.join(selected_values)}"
+            for chart in charts['sections']:
+                for ch in chart['items']:
+                    if not isinstance(ch, dict):
+                        return False, "Each item in 'charts' must be an object."
+                    required_chart_keys = ["id", "name", "type", "filters"]
+                    if not all(k in ch for k in required_chart_keys):
+                        return False, (
+                            "Each item in 'charts' must contain 'id', 'name', 'type', and 'filters'."
+                        )
+                    if not isinstance(ch["filters"], dict):
+                        return False, "'filters' in charts must be a dict."
+                    # check if the values (data columns) are matching. I have indicated the list of known columns above
+                    target_keys = ["date_col","y_col","label_col","value_col",
+                                "names_col","values_col","x_col","index_col1","columns",
+                                "values_col","unique_column","filter_col1","filter_col2","filter_col3"]
+                    selected_values = []
+                    for key in target_keys:
+                        if key in ch["filters"]:
+                            if ch["filters"][key] not in actual_keys_in_data:
+                                if isinstance(ch["filters"][key], list):
+                                    for v in ch["filters"][key]:
+                                        if v not in actual_keys_in_data:
+                                            selected_values.append(v)
+                                else:
+                                    selected_values.append(ch["filters"][key])
+                    if len(selected_values)>0:
+                        return False, f"The following filter values in charts are invalid data columns: {', '.join(selected_values)}"
         return True, "Dry run successful! JSON structure is valid."
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return False, f"Invalid JSON format: {e}"
 
 def upload_dashboard_json(contents):
@@ -150,8 +185,78 @@ def upload_dashboard_json(contents):
         json.loads(decoded_bytes.decode('utf-8'))
     except Exception as e:
         return f"JSON validation failed before saving: {e}"
+    with open(dashboards_json_path, 'wb') as f:
+        f.write(decoded_bytes)
 
-    # Save JSON file
+    return "Upload successful!"
+
+# Program Reports Upload and Dry Run
+def validate_prog_reports_json(contents):
+    """
+    Validates that the uploaded JSON file:
+    - Is a list
+    - Contains objects with required keys
+    - visualization_types must have counts or charts
+    - counts objects must contain id, name, and filters
+    """
+
+    actual_keys_in_data = ['person_id', 'encounter_id', 
+                                       'Gender', 'Age', 'Age_Group', 
+                                       'Date', 'Program', 'Facility', 
+                                       'Facility_CODE', 'User', 'District', 
+                                       'Encounter', 'Home_district', 'TA', 
+                                       'Village', 'visit_days', 'obs_value_coded', 
+                                       'concept_name', 'Value',"",
+                                       'ValueN', 'DrugName', 'Value_name', 'new_revisit','count','count_set','sum']
+    try:
+        data = json.loads(contents)
+        if not isinstance(data, dict):
+            return False, "JSON must be a dict object."
+
+        for item in data['reports']:
+            required_keys = ["id", "report_name","program", "type", "filters"]
+            if not all(k in item for k in required_keys):
+                return False, "Report objects are missing required keys. Required: id, report_name,program, type, filters"
+
+            vis = item.get("filters", {})
+            if not isinstance(vis, dict):
+                return False, "'filters' must be an object."
+            
+            target_keys = ["date_col","y_col","label_col","value_col",
+                                "names_col","values_col","x_col","index_col1","columns",
+                                "values_col","unique_column","filter_col1","filter_col2","filter_col3"]
+            selected_values = []
+            for key in target_keys:
+                if key in vis:
+                    if vis[key] not in actual_keys_in_data:
+                        if isinstance(vis[key], list):
+                            for v in vis[key]:
+                                if v not in actual_keys_in_data:
+                                    selected_values.append(v)
+                        else:
+                            selected_values.append(vis[key])
+            if len(selected_values)>0:
+                return False, f"The following filter values in charts are invalid data columns: {', '.join(selected_values)}"
+        return True, "Dry run successful! JSON structure is valid."
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return False, f"Invalid JSON format: {e}"
+
+def upload_prog_reports_json(contents):
+    if contents is None:
+        return "No file to upload"
+    dashboards_json_path = os.path.join(path, 'data','visualizations', 'validated_prog_reports.json')
+    try:
+        content_type, content_string = contents.split(',')
+        decoded_bytes = base64.b64decode(content_string)
+    except Exception as e:
+        return f"Failed to decode file: {e}"
+    try:
+        json.loads(decoded_bytes.decode('utf-8'))
+    except Exception as e:
+        return f"JSON validation failed before saving: {e}"
     with open(dashboards_json_path, 'wb') as f:
         f.write(decoded_bytes)
 

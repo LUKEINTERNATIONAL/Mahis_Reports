@@ -10,7 +10,8 @@ import io
 from modal_functions import (validate_excel_file, load_reports_data, save_reports_data, 
                         check_existing_report, get_next_report_id, update_or_create_report,load_excel_file,
                         save_excel_file, update_report_metadata, archive_report, load_preview_data,
-                        create_count_item,create_chart_item, create_section,create_chart_fields,validate_dashboard_json,upload_dashboard_json,CHART_TEMPLATES)
+                        create_count_item,create_chart_item, create_section,create_chart_fields,validate_dashboard_json,
+                        upload_dashboard_json,validate_prog_reports_json,upload_prog_reports_json,CHART_TEMPLATES)
 
 dash.register_page(__name__, path="/reports_config", title="Admin Dashboard")
 
@@ -443,6 +444,96 @@ upload_dashboard_json_popup_modal = html.Div([
         'alignItems': 'center',
         'zIndex': '1000'
     })
+upload_prog_reports_json_popup_modal = html.Div([
+        html.Div([
+            html.H3("Upload Json Template", style={'marginBottom': '20px'}),
+            
+            dcc.Upload(
+                id='template-prog-reports-file-upload',
+                children=html.Div([
+                    'Drag and Drop or ',
+                    html.A('Select Files')
+                ]),
+                style={
+                    'width': '100%',
+                    'height': '60px',
+                    'lineHeight': '60px',
+                    'borderWidth': '1px',
+                    'borderStyle': 'dashed',
+                    'borderRadius': '5px',
+                    'textAlign': 'center',
+                    'marginBottom': '20px'
+                },
+                multiple=False,
+                accept='.json'
+            ),
+            
+            html.Div(id='upload-prog-reports-validation-result', style={'marginBottom': '20px'}),
+            html.Div(id='existing-prog-reports-report-warning', style={'marginBottom': '20px'}),
+            
+            html.Div([
+                html.Button(
+                    "Dry Run",
+                    id="dry-prog-reports-run-btn",
+                    n_clicks=0,
+                    style={
+                        'backgroundColor': '#ffc107',
+                        'color': 'black',
+                        'border': 'none',
+                        'padding': '8px 16px',
+                        'borderRadius': '6px',
+                        'cursor': 'pointer',
+                        'marginRight': '10px'
+                    }
+                ),
+                html.Button(
+                    "Upload",
+                    id="upload-prog-reports-confirm-btn",
+                    n_clicks=0,
+                    style={
+                        'backgroundColor': '#198754',
+                        'color': 'white',
+                        'border': 'none',
+                        'padding': '8px 16px',
+                        'borderRadius': '6px',
+                        'cursor': 'pointer',
+                        'marginRight': '10px'
+                    },
+                    disabled=True
+                ),
+                html.Button(
+                    "Cancel",
+                    id="upload-prog-reports-cancel-btn",
+                    n_clicks=0,
+                    style={
+                        'backgroundColor': '#6c757d',
+                        'color': 'white',
+                        'border': 'none',
+                        'padding': '8px 16px',
+                        'borderRadius': '6px',
+                        'cursor': 'pointer'
+                    }
+                ),
+            ], style={'textAlign': 'center'})
+        ], style={
+            'backgroundColor': 'white',
+            'padding': '30px',
+            'borderRadius': '10px',
+            'width': '500px',
+            'margin': 'auto'
+        })
+    ], id="upload-prog-reports-popup", style={
+        'position': 'fixed',
+        'top': '0',
+        'left': '0',
+        'width': '100%',
+        'height': '100%',
+        'backgroundColor': 'rgba(0,0,0,0.5)',
+        'display': 'none',
+        'justifyContent': 'center',
+        'alignItems': 'center',
+        'zIndex': '1000'
+    })
 archive_popup_modal = html.Div([
         html.Div([
             html.H3("Edit Excel File", id="edit-popup-title", style={'marginBottom': '20px'}),
@@ -709,6 +800,7 @@ layout = html.Div(
                 preview_modal,
                 upload_excel_popup_modal,
                 upload_dashboard_json_popup_modal,
+                upload_prog_reports_json_popup_modal,
                 archive_popup_modal,
                 archive_confirmation_modal,
                 reports_table,
@@ -782,7 +874,7 @@ def toggle_upload_popup(add_clicks, cancel_clicks):
     
     return dash.no_update
 
-# json
+# json dashboard
 @callback(
     [Output("upload-dashboard-popup", "style"),
      Output("template-dashboard-file-upload", "contents"),
@@ -807,7 +899,31 @@ def toggle_upload_popup(add_clicks, cancel_clicks):
         return {'display': 'none'}, None, "", ""
     
     return dash.no_update
-
+# json prog reports
+@callback(
+    [Output("upload-prog-reports-popup", "style"),
+     Output("template-prog-reports-file-upload", "contents"),
+     Output("upload-prog-reports-validation-result", "children"),
+     Output("existing-prog-reports-report-warning", "children")],
+    [Input("add-prog-report-temp-btn", "n_clicks"),
+     Input("upload-prog-reports-cancel-btn", "n_clicks")],
+    prevent_initial_call=True
+)
+def toggle_upload_popup(add_clicks, cancel_clicks):
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return dash.no_update
+    
+    trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    
+    if trigger_id == "add-prog-report-temp-btn":
+        return {'display': 'flex', 'position': 'fixed', 'top': '0', 'left': '0', 
+                'width': '100%', 'height': '100%', 'backgroundColor': 'rgba(0,0,0,0.5)', 
+                'justifyContent': 'center', 'alignItems': 'center', 'zIndex': '1000'}, None, "", ""
+    elif trigger_id == "upload-prog-reports-cancel-btn":
+        return {'display': 'none'}, None, "", ""
+    
+    return dash.no_update
 
 @callback(
     [Output("upload-validation-result", "children", allow_duplicate=True),
@@ -945,16 +1061,61 @@ def process_dashboard_json(uploaded_contents, dry_run_clicks, upload_clicks, can
         decoded = base64.b64decode(content_string).decode('utf-8')
     except:
         return "Failed to read file content.", True, "", contents
-
-    # ---------------- DRY RUN ----------------
     if action == "dry-dashboard-run-btn":
         ok, message = validate_dashboard_json(decoded)
         color = "green" if ok else "red"
         return html.Div(message, style={'color': color}), not ok, "", contents
-
-    # ---------------- UPLOAD ----------------
     if action == "upload-dashboard-confirm-btn":
         result = upload_dashboard_json(contents)
+        return html.Div(result, style={'color': 'green'}), True, "", contents
+    
+@callback(
+    Output('upload-prog-reports-validation-result', 'children',allow_duplicate=True),
+    Output('upload-prog-reports-confirm-btn', 'disabled',allow_duplicate=True),
+    Output('existing-prog-reports-report-warning', 'children',allow_duplicate=True),
+
+    Output('template-prog-reports-file-upload', 'contents',allow_duplicate=True),
+
+    Input('template-prog-reports-file-upload', 'contents'),
+    Input('dry-prog-reports-run-btn', 'n_clicks'),
+    Input('upload-prog-reports-confirm-btn', 'n_clicks'),
+    Input('upload-prog-reports-cancel-btn', 'n_clicks'),
+
+    State('template-prog-reports-file-upload', 'filename'),
+    State('template-prog-reports-file-upload', 'contents'),
+    prevent_initial_call=True
+)
+def process_prog_dashboard_json(uploaded_contents, dry_run_clicks, upload_clicks, cancel_clicks,
+                 filename, contents):
+    ctx = dash.callback_context
+
+    action = ctx.triggered[0]["prop_id"].split(".")[0]
+    if action == "upload-prog-reports-cancel-btn":
+        return "", True, "", None
+    if action == "template-prog-reports-file-upload":
+        if filename:
+            msg = html.Div([
+                html.B(f"File selected: {filename}"),
+                html.Br(),
+                "Please click Dry Run to validate the JSON template."
+            ], style={'color': 'blue'})
+            return msg, True, "", contents
+        else:
+            return "Upload a JSON file first.", True, "", contents
+    if not contents:
+        return "Please upload a JSON file first.", True, "", None
+
+    try:
+        _, content_string = contents.split(',')
+        decoded = base64.b64decode(content_string).decode('utf-8')
+    except:
+        return "Failed to read file content.", True, "", contents
+    if action == "dry-prog-reports-run-btn":
+        ok, message = validate_prog_reports_json(decoded)
+        color = "green" if ok else "red"
+        return html.Div(message, style={'color': color}), not ok, "", contents
+    if action == "upload-prog-reports-confirm-btn":
+        result = upload_prog_reports_json(contents)
         return html.Div(result, style={'color': 'green'}), True, "", contents
 
 @callback(
