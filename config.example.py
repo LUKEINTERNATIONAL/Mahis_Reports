@@ -26,7 +26,7 @@ DB_CONFIG_LOCAL = {
 
 
 # on production remove COLLATE utf8mb3_general_ci
-QERY_OPD_TEST = """
+QERY = """
 SELECT 
     main.*,
     CASE 
