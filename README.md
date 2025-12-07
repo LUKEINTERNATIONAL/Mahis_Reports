@@ -27,6 +27,9 @@ re
    Edit the `config.py` file to point to your database.  
    (The config includes the SQL query required to pull data and store it to a CSV in `/data/`.)
 
+    NOTE: if config includes ssh files, create a directory in the parent folder /ssh and add the files. The config.py should include the file name.
+
+    
     ```bash
     mv config.example.py config.py
     ```
