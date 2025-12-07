@@ -1,3 +1,8 @@
+USE_LOCALHOST = False
+START_DATE = '2025-12-01'
+LOAD_FRESH_DATA = True # Set to True to always start from START_DATE and fetch fresh data. Not recommended for large datasets.
+PREFIX_NAME = '/'  # Set to your desired prefix for https paths, e.g., '/myapp'
+
 
 DB_CONFIG = {
     'host': 'hostname',
