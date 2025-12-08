@@ -18,6 +18,9 @@ from datetime import datetime, timedelta
 
 dash.register_page(__name__, path="/home")
 
+path = os.getcwd()
+json_path = os.path.join(path, 'data', 'visualizations', 'validated_dashboards.json')
+
 # Load data once to get date range
 min_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 max_date = datetime.now().replace(hour=23, minute=59, second=59, microsecond=0)
@@ -585,8 +588,6 @@ layout = html.Div(className="container", children=[
         Input('active-button-store', 'data')])
 
 def update_menu(menu_items, color):
-    path = os.getcwd()
-    json_path = os.path.join(path, 'data', 'visualizations', 'dashboards.json')
     
     with open(json_path, 'r') as f:
         menu_json = json.load(f)
@@ -625,8 +626,6 @@ def update_dashboard(urlparams, start_date, end_date, visit_type, hf, age,n_clic
     end_date = pd.to_datetime(end_date).replace(hour=23, minute=59, second=59, microsecond=0)
     delta_days = (end_date - start_date).days
     
-    path = os.getcwd()
-    json_path = os.path.join(path, 'data','visualizations', 'dashboards.json') 
     with open(json_path, 'r') as f:
         menu_json = json.load(f)
     name_to_title = {d["report_id"]: d["report_name"] for d in menu_json}
@@ -648,7 +647,6 @@ def update_dashboard(urlparams, start_date, end_date, visit_type, hf, age,n_clic
     if not os.path.exists(parquet_path):
         raise FileNotFoundError(f"PARQUET file not found at {parquet_path}")
     
-    json_path = os.path.join(path, 'data', 'visualizations','dashboards.json')
     if not os.path.exists(json_path):
         raise FileNotFoundError(f"Dashboard not found: {clicked_title}")
     
