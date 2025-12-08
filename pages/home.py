@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 dash.register_page(__name__, path="/home")
 
 path = os.getcwd()
-json_path = os.path.join(path, 'data', 'visualizations', 'validated_dashboards.json')
+json_path = os.path.join(path, 'data', 'visualizations', 'validated_dashboard.json')
 
 # Load data once to get date range
 min_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
