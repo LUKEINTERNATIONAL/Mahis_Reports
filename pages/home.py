@@ -608,7 +608,7 @@ def update_menu(menu_items, color):
 @callback(
     [Output('dashboard-container', 'children'),
      Output('dashboard-hf-filter', 'options'),
-     Output('active-button-store', 'data',allow_duplicate=True)],
+     Output('active-button-store', 'data')],
     [
         Input('url-params-store', 'data'),
         Input('dashboard-date-range-picker', 'start_date'),
