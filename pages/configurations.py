@@ -35,11 +35,10 @@ DASHBOARD_SCHEMA = {
 
 # Load existing dashboards
 path = os.getcwd()
-dashboards_json_path = os.path.join(path, 'data','visualizations', 'validated_dashboards.json')
+dashboards_json_path = os.path.join(path, 'data','visualizations', 'validated_dashboard.json')
 try:
     with open(dashboards_json_path, 'r') as f:
         dashboards_data = json.load(f)
-        # If it's a single dashboard, convert to list
         if isinstance(dashboards_data, dict):
             dashboards_data = [dashboards_data]
 except FileNotFoundError:
@@ -816,6 +815,7 @@ layout = html.Div(
                 dcc.Store(id="excel-sheet-data", data=None),
                 dcc.Store(id="current-archive-report", data=None),
                 dcc.Download(id="download-template"),
+                dcc.Download(id="download-xlsx-report"),
                 dcc.Store(id="preview-data-store", data=None),  # Add this line
 
                 # Dashboard
@@ -1207,7 +1207,16 @@ def toggle_edit_popup(edit_clicks, cancel_clicks, reports_table):
         return {'display': 'none'}, None, "", None, None, "", None
     
     if "edit-btn" in trigger_id:
-        # Get the report_id from the button that was clicked
+        # Determine which edit button was clicked
+        button_index = None
+        for i, count in enumerate(edit_clicks):
+            if count and count > 0:
+                button_index = i
+                break
+
+        if button_index is None:
+            return dash.no_update
+
         button_id = ctx.triggered[0]['prop_id'].split('.')[0]
         button_id_dict = json.loads(button_id.replace("'", '"'))
         report_id = button_id_dict['index']
@@ -1384,9 +1393,10 @@ def toggle_archive_popup(archive_clicks, cancel_clicks, archive_buttons_ids, rep
             if clicks and clicks > 0:  # Only proceed if button was actually clicked
                 button_index = i
                 break
-        
         if button_index is None:
             return dash.no_update
+        # if button_index == 0:
+        #     return dash.no_update
         
         # Get the report_id from the button that was clicked
         report_id = archive_buttons_ids[button_index]['index']
@@ -1417,6 +1427,47 @@ def toggle_archive_popup(archive_clicks, cancel_clicks, archive_buttons_ids, rep
         return {'display': 'flex'}, current_report, confirmation_message
     
     return dash.no_update
+
+@callback(
+     Output("download-xlsx-report", "data"),
+     Input({"type": "download-btn", "index": dash.ALL}, "n_clicks"),
+     State({"type": "download-btn", "index": dash.ALL}, "id"),
+    prevent_initial_call=True
+)
+def download_xlsx_report(download_clicks,download_ids):
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return dash.no_update
+    
+    trigger_id = ctx.triggered[0]['prop_id']
+    
+    if "download-btn" in trigger_id:
+        # Find which archive button was clicked
+        button_index = None
+        for i, clicks in enumerate(download_clicks):
+            if clicks and clicks > 0:  # Only proceed if button was actually clicked
+                button_index = i
+                break
+        
+        if button_index is None:
+            return dash.no_update
+        
+        # Get the report_id from the button that was clicked
+        report_id = download_ids[button_index]['index']
+        
+        # Find the report data
+        data = load_reports_data()
+        reports = data.get("reports", [])
+        current_report = None
+        
+        for report in reports:
+            if report.get("report_id") == report_id:
+                current_report = report
+                break
+        if not current_report:
+            return dash.no_update
+        return dcc.send_file(os.path.join("data","uploads",f"{current_report.get('page_name')}.xlsx"))
+    # return 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,' + encode_excel_for_download(current_report.get("page_name")), filename=f"{current_report.get('page_name')}.xlsx"
 
 
 @callback(
@@ -1800,10 +1851,8 @@ def update_chart_fields(chart_type):
      State({"type": "chart-index_col1", "section": dash.ALL, "index": dash.ALL}, "value"),
      State({"type": "chart-columns", "section": dash.ALL, "index": dash.ALL}, "value"),
      State({"type": "chart-aggfunc", "section": dash.ALL, "index": dash.ALL}, "value"),
-     # ADD MISSING FIELD:
      State({"type": "chart-duration_default", "section": dash.ALL, "index": dash.ALL}, "value"),  # For all chart types
      State({"type": "chart-colormap", "section": dash.ALL, "index": dash.ALL}, "value"),  # For Pie charts
-     # Common filter fields
      State({"type": "chart-filter_col1", "section": dash.ALL, "index": dash.ALL}, "value"),
      State({"type": "chart-filter_val1", "section": dash.ALL, "index": dash.ALL}, "value"),
      State({"type": "chart-filter_col2", "section": dash.ALL, "index": dash.ALL}, "value"),
@@ -2094,365 +2143,3 @@ def toggle_confirmation_modal(show_confirmation):
         return {"display": "block", "position": "fixed", "top": "50%", "left": "50%", "transform": "translate(-50%, -50%)", "zIndex": "1000", "background": "white", "padding": "20px", "borderRadius": "5px", "boxShadow": "0 2px 10px rgba(0,0,0,0.1)"}
     else:
         return {"display": "none"}
-    
-    # layout = html.Div([
-#     html.H1("Reports Configuration", style={'textAlign': 'center'}),
-#     html.P("Step 1: Update an excel template as provided on the menu below. Be sure to fill all worksheets", style={'textAlign': 'center'}),
-#     html.P("Step 2: Upload the worksheet. Dry run to check if the values are consistent with requirements", style={'textAlign': 'center'}),
-#     html.P("Step 3: To edit or archive, click on the item end and edit or review. The edit will open a popup editing tool with worksheets", style={'textAlign': 'center'}),
-
-#     # --- Top action buttons ---
-#     html.Div([
-#         html.Button(
-#             "Add XLSX-DataSet Report",
-#             id="add-from-template-btn",
-#             n_clicks=0,
-#             style={
-#                 'backgroundColor': '#0d6efd',
-#                 'color': 'white',
-#                 'border': 'none',
-#                 'padding': '10px 16px',
-#                 'borderRadius': '6px',
-#                 'cursor': 'pointer',
-#                 'marginRight': '10px'
-#             }
-#         ),
-#         html.Button(
-#             "Download XLSX Template",
-#             id="download-sample",
-#             n_clicks=0,
-#             style={
-#                 'backgroundColor': '#0d6efd',
-#                 'color': 'white',
-#                 'border': 'none',
-#                 'padding': '10px 16px',
-#                 'borderRadius': '6px',
-#                 'cursor': 'pointer',
-#                 'marginRight': '10px'
-#             }
-#         ),
-#         html.Button(
-#             "Add dashboard",
-#             id="add-dashboard",
-#             n_clicks=0,
-#             style={
-#                 'backgroundColor': "#198754",
-#                 'color': 'white',
-#                 'border': 'none',
-#                 'padding': '10px 16px',
-#                 'borderRadius': '6px',
-#                 'cursor': 'pointer',
-#                 'marginRight': '10px'
-#             }
-#         ),
-#         html.Button(
-#             "Preview Data",
-#             id="preview-data",
-#             n_clicks=0,
-#             style={
-#                 'backgroundColor': "#9F799D",
-#                 'color': 'white',
-#                 'border': 'none',
-#                 'padding': '10px 16px',
-#                 'borderRadius': '6px',
-#                 'cursor': 'pointer',
-#                 'marginRight': '10px'
-#             }
-#         ),
-#         html.Button(
-#             "Logout",
-#             id="logout-button",
-#             n_clicks=0,
-#             style={
-#                 'backgroundColor': '#6c757d',
-#                 'color': 'white',
-#                 'border': 'none',
-#                 'padding': '10px 16px',
-#                 'borderRadius': '6px',
-#                 'cursor': 'pointer'
-#             }
-#         ),
-#     ], style={
-#         'textAlign': 'center',
-#         'marginBottom': '20px'
-#     }),
-
-#         # Preview Data Popup Modal
-#     html.Div([
-#         html.Div([
-#             html.H3("Preview Data", style={'marginBottom': '20px'}),
-            
-#             html.Div(id="preview-data-info", style={'marginBottom': '20px'}),
-            
-#             # Data table container
-#             html.Div(id="preview-data-table", style={'maxHeight': '500px', 'overflowY': 'auto', 'marginBottom': '20px'}),
-            
-#             html.Div([
-#                 html.Button(
-#                     "Close",
-#                     id="close-preview-btn",
-#                     n_clicks=0,
-#                     style={
-#                         'backgroundColor': '#6c757d',
-#                         'color': 'white',
-#                         'border': 'none',
-#                         'padding': '8px 16px',
-#                         'borderRadius': '6px',
-#                         'cursor': 'pointer'
-#                     }
-#                 ),
-#             ], style={'textAlign': 'center'})
-#         ], style={
-#             'backgroundColor': 'white',
-#             'padding': '30px',
-#             'borderRadius': '10px',
-#             'width': '90%',
-#             'maxWidth': '1400px',
-#             'maxHeight': '90vh',
-#             'overflowY': 'auto',
-#             'margin': 'auto'
-#         })
-#     ], id="preview-popup", style={
-#         'position': 'fixed',
-#         'top': '0',
-#         'left': '0',
-#         'width': '100%',
-#         'height': '100%',
-#         'backgroundColor': 'rgba(0,0,0,0.5)',
-#         'display': 'none',
-#         'justifyContent': 'center',
-#         'alignItems': 'center',
-#         'zIndex': '1000'
-#     }),
-
-#     # Upload Popup Modal
-#     html.Div([
-#         html.Div([
-#             html.H3("Upload Template File", style={'marginBottom': '20px'}),
-            
-#             dcc.Upload(
-#                 id='template-file-upload',
-#                 children=html.Div([
-#                     'Drag and Drop or ',
-#                     html.A('Select Files')
-#                 ]),
-#                 style={
-#                     'width': '100%',
-#                     'height': '60px',
-#                     'lineHeight': '60px',
-#                     'borderWidth': '1px',
-#                     'borderStyle': 'dashed',
-#                     'borderRadius': '5px',
-#                     'textAlign': 'center',
-#                     'marginBottom': '20px'
-#                 },
-#                 multiple=False,
-#                 accept='.xlsx'
-#             ),
-            
-#             html.Div(id='upload-validation-result', style={'marginBottom': '20px'}),
-#             html.Div(id='existing-report-warning', style={'marginBottom': '20px'}),
-            
-#             html.Div([
-#                 html.Button(
-#                     "Dry Run",
-#                     id="dry-run-btn",
-#                     n_clicks=0,
-#                     style={
-#                         'backgroundColor': '#ffc107',
-#                         'color': 'black',
-#                         'border': 'none',
-#                         'padding': '8px 16px',
-#                         'borderRadius': '6px',
-#                         'cursor': 'pointer',
-#                         'marginRight': '10px'
-#                     }
-#                 ),
-#                 html.Button(
-#                     "Upload",
-#                     id="upload-confirm-btn",
-#                     n_clicks=0,
-#                     style={
-#                         'backgroundColor': '#198754',
-#                         'color': 'white',
-#                         'border': 'none',
-#                         'padding': '8px 16px',
-#                         'borderRadius': '6px',
-#                         'cursor': 'pointer',
-#                         'marginRight': '10px'
-#                     },
-#                     disabled=True
-#                 ),
-#                 html.Button(
-#                     "Cancel",
-#                     id="upload-cancel-btn",
-#                     n_clicks=0,
-#                     style={
-#                         'backgroundColor': '#6c757d',
-#                         'color': 'white',
-#                         'border': 'none',
-#                         'padding': '8px 16px',
-#                         'borderRadius': '6px',
-#                         'cursor': 'pointer'
-#                     }
-#                 ),
-#             ], style={'textAlign': 'center'})
-#         ], style={
-#             'backgroundColor': 'white',
-#             'padding': '30px',
-#             'borderRadius': '10px',
-#             'width': '500px',
-#             'margin': 'auto'
-#         })
-#     ], id="upload-popup", style={
-#         'position': 'fixed',
-#         'top': '0',
-#         'left': '0',
-#         'width': '100%',
-#         'height': '100%',
-#         'backgroundColor': 'rgba(0,0,0,0.5)',
-#         'display': 'none',
-#         'justifyContent': 'center',
-#         'alignItems': 'center',
-#         'zIndex': '1000'
-#     }),
-
-#     # Edit Popup Modal
-#     html.Div([
-#         html.Div([
-#             html.H3("Edit Excel File", id="edit-popup-title", style={'marginBottom': '20px'}),
-            
-#             # Tabs for different sheets
-#             dcc.Tabs(id="sheet-tabs", value=None),
-            
-#             # Tables container
-#             html.Div(id="sheet-tables-container", style={'maxHeight': '400px', 'overflowY': 'auto', 'marginBottom': '20px'}),
-            
-#             # Action buttons
-#             html.Div([
-#                 html.Button(
-#                     "Save Changes",
-#                     id="save-excel-btn",
-#                     n_clicks=0,
-#                     style={
-#                         'backgroundColor': '#198754',
-#                         'color': 'white',
-#                         'border': 'none',
-#                         'padding': '8px 16px',
-#                         'borderRadius': '6px',
-#                         'cursor': 'pointer',
-#                         'marginRight': '10px'
-#                     }
-#                 ),
-#                 html.Button(
-#                     "Cancel",
-#                     id="edit-cancel-btn",
-#                     n_clicks=0,
-#                     style={
-#                         'backgroundColor': '#6c757d',
-#                         'color': 'white',
-#                         'border': 'none',
-#                         'padding': '8px 16px',
-#                         'borderRadius': '6px',
-#                         'cursor': 'pointer'
-#                     }
-#                 ),
-#             ], style={'textAlign': 'center'})
-#         ], style={
-#             'backgroundColor': 'white',
-#             'padding': '30px',
-#             'borderRadius': '10px',
-#             'width': '90%',
-#             'maxWidth': '1200px',
-#             'maxHeight': '90vh',
-#             'overflowY': 'auto',
-#             'margin': 'auto'
-#         })
-#     ], id="edit-popup", style={
-#         'position': 'fixed',
-#         'top': '0',
-#         'left': '0',
-#         'width': '100%',
-#         'height': '100%',
-#         'backgroundColor': 'rgba(0,0,0,0.5)',
-#         'display': 'none',
-#         'justifyContent': 'center',
-#         'alignItems': 'center',
-#         'zIndex': '1000'
-#     }),
-
-#     # Archive Confirmation Popup Modal
-#     html.Div([
-#         html.Div([
-#             html.H3("Archive Report", style={'marginBottom': '20px'}),
-            
-#             html.Div(id="archive-confirmation-message", style={'marginBottom': '20px', 'fontSize': '16px'}),
-            
-#             html.Div([
-#                 html.Button(
-#                     "Confirm Archive",
-#                     id="confirm-archive-btn",
-#                     n_clicks=0,
-#                     style={
-#                         'backgroundColor': '#dc3545',
-#                         'color': 'white',
-#                         'border': 'none',
-#                         'padding': '8px 16px',
-#                         'borderRadius': '6px',
-#                         'cursor': 'pointer',
-#                         'marginRight': '10px'
-#                     }
-#                 ),
-#                 html.Button(
-#                     "Cancel",
-#                     id="cancel-archive-btn",
-#                     n_clicks=0,
-#                     style={
-#                         'backgroundColor': '#6c757d',
-#                         'color': 'white',
-#                         'border': 'none',
-#                         'padding': '8px 16px',
-#                         'borderRadius': '6px',
-#                         'cursor': 'pointer'
-#                     }
-#                 ),
-#             ], style={'textAlign': 'center'})
-#         ], style={
-#             'backgroundColor': 'white',
-#             'padding': '30px',
-#             'borderRadius': '10px',
-#             'width': '500px',
-#             'margin': 'auto'
-#         })
-#     ], id="archive-popup", style={
-#         'position': 'fixed',
-#         'top': '0',
-#         'left': '0',
-#         'width': '100%',
-#         'height': '100%',
-#         'backgroundColor': 'rgba(0,0,0,0.5)',
-#         'display': 'none',
-#         'justifyContent': 'center',
-#         'alignItems': 'center',
-#         'zIndex': '1000'
-#     }),
-
-#     create_edit_modal(),
-
-#     # auto-refresh every 5 seconds (optional)
-#     dcc.Interval(id="refresh-interval", interval=5000, n_intervals=0),
-#     # table container
-#     html.Div(id="reports-table-container", style={'maxWidth': '1200px', 'margin': '0 auto'}),
-    
-#     # Store components for managing state
-#     dcc.Store(id="current-editing-report", data=None),
-#     dcc.Store(id="excel-sheet-data", data=None),
-#     dcc.Store(id="current-archive-report", data=None),
-#     dcc.Download(id="download-template"),
-#     dcc.Store(id="preview-data-store", data=None),  # Add this line
-
-#     # Dashboard
-#     dcc.Store(id='current-dashboard-data', data={}),
-#     dcc.Store(id='current-dashboard-index', data=-1),
-#     dcc.Store(id='delete-confirmation', data=False)
-# ])
