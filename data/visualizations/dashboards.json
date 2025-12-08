@@ -1,12 +1,12 @@
 [
   {
-    "report_id": "1",
+    "report_id": "report_1",
     "report_name": "Summary",
     "date_created": "2025-11-26",
     "visualization_types": {
       "counts": [
         {
-          "id": "registered",
+          "id": "count_registered",
           "name": "Total Registrations",
           "filters": {
             "measure": "count",
@@ -14,7 +14,7 @@
           }
         },
         {
-          "id": "registered_m",
+          "id": "count_registered_m",
           "name": "Registered Male",
           "filters": {
             "measure": "count",
@@ -24,7 +24,7 @@
           }
         },
         {
-          "id": "registered_f",
+          "id": "count_registered_f",
           "name": "Registered Female",
           "filters": {
             "measure": "count",
@@ -34,7 +34,7 @@
           }
         },
         {
-          "id": "registered_o",
+          "id": "count_registered_o",
           "name": "Registered Over 5",
           "filters": {
             "measure": "count",
@@ -44,7 +44,7 @@
           }
         },
         {
-          "id": "registered_u",
+          "id": "count_registered_u",
           "name": "Registered Under 5",
           "filters": {
             "measure": "count",
@@ -60,7 +60,7 @@
             "section_name": "",
             "items": [
               {
-                "id": "chart1",
+                "id": "chart_summary_1",
                 "name": "Enrollment by Prgram",
                 "type": "Column",
                 "filters": {
@@ -84,7 +84,7 @@
                 }
               },
               {
-                "id": "chart1",
+                "id": "chart_summary_2",
                 "name": "Daily OPD Attendance - Last 7 Days",
                 "type": "Line",
                 "filters": {
@@ -108,7 +108,7 @@
                 }
               },
               {
-                "id": "chart2",
+                "id": "chart_summary_3",
                 "name": "Patient Visit Type",
                 "type": "Pie",
                 "filters": {
@@ -132,7 +132,7 @@
                 }
               },
               {
-                "id": "chart1",
+                "id": "chart_summary_4",
                 "name": "Age Gender Disaggregation",
                 "type": "Histogram",
                 "filters": {
@@ -160,13 +160,13 @@
     }
   },
   {
-    "report_id": "2",
+    "report_id": "report_2",
     "report_name": "OutPatient (OPD)",
     "date_created": "2025-11-26",
     "visualization_types": {
       "counts": [
         {
-          "id": "registered",
+          "id": "count_opd_1",
           "name": "Total Registrations",
           "filters": {
             "measure": "count",
@@ -176,7 +176,7 @@
           }
         },
         {
-          "id": "registered_m",
+          "id": "count_opd_2",
           "name": "Registered Male",
           "filters": {
             "measure": "count",
@@ -188,7 +188,7 @@
           }
         },
         {
-          "id": "registered_f",
+          "id": "count_opd_3",
           "name": "Registered Female",
           "filters": {
             "measure": "count",
@@ -200,7 +200,7 @@
           }
         },
         {
-          "id": "registered_o",
+          "id": "count_opd_4",
           "name": "Registered Over 5",
           "filters": {
             "measure": "count",
@@ -212,7 +212,7 @@
           }
         },
         {
-          "id": "registered_u",
+          "id": "count_opd_5",
           "name": "Registered Under 5",
           "filters": {
             "measure": "count",
@@ -224,7 +224,7 @@
           }
         },
         {
-          "id": "malaria_t",
+          "id": "count_opd_6",
           "name": "Malaria Tests",
           "filters": {
             "measure": "count",
@@ -236,7 +236,7 @@
           }
         },
         {
-          "id": "malaria_c",
+          "id": "count_opd_7",
           "name": "Malaria Cases",
           "filters": {
             "measure": "count",
@@ -248,7 +248,7 @@
           }
         },
         {
-          "id": "discharge",
+          "id": "count_opd_8",
           "name": "Discharges",
           "filters": {
             "measure": "count",
@@ -260,7 +260,7 @@
           }
         },
         {
-          "id": "admission",
+          "id": "count_opd_9",
           "name": "Admitted",
           "filters": {
             "measure": "count",
@@ -272,7 +272,7 @@
           }
         },
         {
-          "id": "referral",
+          "id": "count_opd_10",
           "name": "Referred Out",
           "filters": {
             "measure": "count",
@@ -290,7 +290,7 @@
             "section_name": "OPD Attendance",
             "items": [
               {
-                "id": "chart1",
+                "id": "chart_opd_1",
                 "name": "Daily OPD Attendance - Last 7 Days",
                 "type": "Line",
                 "filters": {
@@ -314,7 +314,7 @@
                 }
               },
               {
-                "id": "chart2",
+                "id": "chart_opd_2",
                 "name": "Patient Visit Type",
                 "type": "Pie",
                 "filters": {
@@ -338,7 +338,7 @@
                 }
               },
               {
-                "id": "chart1",
+                "id": "chart_opd_3",
                 "name": "Age Gender Disaggregation",
                 "type": "Histogram",
                 "filters": {
@@ -360,7 +360,7 @@
                 }
               },
               {
-                "id": "chart1",
+                "id": "chart_opd_4",
                 "name": "Top Presenting complaints",
                 "type": "Bar",
                 "filters": {
@@ -382,7 +382,7 @@
                 }
               },
               {
-                "id": "chart1",
+                "id": "chart_opd_5",
                 "name": "Lab Tests conducted at the health facility",
                 "type": "Column",
                 "filters": {
@@ -406,7 +406,7 @@
                 }
               },
               {
-                "id": "chart1",
+                "id": "chart_opd_6",
                 "name": "Diagnoses",
                 "type": "PivotTable",
                 "filters": {
@@ -435,7 +435,7 @@
             "section_name": "Malaria",
             "items": [
               {
-                "id": "chart1",
+                "id": "chart_opd_7",
                 "name": "Medications dispensed",
                 "type": "PivotTable",
                 "filters": {
@@ -459,7 +459,7 @@
                 }
               },
               {
-                "id": "chart1",
+                "id": "chart_opd_8",
                 "name": "Alcohol Behaviour",
                 "type": "Bar",
                 "filters": {
@@ -493,7 +493,7 @@
     "visualization_types": {
       "counts": [
         {
-          "id": "count_e55b4178",
+          "id": "count_ncd_1",
           "name": "Total Attendance",
           "filters": {
             "measure": "count",
@@ -503,7 +503,7 @@
           }
         },
         {
-          "id": "count_e55b4178",
+          "id": "count_ncd_2",
           "name": "Attendance Male",
           "filters": {
             "measure": "count",
@@ -515,7 +515,7 @@
           }
         },
         {
-          "id": "count_e55b4178",
+          "id": "count_ncd_3",
           "name": "Attendance Female",
           "filters": {
             "measure": "count",
@@ -527,7 +527,7 @@
           }
         },
         {
-          "id": "count_e55b4178",
+          "id": "count_ncd_4",
           "name": "Attendance Under 5",
           "filters": {
             "measure": "count",
@@ -539,7 +539,7 @@
           }
         },
         {
-          "id": "count_e55b4178",
+          "id": "count_ncd_5",
           "name": "Attendance Over 5",
           "filters": {
             "measure": "count",
@@ -551,7 +551,7 @@
           }
         },
         {
-          "id": "count_e55b4178",
+          "id": "count_ncd_6",
           "name": "Diabetes Cases",
           "filters": {
             "measure": "count",
@@ -563,7 +563,7 @@
           }
         },
         {
-          "id": "count_e55b4178",
+          "id": "count_ncd_7",
           "name": "Diabetes Type 1 Cases",
           "filters": {
             "measure": "count",
@@ -575,7 +575,7 @@
           }
         },
         {
-          "id": "count_e55b4178",
+          "id": "count_ncd_8",
           "name": "Diabetes Type 2 Cases",
           "filters": {
             "measure": "count",
@@ -587,7 +587,7 @@
           }
         },
         {
-          "id": "count_e55b4178",
+          "id": "count_ncd_9",
           "name": "Hypertension Cases",
           "filters": {
             "measure": "count",
@@ -605,7 +605,7 @@
             "section_name": "General",
             "items": [
               {
-                "id": "chart1",
+                "id": "chart_ncd_1",
                 "name": "Daily NCD Attendance - Last 7 Days",
                 "type": "Line",
                 "filters": {
@@ -629,7 +629,7 @@
                 }
               },
               {
-                "id": "chart1",
+                "id": "chart_ncd_2",
                 "name": "Age Distribution of NCD Patients",
                 "type": "Histogram",
                 "filters": {
@@ -651,7 +651,7 @@
                 }
               },
               {
-                "id": "chart2",
+                "id": "chart_ncd_3",
                 "name": "Alcohol Risk Factor",
                 "type": "Pie",
                 "filters": {
@@ -675,7 +675,7 @@
                 }
               },
               {
-                "id": "chart2",
+                "id": "chart_ncd_4",
                 "name": "Smoking Risk Factor",
                 "type": "Pie",
                 "filters": {
@@ -699,7 +699,7 @@
                 }
               },
               {
-                "id": "chart1",
+                "id": "chart_ncd_5",
                 "name": "Locations",
                 "type": "PivotTable",
                 "filters": {
@@ -728,7 +728,7 @@
             "section_name": "Diagnoses, Complications and Treatment",
             "items": [
               {
-                "id": "chart1",
+                "id": "chart_ncd_6",
                 "name": "NCD Type for New Patients",
                 "type": "Column",
                 "filters": {
@@ -752,7 +752,7 @@
                 }
               },
               {
-                "id": "chart1",
+                "id": "chart_ncd_7",
                 "name": "NCD Type for All Patients",
                 "type": "Column",
                 "filters": {
@@ -776,7 +776,7 @@
                 }
               },
               {
-                "id": "chart2",
+                "id": "chart_ncd_8",
                 "name": "NCD Complications Foot",
                 "type": "Pie",
                 "filters": {
@@ -800,7 +800,7 @@
                 }
               },
               {
-                "id": "chart1",
+                "id": "chart_ncd_9",
                 "name": "Aggregate NCD Drugs Dispensed",
                 "type": "PivotTable",
                 "filters": {
@@ -830,13 +830,13 @@
     }
   },
   {
-    "report_id": "report_defd6302",
+    "report_id": "report_3",
     "report_name": "Immunisation Program",
     "date_created": "2025-11-29",
     "visualization_types": {
       "counts": [
         {
-          "id": "count_361f79cd",
+          "id": "count_imm_1",
           "name": "Total clients",
           "filters": {
             "measure": "count",
@@ -848,7 +848,7 @@
           }
         },
         {
-          "id": "count_e8761bb6",
+          "id": "count_imm_2",
           "name": "Total clients Under 5",
           "filters": {
             "measure": "count",
@@ -862,7 +862,7 @@
           }
         },
         {
-          "id": "count_cc1a4c0e",
+          "id": "count_imm_3",
           "name": "Total clients Under 2",
           "filters": {
             "measure": "count",
@@ -876,7 +876,7 @@
           }
         },
         {
-          "id": "count_57a52eed",
+          "id": "count_imm_4",
           "name": "Total clients Under 1",
           "filters": {
             "measure": "count",
@@ -890,7 +890,7 @@
           }
         },
         {
-          "id": "count_d3374e10",
+          "id": "count_imm_5",
           "name": "Total clients Over 5",
           "filters": {
             "measure": "count",
@@ -904,7 +904,7 @@
           }
         },
         {
-          "id": "count_37c6e70b",
+          "id": "count_imm_6",
           "name": "Protected at Birth",
           "filters": {
             "measure": "count",
@@ -926,7 +926,7 @@
           }
         },
         {
-          "id": "count_7207d1fe",
+          "id": "count_imm_7",
           "name": "Penta 1 doses",
           "filters": {
             "measure": "count",
@@ -948,7 +948,7 @@
           }
         },
         {
-          "id": "count_a72efe21",
+          "id": "count_imm_8",
           "name": "Penta 3 doses",
           "filters": {
             "measure": "count",
@@ -970,7 +970,7 @@
           }
         },
         {
-          "id": "count_e2d98204",
+          "id": "count_imm_9",
           "name": "MR 1 doses",
           "filters": {
             "measure": "count",
@@ -992,7 +992,7 @@
           }
         },
         {
-          "id": "count_c11b0bc8",
+          "id": "count_imm_10",
           "name": "MR 2 doses",
           "filters": {
             "measure": "count",
@@ -1020,7 +1020,7 @@
             "section_name": "Summary",
             "items": [
               {
-                "id": "chart_6d5068e0",
+                "id": "chart_imm_1",
                 "name": "Daily vaccinated clients - Last 7 days",
                 "type": "Line",
                 "filters": {
@@ -1042,7 +1042,7 @@
                 }
               },
               {
-                "id": "chart_926a9f66",
+                "id": "chart_imm_2",
                 "name": "Vaccines administered",
                 "type": "Column",
                 "filters": {
@@ -1050,7 +1050,7 @@
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Vaccines administered",
-                  "x_col":"Value",
+                  "x_col": "Value",
                   "y_col": "encounter_id",
                   "x_title": "Vaccine",
                   "y_title": "Number of Doses",
@@ -1068,10 +1068,9 @@
         ]
       }
     }
-    
   },
   {
-    "report_id": "report_defd6302",
+    "report_id": "report_4",
     "report_name": "HIV Testing (Result Returns)",
     "date_created": "2025-11-29",
     "visualization_types": {
@@ -1082,7 +1081,7 @@
     }
   },
   {
-    "report_id": "report_defd6302",
+    "report_id": "report_5",
     "report_name": "ART",
     "date_created": "2025-11-29",
     "visualization_types": {
