@@ -18,9 +18,13 @@
 
 3. Start gunicorn in development or production by running start_dev or start_prod
     ```bash
-    chmod +x start_prod.sh
-    chmod +x start_prod.sh
+    chmod +x start_dev.sh
     ./start_dev.sh
+    ```
+
+    ```bash
+    chmod +x start_prod.sh
+    ./start_prod.sh
     ```
 
 4. Kill process (kills production. For dev use CTRL + C)

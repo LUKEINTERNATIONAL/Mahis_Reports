@@ -431,10 +431,10 @@ class DataFetcher:
             last_id = 0
             
         # Cleanup batch files at the end of the run regardless of outcome
-            # try:
-            #     self._cleanup_batches()
-            # except Exception as e:
-            #     logger.warning(f"Batch cleanup encountered an error: {e}")
+            try:
+                self._cleanup_batches()
+            except Exception as e:
+                logger.warning(f"Batch cleanup encountered an error: {e}")
         return final_df
 
     def _process_single_day(self, conn, query_template, date_column, batch_size, current_date, last_id=0):
