@@ -293,7 +293,7 @@ def generate_chart(urlparams, n_clicks, report_name, start_date, end_date, hf):
         return (
             html.Div([
                 html.H4("Report error", style={'color': '#c0392b'}),
-                html.P(f"Unable to find the report: {str(e)}",
+                html.P(f"Unable to find the report: Please ensure the report configuration file exists.",
                       style={'font-size': '16px', 'margin-top': '10px'})
             ], style={
                 'text-align': 'center',
