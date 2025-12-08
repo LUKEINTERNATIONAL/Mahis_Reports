@@ -43,6 +43,8 @@ try:
             dashboards_data = [dashboards_data]
 except FileNotFoundError:
     dashboards_data = []
+except json.JSONDecodeError:
+    dashboards_data = []
 
 
 def build_reports_table(data, page=1, page_size=15):
