@@ -7,7 +7,7 @@ import json
 import numpy as np
 from dash.exceptions import PreventUpdate
 import os
-from pages.home import build_single_chart
+from helpers import build_single_chart
 from datetime import datetime, timedelta
 
 dash.register_page(__name__, path="/program_reports")
