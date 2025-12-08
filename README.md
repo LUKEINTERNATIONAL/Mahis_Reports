@@ -1,14 +1,44 @@
 <!-- USING PY DASH FOR THE BUSINESS INTELLIGENCE -->
 # MaHIS Dash Plotly
 ### This serves as an analytical platform for the MaHIS system. It utilizes the plotly web visualization power to produce dashboards and reports for the ministry of health.
-## Installation steps
+
+
+## Installation steps - Bash
+1. Execute install.sh. This will install ubuntu and python dependencies
+    ```bash
+    chmod +x install.sh
+    ./install.sh
+    ```
+
+2. Be sure to add data_storage.py to crontab or taskscheduler as per install.sh or
+    ```text
+    <!-- Example -->
+    */30 * * * * /path-to-directory/data_storage.py >> /path-to-monitor-logs/logfile.log 2>&1
+    ```
+
+3. Start gunicorn in development or production by running start_dev or start_prod
+    ```bash
+    chmod +x start_prod.sh
+    chmod +x start_prod.sh
+    ./start_dev.sh
+    ```
+
+4. Kill process (kills production. For dev use CTRL + C)
+    ```bash
+    chmod +x stop.sh
+    ./stop.sh
+
+End
+
+
+## Installation steps - Traditional
 ***
 1. **Install Python 3.11 (recommended) or later**
     ```bash
     sudo apt-get update
     sudo apt-get install -y python3
     ```
-re
+
 2. **Install pip**
     ```bash
     sudo apt-get install -y python3-pip
@@ -21,7 +51,7 @@ re
     source venv/bin/activate
     pip install -r requirements.txt
     export DASH_APP_DIR=/var/www/dash_plotly_mahis
-    ```bash
+    ```
 
 4. **Update configuration**  
    Edit the `config.py` file to point to your database.  
@@ -29,7 +59,7 @@ re
 
     NOTE: if config includes ssh files, create a directory in the parent folder /ssh and add the files. The config.py should include the file name.
 
-    
+
     ```bash
     mv config.example.py config.py
     ```
@@ -39,14 +69,19 @@ re
     ```bash
     python3 data_storage.py
     ```
+6. **Add data_storage.py to crontab to run every time (30 minutes as default)
 
-6. **Run the app (development mode)**
+    ```text
+    */30 * * * * /path-to-directory/data_storage.py >> /path-to-monitor-logs/logfile.log 2>&1
+    ```
+
+7. **Run the app (development mode)**
     ```bash
     python3 app.py
     ```
     Default port: [http://localhost:8050](http://localhost:8050)
 
-7. **Run in production with Gunicorn**
+8. **Run in production with Gunicorn**
     ```bash
     nohup python3 -m gunicorn --workers 4 --bind 0.0.0.0:8050 wsgi:server > gunicorn.log 2>&1 &
     ```
@@ -94,21 +129,21 @@ To modify data, go to /pages/, select the file to modify and change the filters.
     ```bash
     git clone <repository-url>
     cd mahis-dash-plotly
-    ```bash
+    ```
 
 3. copy configurations and update them
     ```bash
     cp config.example.py config.py
-    ```bash
+    ```
 
 4. start app
     ```bash
     docker-compose up -d
-    ```bash
+    ```
 5. try the application
     ```text
     http://localhost:8050
-    ```text
+    ```
 
 6. Monitor
     ```bash
@@ -124,6 +159,6 @@ To modify data, go to /pages/, select the file to modify and change the filters.
     # View container health
     docker-compose exec mahis-dash python -c "import requests; print(requests.get('http://localhost:8050/_health').text)"
 
-    ```bash
+    ```
 
 ***

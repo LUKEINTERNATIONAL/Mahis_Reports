@@ -35,7 +35,7 @@ DASHBOARD_SCHEMA = {
 
 # Load existing dashboards
 path = os.getcwd()
-dashboards_json_path = os.path.join(path, 'data','visualizations', 'dashboards.json')
+dashboards_json_path = os.path.join(path, 'data','visualizations', 'validated_dashboards.json')
 try:
     with open(dashboards_json_path, 'r') as f:
         dashboards_data = json.load(f)
@@ -1555,8 +1555,6 @@ def update_dashboard_form(selector_value, add_count_clicks, add_section_clicks, 
         # Reload dashboards_data from file
         global dashboards_data
 
-        path = os.getcwd()
-        dashboards_json_path = os.path.join(path, 'data','visualizations', 'dashboards.json')
         try:
             with open(dashboards_json_path, 'r') as f:
                 dashboards_data = json.load(f)
@@ -2037,9 +2035,6 @@ def save_dashboard(save_clicks, current_index, report_name, report_id, date_crea
         else:  # Invalid index, add as new
             dashboards_data.append(dashboard_structure)
         
-        # Save to file
-        path = os.getcwd()
-        dashboards_json_path = os.path.join(path, 'data','visualizations', 'dashboards.json')
         try:
             with open(dashboards_json_path, 'w') as f:
                 json.dump(dashboards_data, f, indent=2)
@@ -2072,7 +2067,7 @@ def delete_dashboard(delete_clicks, current_index):
             
             # Save the updated data to file
             try:
-                with open('dashboards.json', 'w') as f:
+                with open(dashboards_json_path, 'w') as f:
                     json.dump(dashboards_data, f, indent=2)
             except Exception as e:
                 print(f"Error saving after deletion: {e}")

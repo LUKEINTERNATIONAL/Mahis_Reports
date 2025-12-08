@@ -16,6 +16,9 @@ data = pd.read_parquet('data/latest_data_opd.parquet')
 from datetime import datetime, timedelta
 from dash import html, dcc
 
+path = os.getcwd()
+path_program_reports = os.path.join(path, 'data','visualizations','validated_prog_reports.json') 
+
 # Helper for today's bounds
 _today = datetime.now()
 _start_of_today = _today.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -157,8 +160,6 @@ layout = html.Div(
 )
 
 def update_filters(selected_program):
-    path = os.getcwd()
-    path_program_reports = os.path.join(path, 'data','program_reports.json') 
     with open(path_program_reports) as x:
         program_reports_data = json.load(x)
     filtered_reports_list = [r for r in program_reports_data["reports"] if r.get("program") == selected_program]
@@ -179,10 +180,7 @@ def update_filters(selected_program):
      ]
 )
 def generate_chart(urlparams, n_clicks, report_name, start_date, end_date, hf):
-    path = os.getcwd()
     parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
-    path_program_reports = os.path.join(path, 'data', 'program_reports.json')
-
     try:
         data = pd.read_parquet(parquet_path)
         with open(path_program_reports) as x:
