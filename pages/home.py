@@ -691,20 +691,3 @@ def update_date_range(n):
     start = today.replace(hour=0, minute=0, second=0, microsecond=0)
     end = today.replace(hour=23, minute=59, second=59, microsecond=0)
     return start, end
-
-# @callback(
-#     Output("dashboard-container", "children"),     # or any output you want
-#     Input({"type": "menu-button", "name": ALL}, "n_clicks"),
-#     State({"type": "menu-button", "name": ALL}, "id")
-# )
-# def menu_click_handler(n_clicks_list, id_list):
-#     if not n_clicks_list or all(nc is None for nc in n_clicks_list):
-#         return no_update
-
-#     # find which button was clicked
-#     for n_clicks, btn_id in zip(n_clicks_list, id_list):
-#         if n_clicks:
-#             clicked_name = btn_id["name"]     # ← this gives "home", "opd", etc
-#             return f"You clicked: {clicked_name}"
-
-#     return no_update

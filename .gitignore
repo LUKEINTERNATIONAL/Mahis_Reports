@@ -21,3 +21,5 @@ data/report_template_hmis15.xlsx
 data/uploads
 config.wowa.py
 models.py
+pages/reports_config
+nav_drawer.py
