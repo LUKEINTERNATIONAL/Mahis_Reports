@@ -606,9 +606,9 @@ def update_menu(menu_items, color):
 
 # Callback to update all components based on date range
 @callback(
-    [Output('dashboard-container', 'children',allow_duplicate=True),
-     Output('dashboard-hf-filter', 'options', allow_duplicate=True),
-     Output('active-button-store', 'data',allow_duplicate=True)],
+    [Output('dashboard-container', 'children'),
+     Output('dashboard-hf-filter', 'options'),
+     Output('active-button-store', 'data')],
     [
         Input('url-params-store', 'data'),
         Input('dashboard-date-range-picker', 'start_date'),
@@ -618,7 +618,7 @@ def update_menu(menu_items, color):
         Input('dashboard-age-filter', 'value'),
         Input({"type": "menu-button", "name": ALL}, "n_clicks"),
         State({"type": "menu-button", "name": ALL}, "id")
-    ],prevent_initial_call=True
+    ]
 )
 def update_dashboard(urlparams, start_date, end_date, visit_type, hf, age,n_clicks_list, id_list):
     
@@ -682,10 +682,9 @@ def update_dashboard(urlparams, start_date, end_date, visit_type, hf, age,n_clic
     return build_charts_from_json(filtered_data_date, filtered_data, delta_days, dashboard_json), filtered_data['Facility'].sort_values().unique().tolist(), clicked_name
 
 @callback(
-    [Output('dashboard-date-range-picker', 'start_date',allow_duplicate=True),
-     Output('dashboard-date-range-picker', 'end_date', allow_duplicate=True)],
-    Input('dashboard-interval-update-today', 'n_intervals'),
-    prevent_initial_call=True
+    [Output('dashboard-date-range-picker', 'start_date'),
+     Output('dashboard-date-range-picker', 'end_date')],
+    Input('dashboard-interval-update-today', 'n_intervals')
 )
 def update_date_range(n):
     today = datetime.now()
