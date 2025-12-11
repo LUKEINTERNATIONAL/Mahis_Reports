@@ -152,6 +152,46 @@
                   "filter_col3": "",
                   "filter_val3": ""
                 }
+              },
+              {
+                "id": "chart_summary_5",
+                "name": "Gender Disaggregation",
+                "type": "Pie",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "names_col": "Gender",
+                  "values_col": "encounter_id",
+                  "title": "Gender Disaggregation",
+                  "unique_column": "person_id",
+                  "filter_col1": "",
+                  "filter_val1": "",
+                  "filter_col2": "",
+                  "filter_val2": "",
+                  "filter_col3": "",
+                  "filter_val3": "",
+                  "colormap": {
+                    "Male": "#292D79",
+                    "Female": "#FE1AD0"
+                  }
+                }
+              },
+              {
+                "id": "chart_opd_4",
+                "name": "Active Users (All encounters)",
+                "type": "Bar",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "label_col": "User",
+                  "value_col": "encounter_id",
+                  "title": "Active Users (All encounters)",
+                  "x_title": "Number of encounters",
+                  "y_title": "User",
+                  "top_n": 10
+                }
               }
             ]
           }
@@ -240,7 +280,7 @@
           "name": "Malaria Cases",
           "filters": {
             "measure": "count",
-            "unique": "person_id",
+            "unique": "encounter_id",
             "variable1": "Program",
             "value1": "OPD Program",
             "variable2": "obs_value_coded",
@@ -425,8 +465,8 @@
                   "filter_val2": "DIAGNOSIS",
                   "filter_col3": "concept_name",
                   "filter_val3": "Primary diagnosis",
-                  "x_title": "",
-                  "y_title": ""
+                  "rename": {"obs_value_coded":"Diagnosis"},
+                  "replace": {}
                 }
               }
             ]
@@ -435,49 +475,25 @@
             "section_name": "Malaria",
             "items": [
               {
-                "id": "chart_opd_7",
-                "name": "Medications dispensed",
-                "type": "PivotTable",
-                "filters": {
-                  "measure": "chart",
-                  "unique": "any",
-                  "duration_default": "any",
-                  "index_col1": "DrugName",
-                  "columns": "Program",
-                  "values_col": "ValueN",
-                  "title": "Medications dispensed",
-                  "unique_column": "person_id",
-                  "aggfunc": "sum",
-                  "filter_col1": "Program",
-                  "filter_val1": "OPD Program",
-                  "filter_col2": "Encounter",
-                  "filter_val2": "DISPENSING",
-                  "filter_col3": "",
-                  "filter_val3": "",
-                  "x_title": "",
-                  "y_title": ""
-                }
-              },
-              {
                 "id": "chart_opd_8",
-                "name": "Alcohol Behaviour",
-                "type": "Bar",
+                "name": "Daily Malaria Tests - Last 7 Days",
+                "type": "Line",
                 "filters": {
                   "measure": "chart",
                   "unique": "any",
-                  "duration_default": "any",
-                  "label_col": "DrugName",
-                  "value_col": "Program",
-                  "title": "Medications dispensed",
-                  "x_title": "",
-                  "y_title": "",
-                  "top_n": 10,
+                  "duration_default": "7days",
+                  "date_col": "Date",
+                  "y_col": "encounter_id",
+                  "title": "Daily Malaria Tests - Last 7 Days",
+                  "x_title": "Date",
+                  "y_title": "Number of Patients",
+                  "unique_column": "person_id",
+                  "legend_title": "Legend",
+                  "color": "",
                   "filter_col1": "Program",
                   "filter_val1": "OPD Program",
-                  "filter_col2": "Encounter",
-                  "filter_val2": "DISPENSING",
-                  "filter_col3": "",
-                  "filter_val3": ""
+                  "filter_col2": "obs_value_coded",
+                  "filter_val2": "Malaria Screening"
                 }
               }
             ]
@@ -559,7 +575,9 @@
             "variable1": "Program",
             "value1": "NCD PROGRAM",
             "variable2": "Encounter",
-            "value2": "['OUTPATIENT DIAGNOSIS','DIAGNOSIS']"
+            "value2": ["OUTPATIENT DIAGNOSIS","DIAGNOSIS"],
+            "variable3": "obs_value_coded",
+            "value3": ["Type 1 diabetes","Type 2 diabetes"]
           }
         },
         {
@@ -571,7 +589,9 @@
             "variable1": "Program",
             "value1": "NCD PROGRAM",
             "variable2": "Encounter",
-            "value2": "['OUTPATIENT DIAGNOSIS','DIAGNOSIS']"
+            "value2": ["OUTPATIENT DIAGNOSIS","DIAGNOSIS"],
+            "variable3": "obs_value_coded",
+            "value3": "Type 1 diabetes"
           }
         },
         {
@@ -583,7 +603,9 @@
             "variable1": "Program",
             "value1": "NCD PROGRAM",
             "variable2": "Encounter",
-            "value2": "['OUTPATIENT DIAGNOSIS','DIAGNOSIS']"
+            "value2": ["OUTPATIENT DIAGNOSIS","DIAGNOSIS"],
+            "variable3": "obs_value_coded",
+            "value3": "Type 2 diabetes"
           }
         },
         {
@@ -595,7 +617,9 @@
             "variable1": "Program",
             "value1": "NCD PROGRAM",
             "variable2": "Encounter",
-            "value2": "['OUTPATIENT DIAGNOSIS','DIAGNOSIS']"
+            "value2": ["OUTPATIENT DIAGNOSIS","DIAGNOSIS"],
+            "variable3": "obs_value_coded",
+            "value3": "Hypertension"
           }
         }
       ],
@@ -746,7 +770,7 @@
                   "filter_col1": "Program",
                   "filter_val1": "NCD PROGRAM",
                   "filter_col2": "Encounter",
-                  "filter_val2": "[OUTPATIENT DIAGNOSIS','DIAGNOSIS]",
+                  "filter_val2": ["OUTPATIENT DIAGNOSIS","DIAGNOSIS"],
                   "filter_col3": "new_revisit",
                   "filter_val3": "New"
                 }
@@ -770,7 +794,7 @@
                   "filter_col1": "Program",
                   "filter_val1": "NCD PROGRAM",
                   "filter_col2": "Encounter",
-                  "filter_val2": "[OUTPATIENT DIAGNOSIS','DIAGNOSIS]",
+                  "filter_val2": ["OUTPATIENT DIAGNOSIS","DIAGNOSIS"],
                   "filter_col3": "",
                   "filter_val3": ""
                 }
@@ -1062,6 +1086,52 @@
                   "filter_col2": "concept_name",
                   "filter_val2": "Medications dispensed"
                 }
+              },
+              {
+                "id": "chart_imm_3",
+                "name": "Clients Disaggregation by Gender",
+                "type": "Pie",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "names_col": "Gender",
+                  "values_col": "encounter_id",
+                  "title": "Clients Disaggregation by Gender",
+                  "unique_column": "person_id",
+                  "filter_col1": "Program",
+                  "filter_val1": "IMMUNIZATION PROGRAM",
+                  "filter_col2": "",
+                  "filter_val2": "",
+                  "filter_col3": "",
+                  "filter_val3": "",
+                  "colormap": {
+                    "Male": "#292D79",
+                    "Female": "#FE1AD0"
+                  }
+                }
+              },
+              {   "id":"chart_imm_4",
+                  "name":"Doses Age and Gender Disaggregation",
+                  "type":"CrossTab",
+                  "filters":
+                      {
+                      "measure": "chart",
+                      "unique": "any",
+                      "duration_default": "any",
+                      "index_col1": "Value",
+                      "columns": ["Gender", "Age_Group"],
+                      "values_col": "encounter_id",
+                      "title": "Doses Age and Gender Disaggregation",
+                      "unique_column": "person_id",
+                      "aggfunc": "count",
+                      "filter_col1": "Program",
+                      "filter_val1": "IMMUNIZATION PROGRAM",
+                      "filter_col2": "concept_name",
+                      "filter_val2": "Medications dispensed",
+                      "rename": {"obs_value_coded":"DIAGNOSIS"},
+                      "replace": ""
+                  } 
               }
             ]
           }
@@ -1087,7 +1157,9 @@
     "visualization_types": {
       "counts": [],
       "charts": {
-        "sections": []
+        "sections": [
+          
+        ]
       }
     }
   },
@@ -1098,7 +1170,149 @@
     "visualization_types": {
       "counts": [],
       "charts": {
-        "sections": []
+        "sections": [{
+            "section_name": "!! Dashboard under construction",
+            "items": [
+              {
+                "id": "chart_ahd_1",
+                "name": "Program Attendance - All",
+                "type": "Column",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "title": "Program Attendance - All",
+                  "x_col": "Program",
+                  "y_col": "encounter_id",
+                  "x_title": "Program",
+                  "y_title": "Number of Patients",
+                  "unique_column": "person_id",
+                  "legend_title": "Legend",
+                  "color": ""
+                }
+              },
+              {
+                "id": "chart_ahd_2",
+                "name": "Number of Patients Screened for AHD",
+                "type": "Column",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "title": "Number of Patients Screened for AHD",
+                  "x_col": "Program",
+                  "y_col": "encounter_id",
+                  "x_title": "Program",
+                  "y_title": "Number of Patients",
+                  "unique_column": "person_id",
+                  "legend_title": "Legend",
+                  "color": ""
+                }
+              },
+              {
+                "id": "chart_ahd_3",
+                "name": "Number of AHD Lab tests conducted",
+                "type": "Bar",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "label_col": "obs_value_coded",
+                  "value_col": "encounter_id",
+                  "title": "Number of AHD Lab tests conducted",
+                  "x_title": "Number of Lab Tests",
+                  "y_title": "Test",
+                  "top_n": 10,
+                  "filter_col1": "Encounter",
+                  "filter_val1": "LAB ORDERS",
+                  "filter_col2": "concept_name",
+                  "filter_val2": "Test type"
+                }
+              },
+              {
+                "id": "chart_ahd_4",
+                "name": "WHO Clinical Staging among AHD Patients",
+                "type": "Column",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "title": "WHO Clinical Staging among AHD Patients",
+                  "x_col": "obs_value_coded",
+                  "y_col": "encounter_id",
+                  "x_title": "Program",
+                  "y_title": "Number of Patients",
+                  "unique_column": "person_id",
+                  "legend_title": "Legend",
+                  "color": "",
+                  "filter_col1": "Encounter",
+                  "filter_val1": "HIV STAGING",
+                  "filter_col2": "concept_name",
+                  "filter_val2": "WHO stage"
+                }
+              },
+              {
+                "id": "chart_ahd_5",
+                "name": "Symptoms initiating AHD screening",
+                "type": "Bar",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "label_col": "obs_value_coded",
+                  "value_col": "encounter_id",
+                  "title": "Symptoms initiating AHD screening",
+                  "x_title": "Number of Patients",
+                  "y_title": "Complaint",
+                  "top_n": 10,
+                  "filter_col1": "Encounter",
+                  "filter_val1": "PRESENTING COMPLAINTS",
+                  "filter_col2": "concept_name",
+                  "filter_val2": "Presenting complaint"
+                }
+              },
+              {
+                "id": "chart_ahd_5",
+                "name": "Symptoms initiating AHD screening",
+                "type": "Bar",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "label_col": "obs_value_coded",
+                  "value_col": "encounter_id",
+                  "title": "Symptoms initiating AHD screening",
+                  "x_title": "Number of Patients",
+                  "y_title": "Complaint",
+                  "top_n": 10,
+                  "filter_col1": "Encounter",
+                  "filter_val1": "PRESENTING COMPLAINTS",
+                  "filter_col2": "concept_name",
+                  "filter_val2": "Presenting complaint"
+                }
+              },
+              {   "id":"chart_ahd_6",
+                  "name":"AHD Treatment by Gender",
+                  "type":"CrossTab",
+                  "filters":
+                      {
+                      "measure": "chart",
+                      "unique": "any",
+                      "duration_default": "any",
+                      "index_col1": "obs_value_coded",
+                      "columns": ["Gender"],
+                      "values_col": "encounter_id",
+                      "title": "AHD Treatment by Gender",
+                      "unique_column": "person_id",
+                      "aggfunc": "count",
+                      "filter_col1": "concept_name",
+                      "filter_val1": "Primary diagnosis",
+                      "rename": {"obs_value_coded":"DIAGNOSIS"},
+                      "replace": ""
+                  } 
+              }
+            ]
+          }]
       }
     }
   }

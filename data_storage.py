@@ -56,10 +56,10 @@ class DataStorage:
                          }
         with open(self.dropdown_filepath, 'w') as r:
             json.dump(dropdown_json, r, indent=2)
-    def preview_data(self, col_index=5, tail=10):
+    def preview_data(self, col_index="Date", tail=10):
         """Print sample data for quick inspection."""
         df = self.load_data()
-        print(df.iloc[:, col_index].tail(tail))
+        print(df[col_index].tail(tail))
         print(f"Total records: {len(df)}")
         return df
 

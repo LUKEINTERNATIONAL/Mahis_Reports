@@ -981,6 +981,24 @@ def handle_file_validation_and_dry_run(contents, dry_run_clicks, contents_state)
         filters_columns = [x for x in filters_df.columns.tolist() if x.startswith('variable')]
         filters_df_filtered = filters_df[filters_columns]
         variable_names_list = list(set([str(x).strip() for x in filters_df_filtered.values.flatten() if pd.notna(x) and x.strip()!='']))
+        
+        final_variable_names = []
+        for item in variable_names_list:
+            if isinstance(item, str):
+                if "|" in item:
+                    parts = [x.strip() for x in item.split("|")]
+                    final_variable_names.extend(parts)
+                elif item.startswith("[") and item.endswith("]"):
+                    inner = item[1:-1].strip()
+                    parts = [x.strip() for x in inner.split(",")]
+                    final_variable_names.extend(parts)
+                else:
+                    final_variable_names.append(item.strip())
+            elif isinstance(item, list):
+                final_variable_names.extend([str(x).strip() for x in item])
+            else:
+                final_variable_names.append(str(item).strip())
+
 
         # Check if variable names are the same as in the data
         verification_df, nothing = load_preview_data()
@@ -990,7 +1008,7 @@ def handle_file_validation_and_dry_run(contents, dry_run_clicks, contents_state)
         correct = []
         dry_run_warning = []
 
-        for i in variable_names_list:
+        for i in final_variable_names:
             if i in verification_df_columns:
                 correct.append(i)
             else:

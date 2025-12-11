@@ -41,9 +41,11 @@ class ReportTableBuilder:
                 fcol = str(row.get(f"variable{i}", "")).strip()
                 if not fcol:
                     continue
+                parsed_col = self._parse_col_value(fcol)
+
                 fval = row.get(f"value{i}", "")
                 parsed_val = self._parse_filter_value(fval)
-                pairs.append((fcol, parsed_val))
+                pairs.append((parsed_col, parsed_val))
             self.filters_map[fname] = {
                 "measure": measure,
                 "num_field": num_field,
@@ -67,6 +69,24 @@ class ReportTableBuilder:
             # if "," in s:
             #     return [x.strip() for x in s.split(",")]
         return val
+    
+    @staticmethod
+    def _parse_col_value(col: Any) -> Any:
+        if isinstance(col, list):
+            return col
+        if isinstance(col, str):
+            s = col.strip()
+            if not s:
+                return ""
+            if s.startswith("[") and s.endswith("]"):
+                inner = s[1:-1].strip()
+                return [] if not inner else [x.strip() for x in inner.split(",")]
+            if "|" in s:
+                return [x.strip() for x in s.split("|")]
+            # if "," in s:
+            #     return [x.strip() for x in s.split(",")]
+        return col
+
 
     def _compute_value_from_filter(self, filter_name: str) -> str:
         if not filter_name:

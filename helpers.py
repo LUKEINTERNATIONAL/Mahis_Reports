@@ -7,7 +7,7 @@ from visualizations import (create_column_chart,
                           create_line_chart,
                           create_age_gender_histogram,
                           create_horizontal_bar_chart,
-                          create_pivot_table,create_crosstab_table)
+                          create_pivot_table,create_crosstab_table, create_line_list)
 from datetime import datetime
 
 def build_metrics_section(filtered, counts_config):
@@ -138,6 +138,8 @@ def build_single_chart(filtered, data_opd, delta_days, item_config, style = "car
         figure = create_pivot_table_from_config(filtered, filters)
     elif chart_type == "CrossTab":
         figure = create_crosstab_from_config(filtered, filters)
+    elif chart_type == "LineList":
+        figure = create_linelist_from_config(filtered, item_config)
     else:
         # Default empty figure for unknown chart types
         figure = create_empty_figure()
@@ -456,6 +458,50 @@ def create_crosstab_from_config(filtered, filters):
         rename=rename, replace=replace
     )
 
+def create_linelist_from_config(filtered, filters, **kwargs):
+    """
+    Convert JSON config into arguments for create_line_list().
+    Accepts dynamic group_cols, group_filters, group_aggr, merge methods, rename, cols_order etc.
+    """
+
+    def _as_list_or_str(v):
+        if isinstance(v, str) and '|' in v:
+            return [s.strip() for s in v.split('|') if s.strip()]
+        return v
+
+    unique_col     = _as_list_or_str(filters.get("unique_col") or filters.get("unique"))
+    cols_order     = _as_list_or_str(filters.get("cols_order") or [])
+    merge_methods  = _as_list_or_str(filters.get("merge_methods") or [])
+    rename         = filters.get("rename") or {}
+    title          = filters.get("report_name")
+
+    group_kwargs = {}
+
+    for i in range(1, 10 + 1):
+        # group_colsN
+        c = filters.get(f"group_cols{i}")
+        if c:
+            group_kwargs[f"group_cols{i}"] = c
+        # groupN_filters
+        gf = filters.get(f"group{i}_filters")
+        if gf:
+            group_kwargs[f"group{i}_filters"] = gf
+        # groupN_aggr
+        ga = filters.get(f"group{i}_aggr") or filters.get(f"group{i}_aggregations")
+        if ga:
+            group_kwargs[f"group{i}_aggr"] = ga
+    # Merge any extra **kwargs the user passes
+    group_kwargs.update(kwargs)
+
+    return create_line_list(
+        df=filtered,
+        unique_col=unique_col,
+        cols_order=cols_order,
+        title=title,
+        merge_methods=merge_methods,
+        rename=rename,
+        **group_kwargs
+    )
 
 def create_empty_figure():
     """Create empty figure for unsupported chart types"""

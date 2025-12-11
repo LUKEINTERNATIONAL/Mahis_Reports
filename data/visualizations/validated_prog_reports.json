@@ -51,7 +51,7 @@
                 "y_title": ""
             } 
         },
-        {   "id":"2",
+        {   "id":"3",
             "report_name":"CrossTab Test Report",
             "program":"OPD Program",
             "date_created":"2025-12-04",
@@ -76,7 +76,158 @@
                 "rename": {"obs_value_coded":"DIAGNOSIS"},
                 "replace": ""
             } 
+        },
+        {
+                "id": "4",
+                "report_name":"Medications dispensed",
+                "program":"OPD Program",
+                "type": "PivotTable",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "index_col1": "DrugName",
+                  "columns": "Program",
+                  "values_col": "ValueN",
+                  "title": "Medications dispensed",
+                  "unique_column": "person_id",
+                  "aggfunc": "sum",
+                  "filter_col1": "Program",
+                  "filter_val1": "OPD Program",
+                  "filter_col2": "Encounter",
+                  "filter_val2": "DISPENSING",
+                  "filter_col3": "",
+                  "filter_val3": "",
+                  "x_title": "",
+                  "y_title": ""
+                }
+        },
+        {
+                "id": "5",
+                "report_name":"Line List of OPD Diagnoses and Dispensing",
+                "program":"OPD Program",
+                "type": "LineList",
+                "unique_col": "person_id",
+                "filters":{
+                    "unique": "any"
+                },
+                "rename": {
+                    "given_name": "First Name",
+                    "family_name": "Last Name",
+                    "Order_Name": "Prescribed Drug",
+                    "DrugName": "Drug Name",
+                    "ValueN": "Quantity Dispensed",
+                    "obs_value_coded": "Diagnosis"
+                },
+                "cols_order": [
+                    "given_name",
+                    "family_name",
+                    "Gender",
+                    "Age",
+                    "DrugName",
+                    "ValueN",
+                    "obs_value_coded"
+                ],
+
+                "merge_methods": ["inner", "left"],
+
+                "group_cols1": ["given_name", "family_name", "Gender", "Age"],
+                "group1_filters": {"Program": "OPD Program"},
+
+                "group_cols2": ["DrugName", "ValueN"],
+                "group2_filters": {"Program": "OPD Program","Encounter": "DISPENSING","concept_name": "Amount dispensed"},
+
+                "group_cols3": ["obs_value_coded"],
+                "group3_filters": {"Program": "OPD Program","Encounter": "DIAGNOSIS"}
+        },
+        {
+                "id": "6",
+                "report_name":"General LineList of Patients, Complaints and Diagnosis (All Patients)",
+                "program":"OPD Program",
+                "type": "LineList",
+                "unique_col": ["person_id", "Date"],
+                "filters":{
+                    "unique": "any"
+                },
+                "rename": {
+                    "given_name": "First Name",
+                    "family_name": "Last Name",
+                    "Home_district": "District",
+                    "DrugName": "Drug Name",
+                    "ValueN": "Quantity Dispensed",
+                    "obs_value_coded_x": "Complaint",
+                    "obs_value_coded_y": "Diagnosis"
+                },
+                "cols_order": [
+                    "Date",
+                    "given_name",
+                    "family_name",
+                    "Gender",
+                    "Age",
+                    "Home_district",
+                    "TA",
+                    "Village",
+                    "obs_value_coded_x",
+                    "obs_value_coded_y"
+                ],
+
+                "merge_methods": ["inner", "left"],
+
+                "group_cols1": ["given_name", "family_name", "Gender", "Age","Home_district","TA","Village"],
+                "group1_filters": {"Program": "OPD Program", "Village":"!=''"},
+
+                "group_cols2": ["obs_value_coded"],
+                "group2_filters": {"Program": "OPD Program","Encounter": "PRESENTING COMPLAINTS","concept_name": "Presenting complaint"},
+                "group2_aggr":{"obs_value_coded":"join"},
+
+                "group_cols3": ["obs_value_coded"],
+                "group3_filters": {"Program": "OPD Program","Encounter": "DIAGNOSIS","concept_name": "in:Primary diagnosis,Secondary diagnosis,Differential diagnosis"}
+        },
+        {
+                "id": "6",
+                "report_name":"Strict LineList of Patients, Based on Complete Diagnosis",
+                "program":"OPD Program",
+                "type": "LineList",
+                "unique_col": ["person_id", "Date"],
+                "filters":{
+                    "unique": "any"
+                },
+                "rename": {
+                    "given_name": "First Name",
+                    "family_name": "Last Name",
+                    "Home_district": "District",
+                    "DrugName": "Drug Name",
+                    "ValueN": "Quantity Dispensed",
+                    "obs_value_coded_x": "Complaint",
+                    "obs_value_coded_y": "Diagnosis"
+                },
+                "cols_order": [
+                    "Date",
+                    "given_name",
+                    "family_name",
+                    "Gender",
+                    "Age",
+                    "Home_district",
+                    "TA",
+                    "Village",
+                    "obs_value_coded_x",
+                    "obs_value_coded_y"
+                ],
+
+                "merge_methods": ["left", "inner"],
+
+                "group_cols1": ["Date","given_name", "family_name", "Gender", "Age","Home_district","TA","Village"],
+                "group1_filters": {"Program": "OPD Program", "Village":"!in:''"},
+
+                "group_cols2": ["obs_value_coded"],
+                "group2_filters": {"Program": "OPD Program","Encounter": "PRESENTING COMPLAINTS","concept_name": "Presenting complaint"},
+                "group2_aggr":{"obs_value_coded":"join"},
+
+                "group_cols3": ["obs_value_coded"],
+                "group3_filters": {"Program": "OPD Program","Encounter": "DIAGNOSIS","concept_name": "in:Primary diagnosis,Secondary diagnosis,Differential diagnosis"},
+                "group3_aggr":{"obs_value_coded":"join"}
         }
+                
     ]   
  
 }

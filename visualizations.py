@@ -2,80 +2,91 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import dash
+import operator
 from dash import dash_table, html
 import re
 from datetime import datetime, timedelta
+from typing import List, Optional, Dict, Union, Callable
 
 def _apply_filter(data, filter_col, filter_value):
     """
-    Apply a single filter with support for comparison operators.
+    Apply filtering with full support for:
     
+    - Single-column filters:
+        filter_col="col", filter_value=">10"
+        filter_col="col", filter_value=["Male", "!=Female", ">20"]
+
+    - Multi-column paired filters:
+        filter_col=["concept_name", "Value"],
+        filter_value=["Systolic BP", ">140"]
+
     Rules:
-    - If filter_value is a list: use isin()
-    - If filter_value is int/float and starts with:
-        '=': ==
-        '<': <
-        '<=': <=
-        '>': >
-        '>=': >=
-    - If filter_value is str and starts with:
-        '=': ==
-        '!=': !=
-    - Otherwise: ==
+    - If filter_col is list → filter_value MUST be list of same length.
+      AND logic applied across column-value pairs.
+      
+    - If filter_col is str and filter_value is list → apply AND logic on same column.
+    
+    - Operators supported: =, != , < , <= , > , >=
     """
+
     if filter_col is None or filter_value is None:
         return data
-    
-    # Handle list case
+
+    df = data.copy()
+
+    if isinstance(filter_col, list):
+
+        if not isinstance(filter_value, list):
+            raise ValueError("If filter_col is list, filter_value must also be list.")
+
+        if len(filter_col) != len(filter_value):
+            raise ValueError("filter_col and filter_value lists must match in length.")
+
+        # Apply each (column, value) pair using AND logic
+        for col, val in zip(filter_col, filter_value):
+            df = _apply_filter(df, col, val)
+
+        return df
+
     if isinstance(filter_value, list):
-        return data[data[filter_col].isin(filter_value)]
-    
-    # Handle string with comparison operators
+        for val in filter_value:
+            df = _apply_filter(df, filter_col, val)
+        return df
+
     if isinstance(filter_value, str):
-        # Check if it's a comparison operator
-        if filter_value.startswith(('=', '!=', '<', '>', '<=', '>=')):
-            # Try to extract operator and value
-            match = re.match(r'^([=!<>]=?)\s*(.+)$', filter_value)
-            if match:
-                operator, value_str = match.groups()
-                
-                # Try to convert to numeric if possible
+        match = re.match(r'^([=!<>]*=?)(.*)$', filter_value.strip())
+        if match:
+            operator, value_str = match.groups()
+            operator = operator.strip()
+            value_str = value_str.strip()
+
+            valid_ops = ["=", "!=", "<", "<=", ">", ">="]
+
+            if operator in valid_ops:
                 try:
-                    if '.' in value_str:
+                    if "." in value_str:
                         value = float(value_str)
                     else:
                         value = int(value_str)
-                except ValueError:
+                except:
                     value = value_str
-                
-                # Apply operator
-                if operator == '=':
-                    return data[data[filter_col] == value]
-                elif operator == '!=':
-                    return data[data[filter_col] != value]
-                elif operator == '<':
-                    return data[data[filter_col] < value]
-                elif operator == '<=':
-                    return data[data[filter_col] <= value]
-                elif operator == '>':
-                    return data[data[filter_col] > value]
-                elif operator == '>=':
-                    return data[data[filter_col] >= value]
-        
-        # Default string equality
-        return data[data[filter_col] == filter_value]
-    
-    # Handle numeric values (int/float)
-    elif isinstance(filter_value, (int, float)):
-        # Check if it's a string representation (like "=10" passed as string)
-        if isinstance(filter_value, str):
-            return _apply_filter(data, filter_col, filter_value)
-        else:
-            # Default numeric equality
-            return data[data[filter_col] == filter_value]
-    
-    # Default case
-    return data[data[filter_col] == filter_value]
+
+                # Apply operator logic
+                if operator == "=":
+                    return df[df[filter_col] == value]
+                elif operator == "!=":
+                    return df[df[filter_col] != value]
+                elif operator == "<":
+                    return df[df[filter_col] < value]
+                elif operator == "<=":
+                    return df[df[filter_col] <= value]
+                elif operator == ">":
+                    return df[df[filter_col] > value]
+                elif operator == ">=":
+                    return df[df[filter_col] >= value]
+        return df[df[filter_col] == filter_value]
+
+    return df[df[filter_col] == filter_value]
 
 def create_column_chart(df, x_col, y_col, title, x_title, y_title,
                         unique_column='person_id', legend_title=None,
@@ -236,11 +247,6 @@ def create_pie_chart(df, names_col, values_col, title, unique_column='person_id'
                  )
     return fig 
 
-
-import plotly.graph_objects as go
-
-
-import plotly.graph_objects as go
 
 def create_pivot_table(df, index_col, columns_col, values_col, title, unique_column='person_id', aggfunc='sum',
                      filter_col1=None, filter_value1=None, 
@@ -450,6 +456,202 @@ def create_crosstab_table(
 
     return table
 
+# LINELISTS
+def agg_join(series: pd.Series) -> str:
+    """Aggregates unique values in a series into a comma-separated string."""
+    return ', '.join(series.astype(str).unique())
+AGG_MAP: Dict[str, Union[str, Callable]] = {
+    'first': 'first',
+    'last': 'last',
+    'min': 'min',
+    'max': 'max',
+    'sum': 'sum',
+    'mean': 'mean',
+    'count': 'count',
+    'join': agg_join # join strings
+}
+
+def create_line_list(
+    title: str,
+    df: pd.DataFrame,
+    unique_col: Union[str, List[str]] = 'person_id',
+    rename: Optional[dict] = None,
+    cols_order: Optional[List[str]] = None,
+    merge_methods: Optional[List[str]] = None,
+    **kwargs
+) -> pd.DataFrame:
+    """
+    Helps defragment the data from openmrs, and reagregate to a Line List
+    For each group N:
+      - Apply only groupN_filters to the full base dataframe (for filter flexibility).
+      - Create df_groupN = group_colsN + [unique_col] + unique_count_N from the filtered data,
+        applying custom aggregations defined in groupN_aggr.
+    Then merge all df_groupN on unique_col using a specified sequence of join methods.
+    """
+
+    ops = {
+        "==": operator.eq, "!=": operator.ne, ">": operator.gt, "<": operator.lt,
+        ">=": operator.ge, "<=": operator.le
+    }
+    DEFAULT_MERGE = 'inner'
+
+    unique_col_list = [unique_col] if isinstance(unique_col, str) else unique_col
+    if not unique_col_list:
+        raise ValueError("unique_col must specify at least one column.")
+    
+    df_base = df.copy().fillna("")
+
+    group_dfs = []
+
+    for i in range(1, 11):
+
+        group_cols = kwargs.get(f"group_cols{i}", []) or []
+        group_filters = kwargs.get(f"group{i}_filters", {}) or {}
+        group_aggr = kwargs.get(f"group{i}_aggr", {}) or {} 
+
+        if not group_cols:
+            continue
+            
+        aggr_cols_needed = list(group_aggr.keys())
+        all_required_cols = list(set(group_cols + unique_col_list + aggr_cols_needed))
+
+        df_group_filtered = df_base.copy()
+        filter_mask = pd.Series(True, index=df_group_filtered.index)
+        
+        for col, raw_val in group_filters.items():
+            if col not in df_group_filtered.columns:
+                 print(f"Warning: Filter column '{col}' for group {i} not found in dataframe. Skipping filter.")
+                 continue
+            val = str(raw_val).strip()
+            current_filter = None
+            if val.startswith(("in:", "!in:")):
+                is_in = val.startswith("in:")
+                prefix_len = 3 if is_in else 4
+                items = [x.strip() for x in val[prefix_len:].split(",")]
+                current_filter = df_group_filtered[col].isin(items) if is_in else ~df_group_filtered[col].isin(items)
+            else:
+                applied = False
+                for symbol, func in ops.items():
+                    if val.startswith(symbol):
+                        comp_val = val[len(symbol):].strip()
+                        try:
+                            comp_val = float(comp_val)
+                        except ValueError:
+                            pass 
+                        current_filter = func(df_group_filtered[col], comp_val)
+                        applied = True
+                        break
+                if not applied:
+                    current_filter = (df_group_filtered[col] == raw_val)
+            if current_filter is not None:
+                filter_mask = filter_mask & current_filter
+        
+        df_group_filtered = df_group_filtered[filter_mask].copy()
+        
+        if df_group_filtered.empty:
+            continue
+        
+        
+        missing_output_cols = [c for c in all_required_cols if c not in df_group_filtered.columns]
+        if missing_output_cols:
+            print(f"Warning: Group {i} skipped. Required columns not found: {missing_output_cols}")
+            continue
+
+        df_group = df_group_filtered[all_required_cols].copy()
+        
+        count_col_name = f'unique_count_{i}'
+
+
+        df_group[count_col_name] = (
+            df_group.groupby(group_cols)[unique_col_list].transform("nunique").sum(axis=1)
+        )
+        
+        # Initiator
+        agg_dict = {
+            col: AGG_MAP.get(method.lower(), 'first') # Default to 'first' if method is unknown
+            for col, method in group_aggr.items()
+        }
+
+
+        aggr_columns = list(set(agg_dict.keys()))
+
+        for col in group_cols + unique_col_list:
+            if col not in aggr_columns:
+                agg_dict[col] = 'first' 
+            
+        agg_dict[count_col_name] = 'first'
+
+        df_group = (
+            df_group.groupby(unique_col_list, dropna=False, as_index=False)
+            .agg(agg_dict)
+            .reset_index(drop=True)
+        )
+        group_dfs.append(df_group)
+
+    if not group_dfs:
+        return pd.DataFrame()
+
+    merge_methods_list = merge_methods or []
+    final_df = group_dfs[0]
+
+    for idx, right_df in enumerate(group_dfs[1:]):
+        
+        try:
+            merge_how = merge_methods_list[idx]
+        except IndexError:
+            merge_how = DEFAULT_MERGE
+            
+        try:
+            final_df = pd.merge(
+                final_df, 
+                right_df, 
+                on=unique_col_list,
+                how=merge_how
+            )
+        except ValueError as e:
+            print(f"Error during merge between group {idx+1} and group {idx+2} using method '{merge_how}'. Details: {e}")
+            raise
+
+    if cols_order and isinstance(cols_order, list):
+        final_df = final_df[[c for c in cols_order if c in final_df.columns]]
+    elif isinstance(cols_order, str):
+        raise ValueError("cols_order must be a list.")
+    
+    if rename:
+        final_df = final_df.rename(columns=rename)
+        
+    final_df = final_df.fillna('')
+    # sort the final_df by col1
+    final_df = final_df.sort_values(by=final_df.columns[0])
+
+    table = html.Div([
+        html.H4(title, style={"textAlign":"center"}),
+        dash_table.DataTable(
+            id="crosstab-table",
+            columns=[{"name": col, "id": col} for col in final_df.columns],
+            data=final_df.to_dict('records'),
+            merge_duplicate_headers=False,
+            style_header={
+                "backgroundColor": "rgb(70,70,70)",
+                "color": "white",
+                "fontWeight": "bold",
+                "textAlign": "left",
+                "fontSize": "13px",
+            },
+            style_cell={
+                "padding": "6px",
+                "textAlign": "left",
+                "fontSize": "12px",
+                "whiteSpace": "normal",
+                "height": "auto",
+            },
+            style_table={"overflowX": "scroll"},
+            page_size=20,
+        )
+    ])
+
+    return table
+
 
 def create_age_gender_histogram(df, age_col, gender_col, title, xtitle, ytitle, bin_size,
                                  filter_col1=None, filter_value1=None, 
@@ -545,44 +747,82 @@ def create_count(df, unique_column='encounter_id', filter_col1=None, filter_valu
     unique_visits = data.drop_duplicates(subset=['person_id', 'Date'])
     return str(len(unique_visits))
 
-def create_count_sets(df, unique_column='person_id', filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None,
-                      filter_col3=None, filter_value3=None, filter_col4=None, filter_value4=None,
-                 filter_col5=None, filter_value5=None, filter_col6=None, filter_value6=None, 
-                 filter_col7=None, filter_value7=None, filter_col8=None, filter_value8=None,
-                 filter_col9=None, filter_value9=None, filter_col10=None, filter_value10=None):
+def create_count_sets(
+    df,
+    unique_column='person_id',
+    filter_col1=None, filter_value1=None,
+    filter_col2=None, filter_value2=None,
+    filter_col3=None, filter_value3=None,
+    filter_col4=None, filter_value4=None,
+    filter_col5=None, filter_value5=None,
+    filter_col6=None, filter_value6=None,
+    filter_col7=None, filter_value7=None,
+    filter_col8=None, filter_value8=None,
+    filter_col9=None, filter_value9=None,
+    filter_col10=None, filter_value10=None
+):
     """
-    Count unique IDs that satisfy a paired condition across two filters.
+    Count unique IDs that satisfy ALL provided filters.
+
+    Supports:
+        - Single-column filters:
+              filter_col="col", filter_value="X"
+        - Multi-column filters (paired):
+              filter_col=[col1, col2], filter_value=[X, Y]
+
+    Each filter block is applied independently.
+    Results are merged (INNER JOIN) on unique_column.
     """
-    data = df
-    
-    # Apply first filter if provided
-    if filter_col1 is not None:
-        data = _apply_filter(data, filter_col1, filter_value1)
 
-    if not (isinstance(filter_value2, list) and isinstance(filter_value3, list)):
-        raise ValueError("filter_value2 and filter_value3 must be lists of the same length.")
-    if len(filter_value2) != len(filter_value3):
-        raise ValueError("filter_value2 and filter_value3 must have the same length.")
+    data = df.copy()
 
-    pair_ids = []
-    for v1, v2 in zip(filter_value2, filter_value3):
-        ids = set(df.loc[(df[filter_col2] == v1) & (df[filter_col3] == v2), unique_column])
-        pair_ids.append(ids)
+    filter_cols = [
+        filter_col1, filter_col2, filter_col3, filter_col4, filter_col5,
+        filter_col6, filter_col7, filter_col8, filter_col9, filter_col10
+    ]
+    filter_values = [
+        filter_value1, filter_value2, filter_value3, filter_value4, filter_value5,
+        filter_value6, filter_value7, filter_value8, filter_value9, filter_value10
+    ]
 
-    pair_total = set.intersection(*pair_ids)
-    filtered = df[df[unique_column].isin(pair_total)]
+    filtered_dfs = []
 
-    data = _apply_filter(filtered, filter_col4, filter_value4)
-    data = _apply_filter(data, filter_col5, filter_value5)
-    data = _apply_filter(data, filter_col6, filter_value6)
-    data = _apply_filter(data, filter_col7, filter_value7)
-    data = _apply_filter(data, filter_col8, filter_value8)
-    data = _apply_filter(data, filter_col9, filter_value9)
-    data = _apply_filter(data, filter_col10, filter_value10)
+    for cols, vals in zip(filter_cols, filter_values):
 
-    # Apply extra filters if provided
-    
-    return len(data[unique_column].unique())
+        if cols is None or vals is None:
+            continue
+
+        if isinstance(cols, str):
+            cols = [cols]
+
+            vals = vals if isinstance(vals, list) else [vals]
+
+        elif isinstance(cols, list):
+            if not isinstance(vals, list):
+                raise ValueError(
+                    f"When filter_col is a list, filter_value must also be a list. Got: {vals}"
+                )
+            if len(cols) != len(vals):
+                raise ValueError(
+                    f"Column list and value list must match length: {cols} vs {vals}"
+                )
+        else:
+            raise ValueError(f"Invalid filter_col type: {cols}")
+        df_f = data.copy()
+        for col, val in zip(cols, vals):
+            df_f = _apply_filter(df_f, col, val)
+
+        df_f = df_f[[unique_column] + cols].drop_duplicates()
+
+        filtered_dfs.append(df_f)
+    if not filtered_dfs:
+        return 0
+
+    final_df = filtered_dfs[0]
+    for temp_df in filtered_dfs[1:]:
+        final_df = pd.merge(final_df, temp_df, on=unique_column, how="inner")
+
+    return final_df[unique_column].nunique()
 
 def create_count_unique(df, unique_column='person_id', filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, 
                  filter_col3=None, filter_value3=None, filter_col4=None, filter_value4=None,
