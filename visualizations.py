@@ -8,6 +8,11 @@ import re
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Union, Callable
 
+"""
+MAIN USE CASE OF THIS FILE IS TO PROVIDE VISUALIZATION FUNCTIONS FOR PATIENT DATA
+
+"""
+
 def _apply_filter(data, filter_col, filter_value):
     """
     Apply filtering with full support for:
@@ -812,7 +817,7 @@ def create_count_sets(
         for col, val in zip(cols, vals):
             df_f = _apply_filter(df_f, col, val)
 
-        df_f = df_f[[unique_column] + cols].drop_duplicates()
+        df_f = df_f[[unique_column] + cols + ['Date']].drop_duplicates()
 
         filtered_dfs.append(df_f)
     if not filtered_dfs:
@@ -820,9 +825,11 @@ def create_count_sets(
 
     final_df = filtered_dfs[0]
     for temp_df in filtered_dfs[1:]:
-        final_df = pd.merge(final_df, temp_df, on=unique_column, how="inner")
+        final_df = pd.merge(final_df, temp_df, on=[unique_column]+ ['Date'], how="inner")
 
-    return final_df[unique_column].nunique()
+    unique_visits = final_df.drop_duplicates(subset=[unique_column, 'Date'])
+
+    return str(len(unique_visits))
 
 def create_count_unique(df, unique_column='person_id', filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, 
                  filter_col3=None, filter_value3=None, filter_col4=None, filter_value4=None,

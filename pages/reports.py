@@ -113,7 +113,7 @@ def load_report_options():
         print(f"Missing key in JSON: {e}")
         return []
 
-def build_table(filtered, page_name):
+def build_table(filtered,original_data, page_name):
     preg_patients = filtered[(filtered['concept_name']=='Pregnant woman')&(filtered['obs_value_coded']=='Yes')][['person_id']]
     preg_patients = filtered.merge(preg_patients, on = 'person_id', how='inner')
 
@@ -121,8 +121,10 @@ def build_table(filtered, page_name):
     if not os.path.exists(spec_path):
         error_msg = f"Report not found on Server. Request Admin to add report"
         return html.Div(error_msg)
+    
+    print(original_data['days_before'].max(),original_data['days_before'].min())
 
-    builder = ReportTableBuilder(spec_path, filtered)
+    builder = ReportTableBuilder(spec_path, filtered, original_data)
     builder.load_spec()
     # print(builder.filters_map)
     components = builder.build_dash_components()
@@ -288,6 +290,8 @@ def update_table(clicks, urlparams, period_type, year_filter, month_filter, repo
     data_opd["months"] = data_opd["DateValue"].apply(lambda d: (today - d).days // 30)
     # data_opd.to_csv('data/archive/hmis.csv')
 
+    original_data = data_opd #for cohort analysis this has to be moved forward to the return function
+
     if urlparams:
         search_url = data_opd[data_opd['Facility_CODE'].str.lower() == urlparams.lower()]
     else:
@@ -300,7 +304,9 @@ def update_table(clicks, urlparams, period_type, year_filter, month_filter, repo
                 (pd.to_datetime(search_url['Date']) >= pd.to_datetime(start_date)) &
                 (pd.to_datetime(search_url['Date']) <= pd.to_datetime(end_date))
             ]
-            return build_table(filtered, report["page_name"]), 0
+            original_data = original_data[original_data['Date']<=pd.to_datetime(end_date)]
+            original_data["days_before"] = original_data["DateValue"].apply(lambda d: (start_date - d).days) #filter for relative days before filter
+            return build_table(filtered,original_data, report["page_name"]), 0
             
         elif period_type == 'Monthly': 
             start_date, end_date = get_month_start_end(month_filter, year_filter)
@@ -308,8 +314,9 @@ def update_table(clicks, urlparams, period_type, year_filter, month_filter, repo
                 (pd.to_datetime(search_url['Date']) >= pd.to_datetime(start_date)) &
                 (pd.to_datetime(search_url['Date']) <= pd.to_datetime(end_date))
             ]
-            # print(create_count(filtered, 'encounter_id','Encounter','REGISTRATION'))
-            return build_table(filtered, report["page_name"]), 0
+            original_data = original_data[original_data['Date']<=pd.to_datetime(end_date)]
+            original_data["days_before"] = original_data["DateValue"].apply(lambda d: (start_date - d).days)
+            return build_table(filtered,original_data, report["page_name"]), 0
             
         else:  # Quarterly
             start_date, end_date = get_quarter_start_end(month_filter, year_filter)
@@ -317,7 +324,9 @@ def update_table(clicks, urlparams, period_type, year_filter, month_filter, repo
                 (pd.to_datetime(search_url['Date']) >= pd.to_datetime(start_date)) &
                 (pd.to_datetime(search_url['Date']) <= pd.to_datetime(end_date))
             ]
-            return build_table(filtered, report["page_name"]), 0
+            original_data = original_data[original_data['Date']<=pd.to_datetime(end_date)]
+            original_data["days_before"] = original_data["DateValue"].apply(lambda d: (start_date - d).days)
+            return build_table(filtered,original_data, report["page_name"]), 0
             
     except ValueError as e:
         print(f"Error: {e}")

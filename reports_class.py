@@ -4,9 +4,10 @@ from typing import Any, Dict, List, Tuple
 from visualizations import create_sum, create_count, create_count_sets
 
 class ReportTableBuilder:
-    def __init__(self, excel_path: str, source_df: pd.DataFrame):
+    def __init__(self, excel_path: str, filtered_df: pd.DataFrame, original_df: pd.DataFrame):
         self.excel_path = excel_path
-        self.source_df = source_df
+        self.filtered_df = filtered_df
+        self.original_df = original_df
 
         self.vars_df: pd.DataFrame | None = None
         self.filters_df: pd.DataFrame | None = None
@@ -100,8 +101,10 @@ class ReportTableBuilder:
 
         spec = self.filters_map[filter_name]
         measure = spec["measure"]
-        args: List[Any] = [self.source_df]
+        args: List[Any] = [self.filtered_df]
+        args_cohort: List[Any] = [self.original_df] #cohort data that is not filtered on report to display all patients from the beginning
 
+        # FILTERED DATA
         if measure == "sum":
             args.append(spec["num_field"])
             for fcol, fval in spec["pairs"]:
@@ -112,11 +115,30 @@ class ReportTableBuilder:
             for fcol, fval in spec["pairs"]:
                 args.extend([fcol, fval])
             result = create_count_sets(*args)
-        else:  # count
+        elif measure == "count":
             args.append(spec["unique_column"])
             for fcol, fval in spec["pairs"]:
                 args.extend([fcol, fval])
             result = create_count(*args)
+        
+        # COHORT DATA - FROM PATIENT ENTRY
+        elif measure == "cohort_sum":
+            args_cohort.append(spec["num_field"])
+            for fcol, fval in spec["pairs"]:
+                args_cohort.extend([fcol, fval])
+            result = create_sum(*args_cohort)
+        elif measure == "cohort_count_set":
+            args_cohort.append(spec["unique_column"])
+            for fcol, fval in spec["pairs"]:
+                args_cohort.extend([fcol, fval])
+            result = create_count_sets(*args_cohort)
+        elif measure == "cohort_count":
+            args_cohort.append(spec["unique_column"])
+            for fcol, fval in spec["pairs"]:
+                args_cohort.extend([fcol, fval])
+            result = create_count(*args_cohort)
+        else:
+            result = "" #no result if none has been indicated
 
         result_str = "" if result is None else str(result)
         self._value_cache[filter_name] = result_str
