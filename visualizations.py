@@ -7,6 +7,7 @@ from dash import dash_table, html
 import re
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Union, Callable
+import json
 
 """
 MAIN USE CASE OF THIS FILE IS TO PROVIDE VISUALIZATION FUNCTIONS FOR PATIENT DATA
@@ -36,6 +37,9 @@ def _apply_filter(data, filter_col, filter_value):
 
     if filter_col is None or filter_value is None:
         return data
+    
+    if "|" in filter_value:
+        filter_value = [x.strip() for x in filter_value.split("|")]
 
     df = data.copy()
 
@@ -54,9 +58,7 @@ def _apply_filter(data, filter_col, filter_value):
         return df
 
     if isinstance(filter_value, list):
-        for val in filter_value:
-            df = _apply_filter(df, filter_col, val)
-        return df
+        return df[df[filter_col].isin(filter_value)]
 
     if isinstance(filter_value, str):
         match = re.match(r'^([=!<>]*=?)(.*)$', filter_value.strip())
@@ -108,6 +110,7 @@ def create_column_chart(df, x_col, y_col, title, x_title, y_title,
     data = _apply_filter(data, filter_col1, filter_value1)
     data = _apply_filter(data, filter_col2, filter_value2)
     data = _apply_filter(data, filter_col3, filter_value3)
+
     
     data = data.drop_duplicates(subset=[unique_column, 'Date'])
 
@@ -231,6 +234,8 @@ def create_pie_chart(df, names_col, values_col, title, unique_column='person_id'
     
     df_summary = data.groupby(names_col)[values_col].nunique().reset_index()
     df_summary.columns = [names_col, values_col]
+
+    colormap = {}
 
     fig = px.pie(df_summary, 
                  names=names_col, 
@@ -658,39 +663,68 @@ def create_line_list(
     return table
 
 
-def create_age_gender_histogram(df, age_col, gender_col, title, xtitle, ytitle, bin_size,
-                                 filter_col1=None, filter_value1=None, 
-                                filter_col2=None, filter_value2=None,
-                                filter_col3=None, filter_value3=None):
+def create_age_gender_histogram(
+    df, age_col, gender_col, title, xtitle, ytitle, bin_size,
+    filter_col1=None, filter_value1=None,
+    filter_col2=None, filter_value2=None,
+    filter_col3=None, filter_value3=None
+):
     """
-    Create a histogram of age distribution grouped by gender (side-by-side bars).
+    Create an age–gender histogram with labeled bins and data labels.
     """
-    data = df
-    
-    # Apply filters using the new helper function
+
+    data = df.copy()
+
+    # Apply filters
     data = _apply_filter(data, filter_col1, filter_value1)
     data = _apply_filter(data, filter_col2, filter_value2)
     data = _apply_filter(data, filter_col3, filter_value3)
 
-    df_unique = data.drop_duplicates(subset=['person_id', 'Date'])
+    df_unique = data.drop_duplicates(subset=["person_id", "Date"])
 
     if df_unique.empty:
         return go.Figure()
-    else:
-        fig = px.histogram(df_unique,
-                        x=age_col,
-                        color=gender_col,
-                        nbins=int((df_unique[age_col].max() - df_unique[age_col].min()) / bin_size),
-                        barmode='group',
-                        title=title,
-                        color_discrete_sequence=px.colors.qualitative.Dark2)
 
-        fig.update_layout(
-            xaxis_title=xtitle,
-            yaxis_title=ytitle
-        )
+    min_age = int(df_unique[age_col].min())
+    max_age = int(df_unique[age_col].max())
 
-        return fig
+    bins = list(range(min_age, max_age + int(bin_size), int(bin_size)))
+
+    labels = [
+        f"({bins[i]}–{bins[i+1]})"
+        for i in range(len(bins) - 1)
+    ]
+
+    df_unique["age_bin"] = pd.cut(
+        df_unique[age_col],
+        bins=bins,
+        labels=labels,
+        include_lowest=True,
+        right=True
+    ).copy()
+
+    fig = px.histogram(
+        df_unique,
+        x="age_bin",
+        color=gender_col,
+        barmode="group",
+        title=title,
+        text_auto=True,
+        color_discrete_sequence=px.colors.qualitative.Dark2
+    )
+
+    fig.update_layout(
+        xaxis_title=xtitle,
+        yaxis_title=ytitle,
+        bargap=0.15
+    )
+
+    fig.update_traces(
+        textposition="outside",
+        cliponaxis=False
+    )
+
+    return fig
 
 def create_horizontal_bar_chart(df, label_col, value_col, title, x_title, y_title, top_n=10,
                                  filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None,
@@ -708,7 +742,7 @@ def create_horizontal_bar_chart(df, label_col, value_col, title, x_title, y_titl
     df_unique = data.drop_duplicates(subset=['person_id', 'Date'])
 
     df_grouped = df_unique.groupby(label_col)[value_col].nunique().reset_index()
-    df_top = df_grouped.sort_values(by=value_col, ascending=False).head(top_n)
+    df_top = df_grouped.sort_values(by=value_col, ascending=False).head(int(top_n))
 
     fig = px.bar(df_top,
                  x=value_col,
@@ -749,7 +783,8 @@ def create_count(df, unique_column='encounter_id', filter_col1=None, filter_valu
     data = _apply_filter(data, filter_col9, filter_value9)
     data = _apply_filter(data, filter_col10, filter_value10)
     
-    unique_visits = data.drop_duplicates(subset=['person_id', 'Date'])
+    unique_visits = data.drop_duplicates(subset=[unique_column, 'Date'])
+
     return str(len(unique_visits))
 
 def create_count_sets(

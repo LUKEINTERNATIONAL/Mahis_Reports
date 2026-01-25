@@ -36,15 +36,20 @@ DASHBOARD_SCHEMA = {
 # Load existing dashboards
 path = os.getcwd()
 dashboards_json_path = os.path.join(path, 'data','visualizations', 'validated_dashboard.json')
-try:
-    with open(dashboards_json_path, 'r') as f:
-        dashboards_data = json.load(f)
-        if isinstance(dashboards_data, dict):
-            dashboards_data = [dashboards_data]
-except FileNotFoundError:
-    dashboards_data = []
-except json.JSONDecodeError:
-    dashboards_data = []
+
+def load_dashboards_from_file():
+    try:
+        with open(dashboards_json_path, 'r') as f:
+            data = json.load(f)
+            return data if isinstance(data, list) else [data]
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+def save_dashboards_to_file(data):
+    with open(dashboards_json_path, 'w') as f:
+        json.dump(data, f, indent=2)
+
+dashboards_data = load_dashboards_from_file()
 
 
 def build_reports_table(data, page=1, page_size=15):
@@ -823,7 +828,12 @@ layout = html.Div(
                 # Dashboard
                 dcc.Store(id='current-dashboard-data', data={}),
                 dcc.Store(id='current-dashboard-index', data=-1),
-                dcc.Store(id='delete-confirmation', data=False)
+                dcc.Store(id='delete-confirmation', data=False),
+                dcc.Interval(
+                    id='configurations-interval-update-today',
+                    interval=10*60*1000,  # in milliseconds
+                    n_intervals=0
+                ),
             ],
         ),
     ],
@@ -1578,31 +1588,68 @@ def toggle_preview_popup(preview_clicks, close_clicks):
 
 # DASHBOARD
 @callback(
-    [Output("modal-backdrop", "style",allow_duplicate=True),
-     Output("modal-content", "style",allow_duplicate=True)],
-    [Input("add-dashboard", "n_clicks"),
-     Input("cancel-btn", "n_clicks"),
-     Input("save-btn", "n_clicks")],
-    prevent_initial_call=True
-)
-def toggle_modal(open_clicks, cancel_clicks, save_clicks):
-    trigger = ctx.triggered_id
-    
-    if trigger == "add-dashboard" and open_clicks > 0:
-        return {"display": "block"}, {"display": "block"}
-    elif trigger in ["cancel-btn", "save-btn"]:
-        return {"display": "none"}, {"display": "none"}
-    
-    return dash.no_update, dash.no_update
-
-@callback(
-    [Output("current-dashboard-data", "data"),
-     Output("current-dashboard-index", "data"),
+    [Output("modal-backdrop", "style"),
+     Output("modal-content", "style"),
+     Output("dashboard-selector", "value", allow_duplicate=True),
+     Output("dashboard-selector", "data"),
      Output("report-id-input", "value"),
      Output("report-name-input", "value"),
      Output("date-created-input", "value"),
      Output("counts-container", "children"),
      Output("sections-container", "children")],
+    [Input("add-dashboard", "n_clicks"),
+     Input("cancel-btn", "n_clicks"),
+     Input("save-btn", "n_clicks"),
+     Input("configurations-interval-update-today", "n_intervals")],
+    prevent_initial_call=True
+)
+def toggle_modal(open_clicks, cancel_clicks, save_clicks, n_intervals):
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return dash.no_update
+    
+    trigger = ctx.triggered[0]['prop_id'].split('.')[0]
+    
+    if trigger == "add-dashboard" and open_clicks > 0:
+        # Load current dashboards from file
+        dashboards_data = load_dashboards_from_file()
+        
+        # Update dropdown options
+        options = [{"label": f"📋 {d.get('report_name', 'Unnamed')} (ID: {d.get('report_id', '?')})", 
+                   "value": i} for i, d in enumerate(dashboards_data)] + \
+                  [{"label": "➕ Create New Dashboard", "value": "new"}]
+        
+        
+        # Return empty form for new dashboard
+        return (
+            {"display": "block"}, 
+            {"display": "block"},
+            "new",  # Select "new" in dropdown
+            options,
+            f"report_{uuid.uuid4().hex[:8]}",  # Auto-generate ID
+            "New Dashboard",  # Default name
+            datetime.now().strftime("%Y-%m-%d"),  # Current date
+            [],  # Empty counts
+            []   # Empty sections
+        )
+    
+    elif trigger == "cancel-btn":
+        # Just close the modal
+        return {"display": "none"}, {"display": "none"}, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update
+    
+    elif trigger == "save-btn":
+        # Just close the modal
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update
+    
+    return dash.no_update
+
+
+@callback(
+    [Output("report-id-input", "value",allow_duplicate=True),
+     Output("report-name-input", "value",allow_duplicate=True),
+     Output("date-created-input", "value",allow_duplicate=True),
+     Output("counts-container", "children",allow_duplicate=True),
+     Output("sections-container", "children",allow_duplicate=True)],
     [Input("dashboard-selector", "value"),
      Input("add-count-btn", "n_clicks"),
      Input("add-section-btn", "n_clicks"),
@@ -1610,45 +1657,35 @@ def toggle_modal(open_clicks, cancel_clicks, save_clicks):
      Input({"type": "remove-section", "index": dash.ALL}, "n_clicks"),
      Input({"type": "add-chart-btn", "index": dash.ALL}, "n_clicks"),
      Input({"type": "remove-chart", "section": dash.ALL, "index": dash.ALL}, "n_clicks")],
-    [State("current-dashboard-data", "data"),
-     State("current-dashboard-index", "data"),
+    [State("dashboard-selector", "value"),
      State("counts-container", "children"),
      State("sections-container", "children")],
     prevent_initial_call=True
 )
-def update_dashboard_form(selector_value, add_count_clicks, add_section_clicks, remove_count_clicks, 
-                         remove_section_clicks, add_chart_clicks, remove_chart_clicks, 
-                         current_data, current_index, counts_children, sections_children):
-    ctx_triggered = ctx.triggered_id
-
-    # Handle dashboard selection - RELOAD DATA HERE
-    if ctx_triggered == "dashboard-selector":
-        # Reload dashboards_data from file
-        global dashboards_data
-
-        try:
-            with open(dashboards_json_path, 'r') as f:
-                dashboards_data = json.load(f)
-                # Ensure it's always a list
-                if isinstance(dashboards_data, dict):
-                    dashboards_data = [dashboards_data]
-                elif not isinstance(dashboards_data, list):
-                    dashboards_data = []
-        except (FileNotFoundError, json.JSONDecodeError):
-            dashboards_data = []
+def update_dashboard_form(selector_value, add_count_clicks, add_section_clicks, 
+                         remove_count_clicks, remove_section_clicks, 
+                         add_chart_clicks, remove_chart_clicks,
+                         current_selector, counts_children, sections_children):
+    
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return dash.no_update
+    
+    trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    
+    # Handle dashboard selection - READ DIRECTLY FROM FILE
+    if trigger_id == "dashboard-selector":
+        dashboards_data = load_dashboards_from_file()
         
         if selector_value == "new":
             # Create new dashboard template
-            new_dashboard = {
-                "report_id": f"report_{uuid.uuid4().hex[:8]}",
-                "report_name": "New Dashboard",
-                "date_created": datetime.now().strftime("%Y-%m-%d"),
-                "visualization_types": {
-                    "counts": [],
-                    "charts": {"sections": []}
-                }
-            }
-            return new_dashboard, -1, new_dashboard["report_id"], new_dashboard["report_name"], new_dashboard["date_created"], [], []
+            return (
+                f"report_{uuid.uuid4().hex[:8]}",  # Auto-generate ID
+                "New Dashboard",  # Default name
+                datetime.now().strftime("%Y-%m-%d"),  # Current date
+                [],  # Empty counts
+                []   # Empty sections
+            )
         
         elif isinstance(selector_value, int) and 0 <= selector_value < len(dashboards_data):
             dashboard = dashboards_data[selector_value]
@@ -1658,123 +1695,195 @@ def update_dashboard_form(selector_value, add_count_clicks, add_section_clicks, 
             counts_children = [create_count_item(count, i) for i, count in enumerate(counts)]
             sections_children = [create_section(section, i) for i, section in enumerate(sections)]
             
-            return dashboard, selector_value, dashboard["report_id"], dashboard["report_name"], dashboard["date_created"], counts_children, sections_children
+            return (
+                dashboard.get("report_id", ""),
+                dashboard.get("report_name", ""),
+                dashboard.get("date_created", ""),
+                counts_children,
+                sections_children
+            )
     
-    # Handle adding counts
-    elif ctx_triggered == "add-count-btn" and add_count_clicks > 0:
+    # Handle UI interactions (these will be temporary until saved)
+    elif trigger_id == "add-count-btn":
         new_count_index = len(counts_children) if counts_children else 0
         new_count = create_count_item(index=new_count_index)
         if counts_children is None:
             counts_children = [new_count]
         else:
             counts_children = counts_children + [new_count]
-        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, counts_children, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update, counts_children, dash.no_update
     
-    # Handle adding sections
-    elif ctx_triggered == "add-section-btn" and add_section_clicks > 0:
+    elif trigger_id == "add-section-btn":
         new_section_index = len(sections_children) if sections_children else 0
         new_section = create_section(index=new_section_index)
         if sections_children is None:
             sections_children = [new_section]
         else:
             sections_children = sections_children + [new_section]
-        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, sections_children
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, sections_children
     
-    # Handle removing counts
-    elif ctx_triggered and ctx_triggered['type'] == 'remove-count':
-        if counts_children and len(counts_children) > 0:
-            index_to_remove = ctx_triggered['index']
+    # Handle removal actions
+    elif "remove-count" in trigger_id:
+        # Parse the index to remove
+        trigger_dict = json.loads(trigger_id.replace("'", '"'))
+        index_to_remove = trigger_dict['index']
+        
+        if counts_children and len(counts_children) > index_to_remove:
+            # Remove the count and re-index remaining ones
             new_counts_children = []
             for i, count in enumerate(counts_children):
                 if i != index_to_remove:
+                    # Recreate with new index
                     new_count = create_count_item(index=len(new_counts_children))
                     new_counts_children.append(new_count)
-            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, new_counts_children, dash.no_update
+            return dash.no_update, dash.no_update, dash.no_update, new_counts_children, dash.no_update
     
     # Handle removing sections
-    elif ctx_triggered and ctx_triggered['type'] == 'remove-section':
-        if sections_children and len(sections_children) > 0:
-            index_to_remove = ctx_triggered['index']
+    elif "remove-section" in trigger_id:
+        # Parse the index to remove
+        trigger_dict = json.loads(trigger_id.replace("'", '"'))
+        index_to_remove = trigger_dict['index']
+        
+        if sections_children and len(sections_children) > index_to_remove:
+            # Remove the section and re-index remaining ones
             new_sections_children = []
             for i, section in enumerate(sections_children):
                 if i != index_to_remove:
+                    # Recreate with new index
                     new_section = create_section(index=len(new_sections_children))
                     new_sections_children.append(new_section)
-            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, new_sections_children
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, new_sections_children
     
     # Handle adding charts to sections
-    elif ctx_triggered and ctx_triggered['type'] == 'add-chart-btn':
-        if sections_children and len(sections_children) > 0:
-            section_index = ctx_triggered['index']
+    elif "add-chart-btn" in trigger_id:
+        # Parse the section index
+        trigger_dict = json.loads(trigger_id.replace("'", '"'))
+        section_index = trigger_dict['index']
+        
+        if sections_children and len(sections_children) > section_index:
+            # Get the current section
+            section = sections_children[section_index]
             
-            # Update the specific section
-            new_sections_children = []
-            for i, section in enumerate(sections_children):
-                if i == section_index:
-                    # Get current charts from this section
-                    current_charts = section['props']['children'][1]['props']['children'][1]['props']['children']
-                    if current_charts is None:
-                        current_charts = []
-                    
-                    # Add new chart
-                    new_chart_index = len(current_charts)
-                    new_chart = create_chart_item(section_index=section_index, chart_index=new_chart_index)
-                    updated_charts = current_charts + [new_chart]
+            try:
+                # Extract current charts from the section structure
+                current_charts = []
+                if isinstance(section, dict) and 'props' in section:
+                    # Navigate to the charts container
+                    section_body = section['props']['children'][1]  # card-body
+                    if 'props' in section_body and 'children' in section_body['props']:
+                        body_children = section_body['props']['children']
+                        if len(body_children) > 1:
+                            charts_container = body_children[1]  # charts-container
+                            if 'props' in charts_container and 'children' in charts_container['props']:
+                                current_charts = charts_container['props']['children'] or []
+                
+                # Add new chart
+                new_chart_index = len(current_charts)
+                new_chart = create_chart_item(section_index=section_index, chart_index=new_chart_index)
+                updated_charts = current_charts + [new_chart]
+                
+                # Recreate the section with updated charts
+                updated_section = create_section_with_charts(section, updated_charts, section_index)
+                
+                # Update the sections list
+                new_sections_children = sections_children.copy()
+                new_sections_children[section_index] = updated_section
+                
+                return dash.no_update, dash.no_update, dash.no_update, dash.no_update, new_sections_children
+                
+            except (KeyError, IndexError, TypeError) as e:
+                # If structure is unexpected, recreate section from scratch
+                print(f"Error parsing section structure: {e}")
+                # Fallback: create a new section with one chart
+                new_section = create_section(index=section_index)
+                new_sections_children = sections_children.copy()
+                new_sections_children[section_index] = new_section
+                return dash.no_update, dash.no_update, dash.no_update, dash.no_update, new_sections_children
+    
+    # Handle removing charts from sections
+    elif "remove-chart" in trigger_id:
+        # Parse the section and chart indices
+        trigger_dict = json.loads(trigger_id.replace("'", '"'))
+        section_index = trigger_dict['section']
+        chart_index_to_remove = trigger_dict['index']
+        
+        if sections_children and len(sections_children) > section_index:
+            # Get the current section
+            section = sections_children[section_index]
+            
+            try:
+                # Extract current charts from the section structure
+                current_charts = []
+                if isinstance(section, dict) and 'props' in section:
+                    # Navigate to the charts container
+                    section_body = section['props']['children'][1]  # card-body
+                    if 'props' in section_body and 'children' in section_body['props']:
+                        body_children = section_body['props']['children']
+                        if len(body_children) > 1:
+                            charts_container = body_children[1]  # charts-container
+                            if 'props' in charts_container and 'children' in charts_container['props']:
+                                current_charts = charts_container['props']['children'] or []
+                
+                if current_charts and len(current_charts) > chart_index_to_remove:
+                    # Remove the specified chart and re-index
+                    updated_charts = []
+                    for j, chart in enumerate(current_charts):
+                        if j != chart_index_to_remove:
+                            # Recreate chart with new index
+                            new_chart = create_chart_item(
+                                section_index=section_index, 
+                                chart_index=len(updated_charts)
+                            )
+                            updated_charts.append(new_chart)
                     
                     # Recreate the section with updated charts
                     updated_section = create_section_with_charts(section, updated_charts, section_index)
-                    new_sections_children.append(updated_section)
-                else:
-                    new_sections_children.append(section)
-            
-            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, new_sections_children
+                    
+                    # Update the sections list
+                    new_sections_children = sections_children.copy()
+                    new_sections_children[section_index] = updated_section
+                    
+                    return dash.no_update, dash.no_update, dash.no_update, dash.no_update, new_sections_children
+                    
+            except (KeyError, IndexError, TypeError) as e:
+                # If structure is unexpected, recreate section from scratch
+                print(f"Error parsing section structure: {e}")
+                # Fallback: create a new empty section
+                new_section = create_section(index=section_index)
+                new_sections_children = sections_children.copy()
+                new_sections_children[section_index] = new_section
+                return dash.no_update, dash.no_update, dash.no_update, dash.no_update, new_sections_children
     
-    # Handle removing charts from sections
-    elif ctx_triggered and ctx_triggered['type'] == 'remove-chart':
-        if sections_children and len(sections_children) > 0:
-            section_index = ctx_triggered['section']
-            chart_index_to_remove = ctx_triggered['index']
-            
-            # Update the specific section
-            new_sections_children = []
-            for i, section in enumerate(sections_children):
-                if i == section_index:
-                    # Get current charts from this section
-                    current_charts = section['props']['children'][1]['props']['children'][1]['props']['children']
-                    if current_charts and len(current_charts) > 0:
-                        # Remove the specified chart and re-index
-                        updated_charts = []
-                        for j, chart in enumerate(current_charts):
-                            if j != chart_index_to_remove:
-                                new_chart = create_chart_item(section_index=section_index, chart_index=len(updated_charts))
-                                updated_charts.append(new_chart)
-                        
-                        # Recreate the section with updated charts
-                        updated_section = create_section_with_charts(section, updated_charts, section_index)
-                        new_sections_children.append(updated_section)
-                    else:
-                        new_sections_children.append(section)
-                else:
-                    new_sections_children.append(section)
-            
-            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, new_sections_children
-    
-    return current_data or {}, current_index or -1, "", "", "", counts_children or [], sections_children or []
+    # Return current state (for triggers we don't handle)
+    return dash.no_update, dash.no_update, dash.no_update, counts_children or [], sections_children or []
+
 
 def create_section_with_charts(section, charts, section_index):
     """Recreate a section with updated charts"""
     # Extract the section name from the existing section
-    section_name_input = section['props']['children'][0]['props']['children'][0]['props']['children'][0]
-    section_name = section_name_input['props']['value'] if 'value' in section_name_input['props'] else ""
+    section_name = ""
+    try:
+        if isinstance(section, dict) and 'props' in section:
+            section_header = section['props']['children'][0]  # card-header
+            if 'props' in section_header and 'children' in section_header['props']:
+                header_children = section_header['props']['children']
+                if len(header_children) > 0:
+                    section_header_content = header_children[0]  # section-header
+                    if 'props' in section_header_content and 'children' in section_header_content['props']:
+                        header_content_children = section_header_content['props']['children']
+                        if len(header_content_children) > 0:
+                            section_name_input = header_content_children[0]  # section-col with input
+                            if 'props' in section_name_input and 'children' in section_name_input['props']:
+                                name_input_children = section_name_input['props']['children']
+                                if len(name_input_children) > 1:
+                                    input_field = name_input_children[1]  # dcc.Input
+                                    if 'props' in input_field and 'value' in input_field['props']:
+                                        section_name = input_field['props']['value']
+    except (KeyError, IndexError, TypeError):
+        section_name = f"Section {section_index + 1}"
     
-    # Create new section data
-    section_data = {
-        'section_name': section_name,
-        'items': []  # We don't need the actual items since we're recreating from UI
-    }
-    
-    # Create new section with the updated charts
-    new_section = html.Div(className="section-item", children=[
+    # Create new section
+    return html.Div(className="section-item", children=[
         html.Div(className="card-header", children=[
             html.Div(className="section-header", children=[
                 html.Div(className="section-col", children=[
@@ -1805,8 +1914,6 @@ def create_section_with_charts(section, charts, section_index):
                     children=charts),
         ]),
     ])
-    
-    return new_section
 
 @callback(
     Output({"type": "chart-fields", "section": dash.MATCH, "index": dash.MATCH}, "children"),
@@ -1824,16 +1931,15 @@ def update_chart_fields(chart_type):
     return create_chart_fields(chart_type, None, section_index, chart_index)
 
 @callback(
-    [Output("dashboard-selector", "options"),
-     Output("modal-backdrop", "style"),
-     Output("modal-content", "style")],
+    [Output("dashboard-selector", "options", allow_duplicate=True),
+     Output("modal-backdrop", "style", allow_duplicate=True),
+     Output("modal-content", "style", allow_duplicate=True)],
     [Input("save-btn", "n_clicks")],
-    [State("current-dashboard-index", "data"),
+    [State("dashboard-selector", "value"),  # Get selected dashboard from dropdown
      State("report-name-input", "value"),
      State("report-id-input", "value"),
      State("date-created-input", "value"),
-     State("counts-container", "children"),
-     State("sections-container", "children"),
+     # Count states
      State({"type": "count-id", "index": dash.ALL}, "value"),
      State({"type": "count-name", "index": dash.ALL}, "value"),
      State({"type": "count-unique", "index": dash.ALL}, "value"),
@@ -1845,13 +1951,23 @@ def update_chart_fields(chart_type):
      State({"type": "count-val3", "index": dash.ALL}, "value"),
      State({"type": "count-var4", "index": dash.ALL}, "value"),
      State({"type": "count-val4", "index": dash.ALL}, "value"),
+
+     State({"type": "count-var5", "index": dash.ALL}, "value"),
+     State({"type": "count-val5", "index": dash.ALL}, "value"),
+     State({"type": "count-var6", "index": dash.ALL}, "value"),
+     State({"type": "count-val6", "index": dash.ALL}, "value"),
+     State({"type": "count-var7", "index": dash.ALL}, "value"),
+     State({"type": "count-val7", "index": dash.ALL}, "value"),
+     State({"type": "count-var8", "index": dash.ALL}, "value"),
+     State({"type": "count-val8", "index": dash.ALL}, "value"),
+     # Section states
      State({"type": "section-name", "index": dash.ALL}, "value"),
-     # Chart basic info
+     # Chart states - IMPORTANT: We need to get the actual section and chart indices
      State({"type": "chart-id", "section": dash.ALL, "index": dash.ALL}, "value"),
      State({"type": "chart-name", "section": dash.ALL, "index": dash.ALL}, "value"),
      State({"type": "chart-type", "section": dash.ALL, "index": dash.ALL}, "value"),
      State({"type": "chart-title", "section": dash.ALL, "index": dash.ALL}, "value"),
-     # ALL possible chart fields for different chart types
+     # Chart field states - include the IDs to track which chart they belong to
      State({"type": "chart-date_col", "section": dash.ALL, "index": dash.ALL}, "value"),
      State({"type": "chart-y_col", "section": dash.ALL, "index": dash.ALL}, "value"),
      State({"type": "chart-x_title", "section": dash.ALL, "index": dash.ALL}, "value"),
@@ -1871,17 +1987,25 @@ def update_chart_fields(chart_type):
      State({"type": "chart-index_col1", "section": dash.ALL, "index": dash.ALL}, "value"),
      State({"type": "chart-columns", "section": dash.ALL, "index": dash.ALL}, "value"),
      State({"type": "chart-aggfunc", "section": dash.ALL, "index": dash.ALL}, "value"),
-     State({"type": "chart-duration_default", "section": dash.ALL, "index": dash.ALL}, "value"),  # For all chart types
-     State({"type": "chart-colormap", "section": dash.ALL, "index": dash.ALL}, "value"),  # For Pie charts
+     State({"type": "chart-duration_default", "section": dash.ALL, "index": dash.ALL}, "value"),
+     State({"type": "chart-colormap", "section": dash.ALL, "index": dash.ALL}, "value"),
      State({"type": "chart-filter_col1", "section": dash.ALL, "index": dash.ALL}, "value"),
      State({"type": "chart-filter_val1", "section": dash.ALL, "index": dash.ALL}, "value"),
      State({"type": "chart-filter_col2", "section": dash.ALL, "index": dash.ALL}, "value"),
-     State({"type": "chart-filter_val2", "section": dash.ALL, "index": dash.ALL}, "value")],
+     State({"type": "chart-filter_val2", "section": dash.ALL, "index": dash.ALL}, "value"),
+     State({"type": "chart-filter_col3", "section": dash.ALL, "index": dash.ALL}, "value"),
+     State({"type": "chart-filter_val3", "section": dash.ALL, "index": dash.ALL}, "value"),
+     State({"type": "chart-filter_col4", "section": dash.ALL, "index": dash.ALL}, "value"),
+     State({"type": "chart-filter_val4", "section": dash.ALL, "index": dash.ALL}, "value"),
+     State({"type": "chart-filter_col5", "section": dash.ALL, "index": dash.ALL}, "value"),
+     State({"type": "chart-filter_val5", "section": dash.ALL, "index": dash.ALL}, "value")],
     prevent_initial_call=True
 )
-def save_dashboard(save_clicks, current_index, report_name, report_id, date_created, 
-                  counts_children, sections_children, count_ids, count_names, count_uniques,
-                  count_vars1, count_vals1, count_vars2, count_vals2,count_vars3, count_vals3,count_vars4, count_vals4, section_names,
+def save_dashboard(save_clicks, selector_value, report_name, report_id, date_created, 
+                  count_ids, count_names, count_uniques,
+                  count_vars1, count_vals1, count_vars2, count_vals2, count_vars3, count_vals3, count_vars4, count_vals4,
+                  count_vars5, count_vals5, count_vars6, count_vals6, count_vars7, count_vals7, count_vars8, count_vals8,
+                  section_names,
                   chart_ids, chart_names, chart_types, chart_titles,
                   chart_date_cols, chart_y_cols, chart_x_titles, chart_y_titles,
                   chart_unique_columns, chart_legend_titles, chart_colors,
@@ -1889,15 +2013,19 @@ def save_dashboard(save_clicks, current_index, report_name, report_id, date_crea
                   chart_names_cols, chart_values_cols, chart_x_cols,
                   chart_age_cols, chart_gender_cols, chart_bin_sizes,
                   chart_index_col1s, chart_columns, chart_aggfuncs,
-                  chart_duration_defaults,  # ADDED: For all chart types
-                  chart_colormaps,
-                  chart_filter_col1s, chart_filter_val1s, chart_filter_col2s, chart_filter_val2s):
+                  chart_duration_defaults, chart_colormaps,
+                  chart_filter_col1s, chart_filter_val1s, chart_filter_col2s, chart_filter_val2s,
+                  chart_filter_col3s, chart_filter_val3s, chart_filter_col4s, chart_filter_val4s,
+                  chart_filter_col5s, chart_filter_val5s):
     
     if save_clicks and save_clicks > 0:
         if not report_name:
+            # Show error - you might want to add an error output
             return dash.no_update, dash.no_update, dash.no_update
+        # Load current data from file
+        dashboards_data = load_dashboards_from_file()
         
-        # Build counts data from UI state
+        # 1. Build counts data from UI state
         counts_data = []
         if count_ids and count_names:
             for i, (count_id, count_name) in enumerate(zip(count_ids, count_names)):
@@ -1912,178 +2040,242 @@ def save_dashboard(save_clicks, current_index, report_name, report_id, date_crea
                     }
                     
                     # Add filters if provided
-                    if (i < len(count_vars1) and count_vars1[i] and 
-                        i < len(count_vals1) and count_vals1[i]):
+                    if i < len(count_vars1) and count_vars1[i]:
                         count_data["filters"]["variable1"] = count_vars1[i]
+                    if i < len(count_vals1) and count_vals1[i]:
                         count_data["filters"]["value1"] = count_vals1[i]
                     
-                    if (i < len(count_vars2) and count_vars2[i] and 
-                        i < len(count_vals2) and count_vals2[i]):
+                    if i < len(count_vars2) and count_vars2[i]:
                         count_data["filters"]["variable2"] = count_vars2[i]
+                    if i < len(count_vals2) and count_vals2[i]:
                         count_data["filters"]["value2"] = count_vals2[i]
                     
-                    if (i < len(count_vars3) and count_vars3[i] and 
-                        i < len(count_vals3) and count_vals3[i]):
+                    if i < len(count_vars3) and count_vars3[i]:
                         count_data["filters"]["variable3"] = count_vars3[i]
+                    if i < len(count_vals3) and count_vals3[i]:
                         count_data["filters"]["value3"] = count_vals3[i]
 
-                    if (i < len(count_vars2) and count_vars4[i] and 
-                        i < len(count_vals2) and count_vals4[i]):
+                    if i < len(count_vars4) and count_vars4[i]:
                         count_data["filters"]["variable4"] = count_vars4[i]
+                    if i < len(count_vals4) and count_vals4[i]:
                         count_data["filters"]["value4"] = count_vals4[i]
+                    if i < len(count_vars5) and count_vars5[i]:
+                        count_data["filters"]["variable5"] = count_vars5[i]
+                    if i < len(count_vals5) and count_vals5[i]:
+                        count_data["filters"]["value5"] = count_vals5[i]
+                    if i < len(count_vars6) and count_vars6[i]:
+                        count_data["filters"]["variable6"] = count_vars6[i]
+                    if i < len(count_vals6) and count_vals6[i]:
+                        count_data["filters"]["value6"] = count_vals6[i]
+                    if i < len(count_vars7) and count_vars7[i]:
+                        count_data["filters"]["variable7"] = count_vars7[i]
+                    if i < len(count_vals7) and count_vals7[i]:
+                        count_data["filters"]["value7"] = count_vals7[i]
+                    if i < len(count_vars8) and count_vars8[i]:
+                        count_data["filters"]["variable8"] = count_vars8[i]
+                    if i < len(count_vals8) and count_vals8[i]:
+                        count_data["filters"]["value8"] = count_vals8[i]
                     
                     counts_data.append(count_data)
         
-        # Build sections data from UI state
+        # 2. Build sections data - FIXED VERSION
         sections_data = []
-        if section_names:
-            for section_index, section_name in enumerate(section_names):
-                if section_name:
-                    section_charts = []
-                    
-                    # Find all charts that belong to this section
-                    if chart_ids and chart_names and chart_types:
-                        for i in range(len(chart_ids)):
-                            chart_id = chart_ids[i] if i < len(chart_ids) else None
-                            chart_name = chart_names[i] if i < len(chart_names) else None
-                            chart_type = chart_types[i] if i < len(chart_types) else None
-                            
-                            if chart_id and chart_name and chart_type:
-                                # Create chart data with basic structure
-                                chart_data = {
-                                    "id": chart_id,
-                                    "name": chart_name,
-                                    "type": chart_type,
-                                    "filters": {
-                                        "measure": "chart",
-                                        "unique": "any",  # Default value
-                                        "duration_default": "any"  # Default value
-                                    }
-                                }
-                                
-                                # Add title if available
-                                if chart_titles and i < len(chart_titles) and chart_titles[i]:
-                                    chart_data["filters"]["title"] = chart_titles[i]
-                                
-                                # ADD DURATION_DEFAULT FOR ALL CHART TYPES
-                                if chart_duration_defaults and i < len(chart_duration_defaults) and chart_duration_defaults[i]:
-                                    chart_data["filters"]["duration_default"] = chart_duration_defaults[i]
-                                
-                                # Add chart-specific fields based on chart type
-                                if chart_type == "Line":
-                                    if chart_date_cols and i < len(chart_date_cols):
-                                        chart_data["filters"]["date_col"] = chart_date_cols[i]
-                                    if chart_y_cols and i < len(chart_y_cols):
-                                        chart_data["filters"]["y_col"] = chart_y_cols[i]
-                                    if chart_x_titles and i < len(chart_x_titles):
-                                        chart_data["filters"]["x_title"] = chart_x_titles[i]
-                                    if chart_y_titles and i < len(chart_y_titles):
-                                        chart_data["filters"]["y_title"] = chart_y_titles[i]
-                                    if chart_unique_columns and i < len(chart_unique_columns):
-                                        chart_data["filters"]["unique_column"] = chart_unique_columns[i]
-                                    if chart_legend_titles and i < len(chart_legend_titles):
-                                        chart_data["filters"]["legend_title"] = chart_legend_titles[i]
-                                    if chart_colors and i < len(chart_colors):
-                                        chart_data["filters"]["color"] = chart_colors[i]
-                                
-                                elif chart_type == "Bar":
-                                    if chart_label_cols and i < len(chart_label_cols):
-                                        chart_data["filters"]["label_col"] = chart_label_cols[i]
-                                    if chart_value_cols and i < len(chart_value_cols):
-                                        chart_data["filters"]["value_col"] = chart_value_cols[i]
-                                    if chart_x_titles and i < len(chart_x_titles):
-                                        chart_data["filters"]["x_title"] = chart_x_titles[i]
-                                    if chart_y_titles and i < len(chart_y_titles):
-                                        chart_data["filters"]["y_title"] = chart_y_titles[i]
-                                    if chart_top_ns and i < len(chart_top_ns):
-                                        chart_data["filters"]["top_n"] = chart_top_ns[i]
-                                    # ADD MISSING FIELDS FOR BAR (from your example):
-                                    if chart_unique_columns and i < len(chart_unique_columns):
-                                        chart_data["filters"]["unique_column"] = chart_unique_columns[i]
-                                    if chart_legend_titles and i < len(chart_legend_titles):
-                                        chart_data["filters"]["legend_title"] = chart_legend_titles[i]
-                                    if chart_colors and i < len(chart_colors):
-                                        chart_data["filters"]["color"] = chart_colors[i]
-                                
-                                elif chart_type == "Pie":
-                                    if chart_names_cols and i < len(chart_names_cols):
-                                        chart_data["filters"]["names_col"] = chart_names_cols[i]
-                                    if chart_values_cols and i < len(chart_values_cols):
-                                        chart_data["filters"]["values_col"] = chart_values_cols[i]
-                                    if chart_unique_columns and i < len(chart_unique_columns):
-                                        chart_data["filters"]["unique_column"] = chart_unique_columns[i]
-                                    # ADD MISSING FIELD FOR PIE:
-                                    if chart_colormaps and i < len(chart_colormaps) and chart_colormaps[i]:
-                                        try:
-                                            colormap_data = json.loads(chart_colormaps[i])
-                                            chart_data["filters"]["colormap"] = colormap_data
-                                        except json.JSONDecodeError:
-                                            chart_data["filters"]["colormap"] = {}
-                                
-                                elif chart_type == "Column":
-                                    if chart_x_cols and i < len(chart_x_cols):
-                                        chart_data["filters"]["x_col"] = chart_x_cols[i]
-                                    if chart_y_cols and i < len(chart_y_cols):
-                                        chart_data["filters"]["y_col"] = chart_y_cols[i]
-                                    if chart_x_titles and i < len(chart_x_titles):
-                                        chart_data["filters"]["x_title"] = chart_x_titles[i]
-                                    if chart_y_titles and i < len(chart_y_titles):
-                                        chart_data["filters"]["y_title"] = chart_y_titles[i]
-                                    if chart_unique_columns and i < len(chart_unique_columns):
-                                        chart_data["filters"]["unique_column"] = chart_unique_columns[i]
-                                    if chart_legend_titles and i < len(chart_legend_titles):
-                                        chart_data["filters"]["legend_title"] = chart_legend_titles[i]
-                                    if chart_colors and i < len(chart_colors):
-                                        chart_data["filters"]["color"] = chart_colors[i]
-                                
-                                elif chart_type == "Histogram":
-                                    if chart_age_cols and i < len(chart_age_cols):
-                                        chart_data["filters"]["age_col"] = chart_age_cols[i]
-                                    if chart_gender_cols and i < len(chart_gender_cols):
-                                        chart_data["filters"]["gender_col"] = chart_gender_cols[i]
-                                    if chart_x_titles and i < len(chart_x_titles):
-                                        chart_data["filters"]["x_title"] = chart_x_titles[i]
-                                    if chart_y_titles and i < len(chart_y_titles):
-                                        chart_data["filters"]["y_title"] = chart_y_titles[i]
-                                    if chart_bin_sizes and i < len(chart_bin_sizes):
-                                        chart_data["filters"]["bin_size"] = chart_bin_sizes[i]
-                                
-                                elif chart_type == "PivotTable":
-                                    if chart_index_col1s and i < len(chart_index_col1s):
-                                        chart_data["filters"]["index_col1"] = chart_index_col1s[i]
-                                    if chart_columns and i < len(chart_columns):
-                                        chart_data["filters"]["columns"] = chart_columns[i]
-                                    if chart_values_cols and i < len(chart_values_cols):
-                                        chart_data["filters"]["values_col"] = chart_values_cols[i]
-                                    if chart_unique_columns and i < len(chart_unique_columns):
-                                        chart_data["filters"]["unique_column"] = chart_unique_columns[i]
-                                    if chart_aggfuncs and i < len(chart_aggfuncs):
-                                        chart_data["filters"]["aggfunc"] = chart_aggfuncs[i]
-                                    # ADD MISSING FIELDS FOR PIVOTTABLE:
-                                    if chart_x_titles and i < len(chart_x_titles):
-                                        chart_data["filters"]["x_title"] = chart_x_titles[i]
-                                    if chart_y_titles and i < len(chart_y_titles):
-                                        chart_data["filters"]["y_title"] = chart_y_titles[i]
-                                
-                                # Add common filter fields for ALL chart types
-                                if chart_filter_col1s and i < len(chart_filter_col1s):
-                                    chart_data["filters"]["filter_col1"] = chart_filter_col1s[i]
-                                if chart_filter_val1s and i < len(chart_filter_val1s):
-                                    chart_data["filters"]["filter_val1"] = chart_filter_val1s[i]
-                                if chart_filter_col2s and i < len(chart_filter_col2s):
-                                    chart_data["filters"]["filter_col2"] = chart_filter_col2s[i]
-                                if chart_filter_val2s and i < len(chart_filter_val2s):
-                                    chart_data["filters"]["filter_val2"] = chart_filter_val2s[i]
-                                
-                                section_charts.append(chart_data)
-                    
-                    section_data = {
-                        "section_name": section_name,
-                        "items": section_charts
-                    }
-                    sections_data.append(section_data)
         
-        # Create complete dashboard structure
+        # First, organize charts by their actual section indices
+        # We need to extract section and chart indices from the pattern IDs
+        charts_by_section = {}
+        
+        # Process all charts with their section assignments
+        for i in range(len(chart_ids)):
+            # Get the actual section and chart index from the pattern IDs
+            # This assumes the IDs follow the pattern from create_chart_item
+            section_idx = None
+            chart_idx = None
+            
+            # Try to extract from the chart_id if it contains the info
+            # Or we need to track this differently - let's use a different approach
+            
+            # Since we can't easily extract from IDs, we'll use a different strategy
+            # We'll create charts first, then assign them to sections based on index
+            
+            if chart_ids[i] and chart_names[i] and chart_types[i]:
+                chart_data = {
+                    "id": chart_ids[i],
+                    "name": chart_names[i],
+                    "type": chart_types[i],
+                    "filters": {
+                        "measure": "chart",
+                        "unique": "any",
+                        "duration_default": "any"
+                    }
+                }
+                
+                # Add title if available
+                if i < len(chart_titles) and chart_titles[i]:
+                    chart_data["filters"]["title"] = chart_titles[i]
+                
+                # Add duration_default
+                if i < len(chart_duration_defaults) and chart_duration_defaults[i]:
+                    chart_data["filters"]["duration_default"] = chart_duration_defaults[i]
+                
+                # Add chart type specific fields
+                chart_type = chart_types[i]
+
+                # Access values when list is less than i
+                def get_safe_value(lst, default=None, index=i):
+                    """
+                    Pop and return the first item from a list.
+                    If the list is empty or None, return default.
+                    """
+                    try:
+                        if index < len(lst):
+                            return lst[index]
+                        else:
+                            return lst.pop(0)
+                    except (IndexError, TypeError):
+                        return default
+
+                # Update all chart types with safe access
+                if chart_type == "Line":
+                    chart_data["filters"]["date_col"] = get_safe_value(chart_date_cols, i)
+                    chart_data["filters"]["y_col"] = get_safe_value(chart_y_cols, i)
+                    chart_data["filters"]["title"] = get_safe_value(chart_titles, i)
+                    chart_data["filters"]["x_title"] = get_safe_value(chart_x_titles, i)
+                    chart_data["filters"]["y_title"] = get_safe_value(chart_y_titles, i)
+                    chart_data["filters"]["unique_column"] = get_safe_value(chart_unique_columns, i)
+                    chart_data["filters"]["legend_title"] = get_safe_value(chart_legend_titles, i)
+                    chart_data["filters"]["color"] = get_safe_value(chart_colors, i)
+                    chart_data["filters"]["filter_col1"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val1"] = get_safe_value(chart_filter_val1s, i)
+                    chart_data["filters"]["filter_col2"] = get_safe_value(chart_filter_col2s, i)
+                    chart_data["filters"]["filter_val2"] = get_safe_value(chart_filter_val2s, i)
+                    chart_data["filters"]["filter_col3"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val3"] = get_safe_value(chart_filter_val1s, i)
+                    chart_data["filters"]["filter_col4"] = get_safe_value(chart_filter_col2s, i)
+                    chart_data["filters"]["filter_val4"] = get_safe_value(chart_filter_val2s, i)
+                    chart_data["filters"]["filter_col5"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val5"] = get_safe_value(chart_filter_val1s, i)
+
+
+                elif chart_type == "Bar":
+                    chart_data["filters"]["label_col"] = get_safe_value(chart_label_cols, i)
+                    chart_data["filters"]["value_col"] = get_safe_value(chart_value_cols, i)
+                    chart_data["filters"]["title"] = get_safe_value(chart_titles, i)
+                    chart_data["filters"]["x_title"] = get_safe_value(chart_x_titles, i)
+                    chart_data["filters"]["y_title"] = get_safe_value(chart_y_titles, i)
+                    chart_data["filters"]["unique_column"] = get_safe_value(chart_unique_columns, i)
+                    chart_data["filters"]["top_n"] = get_safe_value(chart_top_ns, i)
+                    chart_data["filters"]["filter_col1"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val1"] = get_safe_value(chart_filter_val1s, i)
+                    chart_data["filters"]["filter_col2"] = get_safe_value(chart_filter_col2s, i)
+                    chart_data["filters"]["filter_val2"] = get_safe_value(chart_filter_val2s, i)
+                    chart_data["filters"]["filter_col3"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val3"] = get_safe_value(chart_filter_val1s, i)
+                    chart_data["filters"]["filter_col4"] = get_safe_value(chart_filter_col2s, i)
+                    chart_data["filters"]["filter_val4"] = get_safe_value(chart_filter_val2s, i)
+                    chart_data["filters"]["filter_col5"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val5"] = get_safe_value(chart_filter_val1s, i)
+
+                elif chart_type == "Pie":
+                    chart_data["filters"]["names_col"] = get_safe_value(chart_names_cols, i)
+                    chart_data["filters"]["values_col"] = get_safe_value(chart_values_cols, i)
+                    chart_data["filters"]["title"] = get_safe_value(chart_titles, i)
+                    chart_data["filters"]["unique_column"] = get_safe_value(chart_unique_columns, i)
+                    chart_data["filters"]["colormap"] = get_safe_value(chart_colormaps, i)
+                    chart_data["filters"]["filter_col1"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val1"] = get_safe_value(chart_filter_val1s, i)
+                    chart_data["filters"]["filter_col2"] = get_safe_value(chart_filter_col2s, i)
+                    chart_data["filters"]["filter_val2"] = get_safe_value(chart_filter_val2s, i)
+                    chart_data["filters"]["filter_col3"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val3"] = get_safe_value(chart_filter_val1s, i)
+                    chart_data["filters"]["filter_col4"] = get_safe_value(chart_filter_col2s, i)
+                    chart_data["filters"]["filter_val4"] = get_safe_value(chart_filter_val2s, i)
+                    chart_data["filters"]["filter_col5"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val5"] = get_safe_value(chart_filter_val1s, i)
+
+                elif chart_type == "Column":
+                    chart_data["filters"]["x_col"] = get_safe_value(chart_x_cols, i)
+                    chart_data["filters"]["y_col"] = get_safe_value(chart_y_cols, i)
+                    chart_data["filters"]["title"] = get_safe_value(chart_titles, i)
+                    chart_data["filters"]["x_title"] = get_safe_value(chart_x_titles, i)
+                    chart_data["filters"]["y_title"] = get_safe_value(chart_y_titles, i)
+                    chart_data["filters"]["unique_column"] = get_safe_value(chart_unique_columns, i)
+                    chart_data["filters"]["legend_title"] = get_safe_value(chart_legend_titles, i)
+                    chart_data["filters"]["color"] = get_safe_value(chart_colors, i)
+                    chart_data["filters"]["filter_col1"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val1"] = get_safe_value(chart_filter_val1s, i)
+                    chart_data["filters"]["filter_col2"] = get_safe_value(chart_filter_col2s, i)
+                    chart_data["filters"]["filter_val2"] = get_safe_value(chart_filter_val2s, i)
+                    chart_data["filters"]["filter_col3"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val3"] = get_safe_value(chart_filter_val1s, i)
+                    chart_data["filters"]["filter_col4"] = get_safe_value(chart_filter_col2s, i)
+                    chart_data["filters"]["filter_val4"] = get_safe_value(chart_filter_val2s, i)
+                    chart_data["filters"]["filter_col5"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val5"] = get_safe_value(chart_filter_val1s, i)
+
+                elif chart_type == "Histogram":
+                    chart_data["filters"]["age_col"] = get_safe_value(chart_age_cols, i)
+                    chart_data["filters"]["gender_col"] = get_safe_value(chart_gender_cols, i)
+                    chart_data["filters"]["title"] = get_safe_value(chart_titles, i)
+                    chart_data["filters"]["x_title"] = get_safe_value(chart_x_cols, i)
+                    chart_data["filters"]["y_title"] = get_safe_value(chart_y_cols, i)
+                    chart_data["filters"]["unique_column"] = get_safe_value(chart_unique_columns, i)
+                    chart_data["filters"]["bin_size"] = get_safe_value(chart_bin_sizes, i)
+                    chart_data["filters"]["color"] = get_safe_value(chart_colors, i)
+                    chart_data["filters"]["filter_col1"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val1"] = get_safe_value(chart_filter_val1s, i)
+                    chart_data["filters"]["filter_col2"] = get_safe_value(chart_filter_col2s, i)
+                    chart_data["filters"]["filter_val2"] = get_safe_value(chart_filter_val2s, i)
+                    chart_data["filters"]["filter_col3"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val3"] = get_safe_value(chart_filter_val1s, i)
+                    chart_data["filters"]["filter_col4"] = get_safe_value(chart_filter_col2s, i)
+                    chart_data["filters"]["filter_val4"] = get_safe_value(chart_filter_val2s, i)
+                    chart_data["filters"]["filter_col5"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val5"] = get_safe_value(chart_filter_val1s, i)
+
+                elif chart_type == "PivotTable":
+                    chart_data["filters"]["index_col1"] = get_safe_value(chart_index_col1s, i)
+                    chart_data["filters"]["columns"] = get_safe_value(chart_columns, i)
+                    chart_data["filters"]["title"] = get_safe_value(chart_titles, i)
+                    chart_data["filters"]["x_title"] = get_safe_value(chart_x_cols, i)
+                    chart_data["filters"]["y_title"] = get_safe_value(chart_y_cols, i)
+                    chart_data["filters"]["unique_column"] = get_safe_value(chart_unique_columns, i)
+                    chart_data["filters"]["values_col"] = get_safe_value(chart_values_cols, i)
+                    chart_data["filters"]["aggfunc"] = get_safe_value(chart_aggfuncs, i)
+                    chart_data["filters"]["filter_col1"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val1"] = get_safe_value(chart_filter_val1s, i)
+                    chart_data["filters"]["filter_col2"] = get_safe_value(chart_filter_col2s, i)
+                    chart_data["filters"]["filter_val2"] = get_safe_value(chart_filter_val2s, i)
+                    chart_data["filters"]["filter_col3"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val3"] = get_safe_value(chart_filter_val1s, i)
+                    chart_data["filters"]["filter_col4"] = get_safe_value(chart_filter_col2s, i)
+                    chart_data["filters"]["filter_val4"] = get_safe_value(chart_filter_val2s, i)
+                    chart_data["filters"]["filter_col5"] = get_safe_value(chart_filter_col1s, i)
+                    chart_data["filters"]["filter_val5"] = get_safe_value(chart_filter_val1s, i)
+                
+
+                total_charts_processed = i
+                
+                # Distribute charts to sections based on the number of sections
+                if section_names:
+                    # Simple distribution: assign charts in order to sections
+                    section_idx = total_charts_processed % len(section_names)
+                    
+                    if section_idx not in charts_by_section:
+                        charts_by_section[section_idx] = []
+                    charts_by_section[section_idx].append(chart_data)
+        
+        # 3. Create sections with their assigned charts
+        for section_idx, section_name in enumerate(section_names):
+            if section_name:
+                section_charts = charts_by_section.get(section_idx, [])
+                section_data = {
+                    "section_name": section_name,
+                    "items": section_charts
+                }
+                sections_data.append(section_data)
+        
+        # 4. Create complete dashboard structure
         dashboard_structure = {
             "report_id": report_id or f"report_{uuid.uuid4().hex[:8]}",
             "report_name": report_name,
@@ -2096,25 +2288,30 @@ def save_dashboard(save_clicks, current_index, report_name, report_id, date_crea
             }
         }
         
-        # Update or add to dashboards data
-        if current_index == -1:  # New dashboard
+        # 5. Update or add to dashboards data
+        if selector_value == "new":  # New dashboard
             dashboards_data.append(dashboard_structure)
-        elif 0 <= current_index < len(dashboards_data):  # Existing dashboard
-            dashboards_data[current_index] = dashboard_structure
-        else:  # Invalid index, add as new
+        elif isinstance(selector_value, int) and 0 <= selector_value < len(dashboards_data):
+            # Update existing dashboard
+            dashboards_data[selector_value] = dashboard_structure
+        else:  # Invalid selector, add as new
             dashboards_data.append(dashboard_structure)
         
+        # 6. Save to file
         try:
-            with open(dashboards_json_path, 'w') as f:
-                json.dump(dashboards_data, f, indent=2)
+            save_dashboards_to_file(dashboards_data)
         except Exception as e:
             print(f"Error saving dashboard: {e}")
+            # You might want to show an error message to the user
         
-        # Update dropdown options
-        options = [{"label": f"📋 {d.get('report_name', 'Unnamed')} (ID: {d.get('report_id', '?')})", 
-                   "value": i} for i, d in enumerate(dashboards_data)] + \
-                  [{"label": "➕ Create New Dashboard", "value": "new"}]
+        # 7. Update dropdown options
+        options = [
+            {"label": f"📋 {d.get('report_name', 'Unnamed')} (ID: {d.get('report_id', '?')})", 
+             "value": idx} 
+            for idx, d in enumerate(dashboards_data)
+        ] + [{"label": "➕ Create New Dashboard", "value": "new"}]
         
+        # 8. Close modal and return updated options
         return options, {"display": "none"}, {"display": "none"}
     
     return dash.no_update, dash.no_update, dash.no_update

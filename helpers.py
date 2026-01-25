@@ -80,9 +80,11 @@ def create_count_from_config(df, filters):
             active_filters.append((var, val))
     if not active_filters:
         return create_count(df, unique_col)
+    
+    
 
-    if active_filters[0][0] != filters.get("variable1"):
-        return create_count(df, unique_col)  # failsafe
+    # if active_filters[0][0] != filters.get("variable1"):
+    #     return create_count(df, unique_col)  # failsafe
     args = []
     for var, val in active_filters:
         args.extend([var, val])

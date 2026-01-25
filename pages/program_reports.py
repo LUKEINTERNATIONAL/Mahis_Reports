@@ -71,7 +71,7 @@ report_config_panel = html.Div(
                             min_date_allowed=datetime(2023, 1, 1),
                             max_date_allowed=_end_of_today,
                             initial_visible_month=_today,
-                            start_date=_start_of_today - pd.Timedelta(days=30),
+                            start_date=_start_of_today,
                             end_date=_end_of_today - pd.Timedelta(days=1),
                             display_format="YYYY-MM-DD",
                             minimum_nights=0,
@@ -323,3 +323,14 @@ def generate_chart(urlparams, n_clicks, report_name, start_date, end_date, hf):
             [],
             []
         )
+    
+@callback(
+    [Output('prog-date-range-picker', 'start_date'),
+     Output('prog-date-range-picker', 'end_date')],
+    Input('prog-interval-update-today', 'n_intervals')
+)
+def update_date_range(n):
+    today = datetime.now()
+    start = today.replace(hour=0, minute=0, second=0, microsecond=0) - pd.Timedelta(days=30)
+    end = today.replace(hour=23, minute=59, second=59, microsecond=0)  - pd.Timedelta(days=1)
+    return start, end

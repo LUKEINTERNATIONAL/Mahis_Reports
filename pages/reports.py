@@ -10,7 +10,16 @@ import json
 from isoweek import Week
 from dash.exceptions import PreventUpdate
 from reports_class import ReportTableBuilder
-from visualizations import create_count, create_sum, create_count_sets, create_sum_sets
+from reportlab.lib.pagesizes import letter, A4, portrait
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.units import inch
+import io
+import base64
+
+from config import DATE_, FACILITY_, AGE_GROUP_, GENDER_, NEW_REVISIT_, HOME_DISTRICT_, TA_, VILLAGE_, FACILITY_CODE_
+
 
 dash.register_page(__name__, path="/hmis_reports")
 
@@ -113,112 +122,117 @@ def load_report_options():
         print(f"Missing key in JSON: {e}")
         return []
 
-def build_table(filtered,original_data, page_name):
-    preg_patients = filtered[(filtered['concept_name']=='Pregnant woman')&(filtered['obs_value_coded']=='Yes')][['person_id']]
-    preg_patients = filtered.merge(preg_patients, on = 'person_id', how='inner')
-
-    spec_path = f"data/uploads/{page_name}.xlsx"
-    if not os.path.exists(spec_path):
-        error_msg = f"Report not found on Server. Request Admin to add report"
-        return html.Div(error_msg)
-    
-    print(original_data['days_before'].max(),original_data['days_before'].min())
-
-    builder = ReportTableBuilder(spec_path, filtered, original_data)
-    builder.load_spec()
-    # print(builder.filters_map)
-    components = builder.build_dash_components()
-    return components
 
 layout = html.Div(className="container", children=[
     html.H4("Select Report Parameters",style={'textAlign': 'center',"color":"#006401",}),
     html.Div([
-        html.Div(className="filter-container", children=[
-            html.Div([
-                html.Label("Report Name"),
-                dcc.Dropdown(
-                    id='report_name',
-                    options=[
-                        {'label': hf, 'value': hf}
-                        for hf in []
-                    ],
-                    value=None,
-                    clearable=True
-                )
-            ], className="filter-input"),
-            html.Div([
-                html.Label("Period Type"),
-                dcc.Dropdown(
-                    id='period_type-filter',
-                    options=[
-                        {'label': period, 'value': period}
-                        for period in ['Weekly','Monthly','Quarterly']
-                    ],
-                    value='Monthly',
-                    clearable=True
-                )
-            ], className="filter-input"),
-            html.Div([
-                html.Label("Year"),
-                dcc.Dropdown(
-                    id='year-filter',
-                    options=[
-                        {'label': period, 'value': period}
-                        for period in relative_year
-                    ],
-                    value=dt.now().strftime("%Y"),
-                    clearable=True
-                )
-            ], className="filter-input"),
+            html.Div(className="filter-container", children=[
+                html.Div([
+                    html.Label("Report Name"),
+                    dcc.Dropdown(
+                        id='report_name',
+                        options=[
+                            {'label': hf, 'value': hf}
+                            for hf in []
+                        ],
+                        value=None,
+                        clearable=True
+                    )
+                ], className="filter-input"),
+                html.Div([
+                    html.Label("Period Type"),
+                    dcc.Dropdown(
+                        id='period_type-filter',
+                        options=[
+                            {'label': period, 'value': period}
+                            for period in ['Weekly','Monthly','Quarterly']
+                        ],
+                        value='Monthly',
+                        clearable=True
+                    )
+                ], className="filter-input"),
+                html.Div([
+                    html.Label("Year"),
+                    dcc.Dropdown(
+                        id='year-filter',
+                        options=[
+                            {'label': period, 'value': period}
+                            for period in relative_year
+                        ],
+                        value=dt.now().strftime("%Y"),
+                        clearable=True
+                    )
+                ], className="filter-input"),
 
-            html.Div([
-                html.Label("Week/Month/Quarter"),
-                dcc.Dropdown(
-                    id='month-filter',
-                    options=[
-                        {'label': period, 'value': period}
-                        for period in relative_month
-                    ],
-                    value=dt.now().strftime("%B"),
-                    clearable=True
-                )
-            ], className="filter-input"),
-            html.Div([
-                html.Label("Program (some reports may not need program filter)"),
-                dcc.Dropdown(
-                    id='program_filter',
-                    options=[
-                        {'label': item, 'value': item}
-                        for item in ["OPD","IPD"]
-                    ],
-                    value=dt.now().strftime("%B"),
-                    clearable=True
-                )
-            ], className="filter-input"),
-            html.Div([
-            html.Button(
-                "Generate Report",
-                id="generate-btn",
-                n_clicks=0,
-                style={
-                    "backgroundColor": "#297952",
-                    "color": "white",
-                    "border": "none",
-                    "padding": "8px 12px",
-                    "borderRadius": "6px",
-                    "cursor": "pointer",
-                    "fontSize": "16px",
-                    "marginTop": "0px",
-                    "marginBottom": "10px"
-                }
-            ),
-        ]),
+                html.Div([
+                    html.Label("Week/Month/Quarter"),
+                    dcc.Dropdown(
+                        id='month-filter',
+                        options=[
+                            {'label': period, 'value': period}
+                            for period in relative_month
+                        ],
+                        value=dt.now().strftime("%B"),
+                        clearable=True
+                    )
+                ], className="filter-input"),
+                html.Div([
+                    html.Label("Program (some reports may not need program filter)"),
+                    dcc.Dropdown(
+                        id='program_filter',
+                        options=[
+                            {'label': item, 'value': item}
+                            for item in ["OPD","IPD"]
+                        ],
+                        value=dt.now().strftime("%B"),
+                        clearable=True
+                    )
+                ], className="filter-input"),
+            html.Div(
+                    id='report-downloads-menu',
+                    style={"display": "flex","alignItems": "center","width": "100%"
+                    },
+                    children=[
 
+                        # LEFT SIDE
+                        html.Div(
+                            children=[
+                                html.Button("Generate Report",id="generate-btn",n_clicks=0,
+                                    style={
+                                        "backgroundColor": "#297952",
+                                        "color": "white",
+                                        "border": "none",
+                                        "padding": "8px 12px",
+                                        "borderRadius": "6px",
+                                        "cursor": "pointer",
+                                        "fontSize": "16px"
+                                    }
+                                )
+                            ],
+                            style={"display": "flex","gap": "10px"}
+                        ),
+
+                        # RIGHT SIDE
+                        html.Div(
+                            children=[
+                                html.Button("CSV", id="report-btn-csv", n_clicks=0, className="btn btn-outline-secondary"),
+                                html.Button("JSON", id="report-btn-json", n_clicks=0, className="btn btn-outline-secondary"),
+                                html.Button("PDF", id="report-btn-pdf", n_clicks=0, className="btn btn-outline-secondary"),
+                                html.Span(id="report-run-status", className="run-status")
+                            ],
+                            style={"display": "flex","gap": "10px","marginLeft": "auto"
+                            }
+                        )
+                    ]
+                )
+        
         ]),
         
     ]),
+    dcc.Download(id="download-report-blob"),
 
-    html.Div(id='standard-reports-table-container'),        
+    dcc.Store(id="report-data-store"),
+    html.Div(id='standard-reports-table-container')  
 ])
 
 @callback(
@@ -243,8 +257,10 @@ def update_report_dropdown(urlparams):
 
 @callback(
     [Output('standard-reports-table-container', 'children'),
-     Output('generate-btn', 'n_clicks')],
-    Input('generate-btn', 'n_clicks'),
+     Output('generate-btn', 'n_clicks'),
+     Output('report-data-store', 'data')],
+
+    Input('generate-btn', 'n_clicks'), 
     Input('url-params-store', 'data'),
     Input('period_type-filter', 'value'),
     Input('year-filter', 'value'),
@@ -252,11 +268,20 @@ def update_report_dropdown(urlparams):
     Input('report_name', 'value'),
     prevent_initial_call=True
 )
-def update_table(clicks, urlparams, period_type, year_filter, month_filter, report_filter):
-    # Only generate table when button is clicked
+def update_table(clicks, 
+                 urlparams, 
+                 period_type, 
+                 year_filter, 
+                 month_filter, 
+                 report_filter):
+    
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return dash.no_update
+    trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+
     if clicks is None or clicks == 0:
         raise PreventUpdate
-    
     # Handle missing inputs to prevent errors
     if not urlparams or not period_type or not year_filter or not month_filter or not report_filter:
         return html.Div("Please fill all required filters")
@@ -283,9 +308,9 @@ def update_table(clicks, urlparams, period_type, year_filter, month_filter, repo
         return html.Div(error_msg)
     
     data_opd = pd.read_parquet(parquet_path)
-    data_opd['Date'] = pd.to_datetime(data_opd['Date'], format='mixed')
-    data_opd['Gender'] = data_opd['Gender'].replace({"M":"Male","F":"Female"})
-    data_opd["DateValue"] = pd.to_datetime(data_opd["Date"]).dt.date
+    data_opd[DATE_] = pd.to_datetime(data_opd[DATE_], format='mixed')
+    data_opd[GENDER_] = data_opd[GENDER_].replace({"M":"Male","F":"Female"})
+    data_opd["DateValue"] = pd.to_datetime(data_opd[DATE_]).dt.date
     today = dt.today().date()
     data_opd["months"] = data_opd["DateValue"].apply(lambda d: (today - d).days // 30)
     # data_opd.to_csv('data/archive/hmis.csv')
@@ -293,7 +318,7 @@ def update_table(clicks, urlparams, period_type, year_filter, month_filter, repo
     original_data = data_opd #for cohort analysis this has to be moved forward to the return function
 
     if urlparams:
-        search_url = data_opd[data_opd['Facility_CODE'].str.lower() == urlparams.lower()]
+        search_url = data_opd[data_opd[FACILITY_CODE_].str.lower() == urlparams.lower()]
     else:
         return html.Div("No facility selected")
     
@@ -301,33 +326,194 @@ def update_table(clicks, urlparams, period_type, year_filter, month_filter, repo
         if period_type == 'Weekly': 
             start_date, end_date = get_week_start_end(month_filter, year_filter)
             filtered = search_url[
-                (pd.to_datetime(search_url['Date']) >= pd.to_datetime(start_date)) &
-                (pd.to_datetime(search_url['Date']) <= pd.to_datetime(end_date))
+                (pd.to_datetime(search_url[DATE_]) >= pd.to_datetime(start_date)) &
+                (pd.to_datetime(search_url[DATE_]) <= pd.to_datetime(end_date))
             ]
-            original_data = original_data[original_data['Date']<=pd.to_datetime(end_date)]
+            original_data = original_data[original_data[DATE_]<=pd.to_datetime(end_date)]
             original_data["days_before"] = original_data["DateValue"].apply(lambda d: (start_date - d).days) #filter for relative days before filter
-            return build_table(filtered,original_data, report["page_name"]), 0
+
+            spec_path = f"data/uploads/{report['page_name']}.xlsx"
+            if not os.path.exists(spec_path):
+                error_msg = f"Report not found on Server. Request Admin to add report"
+                return html.Div(error_msg)
+            builder = ReportTableBuilder(spec_path, filtered, original_data)
+            builder.load_spec()
+            components = builder.build_dash_components()
+            return components, 0, None
             
         elif period_type == 'Monthly': 
             start_date, end_date = get_month_start_end(month_filter, year_filter)
             filtered = search_url[
-                (pd.to_datetime(search_url['Date']) >= pd.to_datetime(start_date)) &
-                (pd.to_datetime(search_url['Date']) <= pd.to_datetime(end_date))
+                (pd.to_datetime(search_url[DATE_]) >= pd.to_datetime(start_date)) &
+                (pd.to_datetime(search_url[DATE_]) <= pd.to_datetime(end_date))
             ]
-            original_data = original_data[original_data['Date']<=pd.to_datetime(end_date)]
+            original_data = original_data[original_data[DATE_]<=pd.to_datetime(end_date)]
             original_data["days_before"] = original_data["DateValue"].apply(lambda d: (start_date - d).days)
-            return build_table(filtered,original_data, report["page_name"]), 0
+
+            spec_path = f"data/uploads/{report['page_name']}.xlsx"
+            if not os.path.exists(spec_path):
+                error_msg = f"Report not found on Server. Request Admin to add report"
+                return html.Div(error_msg)
+            builder = ReportTableBuilder(spec_path, filtered, original_data)
+            builder.load_spec()
+            components = builder.build_dash_components()
+            section_data = builder.build_section_tables()
+            serializable_data = []
+            for section_name, df in section_data:
+                df_json = df.to_json(date_format='iso', orient='split')
+                serializable_data.append({
+                    'section': section_name,
+                    'data': df_json
+                })
+            return components, 0, serializable_data
             
         else:  # Quarterly
             start_date, end_date = get_quarter_start_end(month_filter, year_filter)
             filtered = search_url[
-                (pd.to_datetime(search_url['Date']) >= pd.to_datetime(start_date)) &
-                (pd.to_datetime(search_url['Date']) <= pd.to_datetime(end_date))
+                (pd.to_datetime(search_url[DATE_]) >= pd.to_datetime(start_date)) &
+                (pd.to_datetime(search_url[DATE_]) <= pd.to_datetime(end_date))
             ]
-            original_data = original_data[original_data['Date']<=pd.to_datetime(end_date)]
+            original_data = original_data[original_data[DATE_]<=pd.to_datetime(end_date)]
             original_data["days_before"] = original_data["DateValue"].apply(lambda d: (start_date - d).days)
-            return build_table(filtered,original_data, report["page_name"]), 0
+            
+            spec_path = f"data/uploads/{report['page_name']}.xlsx"
+            if not os.path.exists(spec_path):
+                error_msg = f"Report not found on Server. Request Admin to add report"
+                return html.Div(error_msg)
+            builder = ReportTableBuilder(spec_path, filtered, original_data)
+            builder.load_spec()
+            components = builder.build_dash_components()
+            return components, 0, None
             
     except ValueError as e:
         print(f"Error: {e}")
         return html.Div(f"Error: {str(e)}")
+    
+@callback(
+        Output('download-report-blob', 'data'),
+        [
+        Input('report-data-store', 'data'),
+        Input('report-btn-csv', 'n_clicks'),
+        Input('report-btn-json', 'n_clicks'),
+        Input('report-btn-pdf', 'n_clicks')
+        ],
+        prevent_initial_call=True
+)
+def get_data(reports_data, csv, json, pdf):
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return dash.no_update
+    if not reports_data:
+        return dash.no_update
+    trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    if trigger_id == 'report-btn-csv':
+        all_dfs = []
+        for item in reports_data:
+            section_name = item['section']
+            df = pd.read_json(item['data'], orient='split')
+            df.insert(0, 'Section', section_name)  # Add a column to identify the section
+            all_dfs.append(df)
+        combined_df = pd.concat(all_dfs, ignore_index=True)
+        return dcc.send_data_frame(combined_df.to_csv, 'MaHIS_facility_report.csv',index=False)
+    elif trigger_id == 'report-btn-json':
+        all_dfs = []
+        for item in reports_data:
+            section_name = item['section']
+            df = pd.read_json(item['data'], orient='split')
+            df.insert(0, 'Section', section_name)  # Add a column to identify the section
+            all_dfs.append(df)
+        combined_df = pd.concat(all_dfs, ignore_index=True)
+        return dcc.send_data_frame(combined_df.to_json, 'MaHIS_facility_report.json')
+    elif trigger_id == 'report-btn-pdf':
+        all_dfs = []
+        for item in reports_data:
+            section_name = item['section']
+            df = pd.read_json(item['data'], orient='split')
+            df.insert(0, 'Section', section_name)
+            all_dfs.append(df)
+        combined_df = pd.concat(all_dfs, ignore_index=True)
+        
+        # Create PDF in memory
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buffer, 
+            pagesize=portrait(A4), 
+            leftMargin=30, 
+            rightMargin=30, 
+            topMargin=30, 
+            bottomMargin=30
+        )
+        
+        elements = []
+        styles = getSampleStyleSheet()
+        title_text = f"MAHIS FACILITY REPORT"
+        title = Paragraph(title_text, styles["Title"])
+        elements.append(title)
+        current_date = dt.now().strftime("%Y-%m-%d %H:%M:%S")
+        subtitle_text = f"Report | Generated: {current_date}"
+        subtitle = Paragraph(subtitle_text, styles["Heading5"])
+        elements.append(subtitle)
+        elements.append(Spacer(1, 20))
+        # Create wrap style for table cells
+        wrap_style = ParagraphStyle(
+            name='WrapStyle',
+            parent=styles['Normal'],
+            fontSize=8,
+            leading=9,
+            wordWrap='LTR',
+            spaceBefore=2,
+            spaceAfter=2,
+        )
+        pdf_columns = combined_df.columns.tolist()
+        table_data = [pdf_columns]
+        for _, row in combined_df.iterrows():
+            table_row = []
+            for col in pdf_columns:
+                value = row.get(col, '')
+                if isinstance(value, str) and len(str(value)) > 30:
+                    table_row.append(Paragraph(str(value), wrap_style))
+                else:
+                    table_row.append(str(value))
+            table_data.append(table_row)
+        col_widths = []
+        for col in pdf_columns:
+            base_width = len(str(col)) * 5
+            col_widths.append(min(base_width + 20, 150))  # Max 150 points
+        t = Table(table_data, repeatRows=1)
+        t.setStyle(TableStyle([
+            # Header
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#198754')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            
+            # Data
+            ('ALIGN', (0, 1), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            
+            # Alternating row colors
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
+            
+            # Cell padding
+            ('LEFTPADDING', (0, 0), (-1, -1), 4),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+            ('TOPPADDING', (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ]))
+        
+        elements.append(t)
+        elements.append(Spacer(1, 20))
+        footer_text = f"Page 1 of 1 | Generated through MaHIS"
+        footer = Paragraph(footer_text, styles["Normal"])
+        elements.append(footer)
+        doc.build(elements)
+        buffer.seek(0)
+        filename = f"MaHIS_facility_report.pdf"
+        
+        return dcc.send_bytes(buffer.getvalue(), filename=filename)
+    else:
+        return dash.no_update

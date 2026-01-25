@@ -8,6 +8,8 @@ import base64
 import io
 import uuid
 
+from config import actual_keys_in_data
+
 path = os.getcwd()
 path_dcc_json = os.path.join(path, 'data', 'dcc_dropdown_json','dropdowns.json')
 with open(path_dcc_json) as r:
@@ -82,14 +84,6 @@ def validate_dashboard_json(contents):
     - counts objects must contain id, name, and filters
     """
 
-    actual_keys_in_data = ['person_id', 'encounter_id', 
-                                       'Gender', 'Age', 'Age_Group', 
-                                       'Date', 'Program', 'Facility', 
-                                       'Facility_CODE', 'User', 'District', 
-                                       'Encounter', 'Home_district', 'TA', 
-                                       'Village', 'visit_days', 'obs_value_coded', 
-                                       'concept_name', 'Value',"",
-                                       'ValueN', 'DrugName', 'Value_name', 'new_revisit','count','count_set','sum']
     try:
         data = json.loads(contents)
 
@@ -415,6 +409,7 @@ def create_chart_fields(chart_type, chart_data=None, section_index=None, chart_i
     
     if chart_type not in CHART_TEMPLATES:
         return html.Div("Invalid chart type")
+
     
     # Get the template for this chart type
     template = CHART_TEMPLATES[chart_type]
@@ -538,18 +533,20 @@ def create_count_item(count_data=None, index=None):
                           className="btn-danger btn-small")
             ]),
         ]),
+
+        # Level 1 Filters
         html.Div(className="count-row", children=[
-            html.Div(className="count-col", children=[
+            html.Div(className="count-col", style={"display": "none"},  children=[
                 html.Label("Filter Variable 1", className="form-label"),
                 dcc.Input(
                     id={"type": "count-var1", "index": index},
                     value=count_data.get('filters', {}).get('variable1', 'Program'),
-                    placeholder='',
-                    className="form-input"
+                    className="form-input",
+
                 ),
             ]),
             html.Div(className="count-col", children=[
-                html.Label("Filter Value 1", className="form-label"),
+                html.Label("Program Filter (Var1)", className="form-label"),
                 dcc.Dropdown(
                     id={"type": "count-val1", "index": index},
                     value=value1,
@@ -561,17 +558,16 @@ def create_count_item(count_data=None, index=None):
                     className="form-input"
                 ),
             ]),
-            html.Div(className="count-col", children=[
-                html.Label("Filter Variable 2", className="form-label"),
+            html.Div(className="count-col",style={"display": "none"}, children=[
+                html.Label("Filter Variable 2",  className="form-label"),
                 dcc.Input(
                     id={"type": "count-var2", "index": index},
-                    value=count_data.get('filters', {}).get('variable2', ''),
-                    placeholder="Encounter",
+                    value=count_data.get('filters', {}).get('variable2', 'Encounter'),
                     className="form-input"
                 ),
             ]),
             html.Div(className="count-col", children=[
-                html.Label("Filter Value 2", className="form-label"),
+                html.Label("Encounter Filter (Var2)", className="form-label"),
                 dcc.Dropdown(
                     id={"type": "count-val2", "index": index},
                     value=value2,
@@ -584,17 +580,16 @@ def create_count_item(count_data=None, index=None):
                     className="form-input"
                 ),
             ]),
-            html.Div(className="count-col", children=[
+            html.Div(className="count-col",style={"display": "none"}, children=[
                 html.Label("Filter Variable 3", className="form-label"),
                 dcc.Input(
                     id={"type": "count-var3", "index": index},
-                    value=count_data.get('filters', {}).get('variable3', ''),
-                    placeholder="concept_name",
+                    value=count_data.get('filters', {}).get('variable3', 'concept_name'),
                     className="form-input"
                 ),
             ]),
             html.Div(className="count-col", children=[
-                html.Label("Filter Value 3", className="form-label"),
+                html.Label("Concept Name (Var3)", className="form-label"),
                 dcc.Dropdown(
                     id={"type": "count-val3", "index": index},
                     value=value3,
@@ -607,21 +602,94 @@ def create_count_item(count_data=None, index=None):
                 ),
             ])
             ,
-            html.Div(className="count-col", children=[
+            html.Div(className="count-col",style={"display": "none"}, children=[
                 html.Label("Filter Variable 4", className="form-label"),
                 dcc.Input(
                     id={"type": "count-var4", "index": index},
-                    value=count_data.get('filters', {}).get('variable4', ''),
-                    placeholder="e.g. Age_Group",
+                    value=count_data.get('filters', {}).get('variable4', 'obs_value_coded'),
                     className="form-input"
                 ),
             ]),
             html.Div(className="count-col", children=[
-                html.Label("Filter Value 4", className="form-label"),
+                html.Label("Obs Value Coded (Var4)", className="form-label"),
                 dcc.Input(
                     id={"type": "count-val4", "index": index},
                     value=count_data.get('filters', {}).get('value4', ''),
-                    placeholder="e.g. Over 5",
+                    placeholder="Input Obs Value Coded",
+                    className="form-input"
+                ),
+            ])
+        ]),
+
+        # Level 2 filters
+        html.Div(className="count-row", children=[
+            html.Div(className="count-col", style={"display": "none"},  children=[
+                html.Label("Filter Variable 5", className="form-label"),
+                dcc.Input(
+                    id={"type": "count-var5", "index": index},
+                    value=count_data.get('filters', {}).get('variable5', 'ValueN'),
+                    className="form-input",
+
+                ),
+            ]),
+            html.Div(className="count-col", children=[
+                html.Label("Obs Value Numeric (Var5)", className="form-label"),
+                dcc.Input(
+                    id={"type": "count-val5", "index": index},
+                    value=count_data.get('filters', {}).get('value5', ''),
+                    placeholder="Input Obs Value Numeric",
+                    className="form-input"
+                ),
+            ]),
+            html.Div(className="count-col",style={"display": "none"}, children=[
+                html.Label("Filter Variable 6",  className="form-label"),
+                dcc.Input(
+                    id={"type": "count-var6", "index": index},
+                    value=count_data.get('filters', {}).get('variable6', 'Value'),
+                    className="form-input"
+                ),
+            ]),
+            html.Div(className="count-col", children=[
+                html.Label("Drugs Name (Var6)", className="form-label"),
+                dcc.Input(
+                    id={"type": "count-val6", "index": index},
+                    value=count_data.get('filters', {}).get('value6', ''),
+                    placeholder="Input Drug Name",
+                    className="form-input"
+                ),
+            ]),
+            html.Div(className="count-col",style={"display": "none"}, children=[
+                html.Label("Filter Variable 7", className="form-label"),
+                dcc.Input(
+                    id={"type": "count-var7", "index": index},
+                    value=count_data.get('filters', {}).get('variable7', 'Gender'),
+                    className="form-input"
+                ),
+            ]),
+            html.Div(className="count-col", children=[
+                html.Label("Gender (Var7)", className="form-label"),
+                dcc.Input(
+                    id={"type": "count-val7", "index": index},
+                    value=count_data.get('filters', {}).get('value7', ''),
+                    placeholder="Input Gender",
+                    className="form-input"
+                ),
+            ])
+            ,
+            html.Div(className="count-col",style={"display": "none"}, children=[
+                html.Label("Filter Variable 8", className="form-label"),
+                dcc.Input(
+                    id={"type": "count-var8", "index": index},
+                    value=count_data.get('filters', {}).get('variable8', 'Age_Group'),
+                    className="form-input"
+                ),
+            ]),
+            html.Div(className="count-col", children=[
+                html.Label("Age Goup (Var8)", className="form-label"),
+                dcc.Input(
+                    id={"type": "count-val8", "index": index},
+                    value=count_data.get('filters', {}).get('value8', ''),
+                    placeholder="Input Age Group",
                     className="form-input"
                 ),
             ])
@@ -689,7 +757,7 @@ def create_section(section_data=None, index=None):
                     html.Label("Section Name *", className="form-label"),
                     dcc.Input(
                         id={"type": "section-name", "index": index},
-                        value=section_data.get('section_name', ''),
+                        value=section_data.get('section_name', ' '),
                         placeholder="e.g Attendance",
                         className="form-input"
                     ),
@@ -719,7 +787,7 @@ CHART_TEMPLATES = {
         "measure": "chart",
         "unique": "any",
         "duration_default": "7days",
-        "date_col": "",
+        "date_col": "Date",
         "y_col": "",
         "title": "",
         "x_title": "Date",
@@ -730,7 +798,13 @@ CHART_TEMPLATES = {
         "filter_col1": "",
         "filter_val1": "",
         "filter_col2": "",
-        "filter_val2": ""
+        "filter_val2": "",
+        "filter_col3": "",
+        "filter_val3": "",
+        "filter_col4": "",
+        "filter_val4": "",
+        "filter_col5": "",
+        "filter_val5": ""
     },
     "Bar": {
         "measure": "chart",
@@ -745,7 +819,13 @@ CHART_TEMPLATES = {
         "filter_col1": "",
         "filter_val1": "",
         "filter_col2": "",
-        "filter_val2": ""
+        "filter_val2": "",
+        "filter_col3": "",
+        "filter_val3": "",
+        "filter_col4": "",
+        "filter_val4": "",
+        "filter_col5": "",
+        "filter_val5": ""
     },
     "Pie": {
         "measure": "chart",
@@ -759,6 +839,12 @@ CHART_TEMPLATES = {
         "filter_val1": "",
         "filter_col2": "",
         "filter_val2": "",
+        "filter_col3": "",
+        "filter_val3": "",
+        "filter_col4": "",
+        "filter_val4": "",
+        "filter_col5": "",
+        "filter_val5": "",
         "colormap": {}
     },
     "Column": {
@@ -776,7 +862,13 @@ CHART_TEMPLATES = {
         "filter_col1": "",
         "filter_val1": "",
         "filter_col2": "",
-        "filter_val2": ""
+        "filter_val2": "",
+        "filter_col3": "",
+        "filter_val3": "",
+        "filter_col4": "",
+        "filter_val4": "",
+        "filter_col5": "",
+        "filter_val5": ""
     },
     "Histogram": {
         "measure": "chart",
@@ -791,7 +883,13 @@ CHART_TEMPLATES = {
         "filter_col1": "",
         "filter_val1": "",
         "filter_col2": "",
-        "filter_val2": ""
+        "filter_val2": "",
+        "filter_col3": "",
+        "filter_val3": "",
+        "filter_col4": "",
+        "filter_val4": "",
+        "filter_col5": "",
+        "filter_val5": ""
     },
     "PivotTable": {
         "measure": "chart",
@@ -807,6 +905,12 @@ CHART_TEMPLATES = {
         "filter_val1": "",
         "filter_col2": "",
         "filter_val2": "",
+        "filter_col3": "",
+        "filter_val3": "",
+        "filter_col4": "",
+        "filter_val4": "",
+        "filter_col5": "",
+        "filter_val5": ""
     }
 }
 

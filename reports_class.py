@@ -191,7 +191,6 @@ class ReportTableBuilder:
             df = pd.DataFrame(buffer)
             df = df.loc[:, (df != "").any(axis=0)]
             sections.append((current_section_name, df))
-
         return sections
 
     
@@ -201,11 +200,11 @@ class ReportTableBuilder:
         title = self._title() or "Report"  # Or use self._title() if DESIGN sheet still has Title
         sections = self.build_section_tables()  # New method for multi-section tables
 
-        children: List[Any] = [html.H1(title, style={"textAlign": "center"})]
-
+        children: List[Any] = [html.H2(title, style={"textAlign": "center"})] 
+        
         for subtitle, subdf in sections:
             if subtitle:
-                children.append(html.H2(subtitle, style={"marginBottom": "0px"}))
+                children.append(html.H3(subtitle, style={"marginBottom": "0px"}))
 
             value_cols = [c for c in subdf.columns if c != "Data Element"]
             columns = [{"name": "Data Element", "id": "Data Element"}]

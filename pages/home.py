@@ -9,6 +9,12 @@ from dash.exceptions import PreventUpdate
 import os
 from helpers import build_charts_section, build_metrics_section
 from datetime import datetime
+from datetime import datetime as dt
+
+# Importing parquet file path and from config
+
+# importing referential columns from config
+from config import DATE_, FACILITY_, AGE_GROUP_, GENDER_, NEW_REVISIT_, HOME_DISTRICT_, TA_, VILLAGE_, FACILITY_CODE_
 
 dash.register_page(__name__, path="/home")
 
@@ -29,7 +35,7 @@ def build_charts_from_json(filtered, data_opd, delta_days, dashboards_json):
     config = dashboards_json
     
     filtered = filtered.copy()
-    filtered['Residence'] = filtered['Home_district'] + ', TA-' + filtered['TA'] + ', ' + filtered['Village']
+    filtered['Residence'] = filtered[HOME_DISTRICT_] + ', TA-' + filtered[TA_] + ', ' + filtered[VILLAGE_]
     delta_days = 7 if delta_days <= 0 else delta_days
     
     # Build metrics from counts section
@@ -42,6 +48,39 @@ def build_charts_from_json(filtered, data_opd, delta_days, dashboards_json):
         html.Div(className="card-container-5", children=metrics),
         charts
     ])
+
+def get_relative_date_range(option):
+    from datetime import datetime, timedelta
+    today = datetime.today().date()
+    
+    if option == 'Today':
+        return today, today
+    elif option == 'Yesterday':
+        yesterday = today - timedelta(days=1)
+        return yesterday, yesterday
+    elif option == 'Last 7 Days':
+        start_date = today - timedelta(days=7)
+        return start_date, today
+    elif option == 'Last 30 Days':
+        start_date = today - timedelta(days=30)
+        return start_date, today
+    elif option == 'This Week':
+        start_date = today - timedelta(days=today.weekday())
+        return start_date, today
+    elif option == 'Last Week':
+        start_date = today - timedelta(days=today.weekday() + 7)
+        end_date = start_date + timedelta(days=6)
+        return start_date, end_date
+    elif option == 'This Month':
+        start_date = today.replace(day=1)
+        return start_date, today
+    elif option == 'Last Month':
+        first_day_this_month = today.replace(day=1)
+        last_day_last_month = first_day_this_month - timedelta(days=1)
+        start_date = last_day_last_month.replace(day=1)
+        return start_date, last_day_last_month
+    else:
+        return None, None
 
 layout = html.Div(className="container", children=[
     dcc.Location(id='url', refresh=False),
@@ -57,12 +96,12 @@ layout = html.Div(className="container", children=[
             ),
         html.Div(className="filter-container", children=[
             html.Div([
-                html.Label("Visit Type"),
+                html.Label("Relative Period"),
                 dcc.Dropdown(
-                    id='dashboard-visit-type-filter',
+                    id='dashboard-period-type-filter',
                     options=[
                         {'label': item, 'value': item}
-                        for item in ['New', 'Revisit']
+                        for item in ['Today', 'Yesterday', 'Last 7 Days', 'Last 30 Days','This Week','Last Week', 'This Month', 'Last Month']
                     ],
                     value=None,
                     clearable=True
@@ -70,7 +109,7 @@ layout = html.Div(className="container", children=[
             ], className="filter-input"),
 
             html.Div([
-                html.Label("Date Range"),
+                html.Label("Custom Date Range"),
                 dcc.DatePickerRange(
                     id='dashboard-date-range-picker',
                     min_date_allowed="2023-01-01",
@@ -107,6 +146,14 @@ layout = html.Div(className="container", children=[
                     clearable=True
                 )
             ], className="filter-input"),
+
+            html.Div(
+                    children=[
+                        html.Button("Apply", id="dashboard-btn-generate", n_clicks=0, className="btn btn-primary"),
+                        html.Button("Reset", id="dashboard-btn-reset", n_clicks=0, className="btn btn-secondary"),
+                    ],
+                    style={"display": "flex", "gap": "10px", "margin-bottom": "10px"}
+                ),
         ]),
 
 ]),
@@ -123,7 +170,7 @@ layout = html.Div(className="container", children=[
         [Input('dashboard-interval-update-today', 'n_intervals'),
         Input('active-button-store', 'data')])
 
-def update_menu(menu_items, color):
+def update_menu(interval, color):
     
     with open(json_path, 'r') as f:
         menu_json = json.load(f)
@@ -138,92 +185,131 @@ def update_menu(menu_items, color):
     ]
 
 
-
-
-# Callback to update all components based on date range
 @callback(
     [Output('dashboard-container', 'children'),
      Output('dashboard-hf-filter', 'options'),
      Output('active-button-store', 'data')],
     [
-        Input('url-params-store', 'data'),
-        Input('dashboard-date-range-picker', 'start_date'),
-        Input('dashboard-date-range-picker', 'end_date'),
-        Input('dashboard-visit-type-filter', 'value'),
-        Input('dashboard-hf-filter', 'value'),
-        Input('dashboard-age-filter', 'value'),
+        Input('dashboard-btn-generate', 'n_clicks'),
         Input({"type": "menu-button", "name": ALL}, "n_clicks"),
-        State({"type": "menu-button", "name": ALL}, "id")
+        Input('dashboard-interval-update-today', 'n_intervals') # For auto-refresh
+    ],
+    [
+        State('url-params-store', 'data'),
+        State('dashboard-date-range-picker', 'start_date'),
+        State('dashboard-date-range-picker', 'end_date'),
+        State('dashboard-period-type-filter', 'value'),
+        State('dashboard-hf-filter', 'value'),
+        State('dashboard-age-filter', 'value'),
+        State({"type": "menu-button", "name": ALL}, "id"),
+        State('active-button-store', 'data')
     ]
 )
-def update_dashboard(urlparams, start_date, end_date, visit_type, hf, age,n_clicks_list, id_list):
-    
-    start_date = pd.to_datetime(start_date).replace(hour=0, minute=0, second=0, microsecond=0)
-    end_date = pd.to_datetime(end_date).replace(hour=23, minute=59, second=59, microsecond=0)
-    delta_days = (end_date - start_date).days
-    
-    with open(json_path, 'r') as f:
-        menu_json = json.load(f)
-    name_to_title = {d["report_id"]: d["report_name"] for d in menu_json}
+def update_dashboard(gen_clicks, menu_clicks, interval, urlparams, start_date, end_date, period_type, hf, age, id_list, current_active):
+    ctx = callback_context
+    triggered_id = ctx.triggered[0]['prop_id'] if ctx.triggered else None
 
-    triggered = callback_context.triggered
-    clicked_name = 'Summary'
-    
-    if triggered and "menu-button" in triggered[0]["prop_id"]:
-            # Extract the name from the triggered input
-            triggered_id = eval(triggered[0]["prop_id"].split(".")[0])  # converts string back to dict
-            clicked_name = triggered_id["name"]
+    # Determine which report to show
+    clicked_name = current_active
+    if triggered_id and "menu-button" in triggered_id:
+        prop_dict = json.loads(triggered_id.split('.')[0])
+        clicked_name = prop_dict['name']
 
-    clicked_title = name_to_title.get(clicked_name, clicked_name)
-    for dashboard in menu_json:
-        if dashboard['report_name'] == clicked_name:
-            dashboard_json = dashboard
- 
-    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
-    if not os.path.exists(parquet_path):
-        raise FileNotFoundError(f"PARQUET file not found at {parquet_path}")
-    
-    if not os.path.exists(json_path):
-        raise FileNotFoundError(f"Dashboard not found: {clicked_title}")
-    
-    
-    data_opd = pd.read_parquet(parquet_path)
-    # print(sorted(list(data_opd)))
-    data_opd['Date'] = pd.to_datetime(data_opd['Date'], format='mixed')
-    data_opd['Gender'] = data_opd['Gender'].replace({"M":"Male","F":"Female"})
-    # data_opd = data_opd[data_opd['Program']=='OPD Program']
-    # data_opd.to_excel('data/archive/hmis.xlsx')
-    
+    # Date Logic
+    start_dt = pd.to_datetime(start_date).replace(hour=0, minute=0, second=0)
+    end_dt = pd.to_datetime(end_date).replace(hour=23, minute=59, second=59)
 
+    if period_type:
+        s, e = get_relative_date_range(period_type)
+        if s and e:
+            start_dt, end_dt = pd.to_datetime(s), pd.to_datetime(e)
+
+    # Load Data
+    data_opd = pd.read_parquet(os.path.join(path, 'data', 'latest_data_opd.parquet'))
+    data_opd[DATE_] = pd.to_datetime(data_opd[DATE_], format='mixed')
+    data_opd[GENDER_] = data_opd[GENDER_].replace({"M":"Male","F":"Female"})
+    data_opd["DateValue"] = pd.to_datetime(data_opd[DATE_]).dt.date
+    today = dt.today().date()
+    data_opd["months"] = data_opd["DateValue"].apply(lambda d: (today - d).days // 30)
+    data_opd.to_excel("data/archive/hmis.xlsx", index=False)
+    
+    # Filter by URL params (e.g. Facility Code)
     if urlparams:
-        search_url = data_opd[data_opd['Facility_CODE'].str.lower() == urlparams.lower()]
+        search_url = data_opd[data_opd[FACILITY_CODE_].str.lower() == urlparams.lower()]
     else:
-        PreventUpdate
-        
-        
+        search_url = data_opd
+
+    # Apply Dropdown Filters
     mask = pd.Series(True, index=search_url.index)
     if hf:
-        mask &= (search_url['Facility'] == hf)
+        mask &= (search_url[FACILITY_] == hf)
     if age:
-        mask &= (search_url['Age_Group'] == age)
-
+        mask &= (search_url[AGE_GROUP_] == age)
         
     filtered_data = search_url[mask].copy()
 
+    # Apply Date Mask
     filtered_data_date = filtered_data[
-        (pd.to_datetime(filtered_data['Date']) >= pd.to_datetime(start_date)) & 
-        (pd.to_datetime(filtered_data['Date']) <= pd.to_datetime(end_date))
+        (filtered_data[DATE_] >= start_dt) & 
+        (filtered_data[DATE_] <= end_dt)
     ]
-    
-    return build_charts_from_json(filtered_data_date, filtered_data, delta_days, dashboard_json), filtered_data['Facility'].sort_values().unique().tolist(), clicked_name
+
+    # Get JSON config for the report
+    with open(json_path, 'r') as f:
+        menu_json = json.load(f)
+    dashboard_json = next((d for d in menu_json if d['report_name'] == clicked_name), menu_json[0])
+
+    delta_days = (end_dt - start_dt).days
+    hf_options = filtered_data[FACILITY_].sort_values().unique().tolist()
+
+    return build_charts_from_json(filtered_data_date, filtered_data, delta_days, dashboard_json), hf_options, clicked_name
 
 @callback(
-    [Output('dashboard-date-range-picker', 'start_date'),
-     Output('dashboard-date-range-picker', 'end_date')],
-    Input('dashboard-interval-update-today', 'n_intervals')
+    [Output('dashboard-date-range-picker', 'start_date',allow_duplicate=True),
+     Output('dashboard-date-range-picker', 'end_date',allow_duplicate=True)],
+    Input('dashboard-interval-update-today', 'n_intervals'),
+    prevent_initial_call=True
 )
 def update_date_range(n):
     today = datetime.now()
     start = today.replace(hour=0, minute=0, second=0, microsecond=0)
     end = today.replace(hour=23, minute=59, second=59, microsecond=0)
     return start, end
+
+@callback(
+    [Output('dashboard-date-range-picker', 'start_date',allow_duplicate=True),
+     Output('dashboard-date-range-picker', 'end_date',allow_duplicate=True),
+     Output('dashboard-period-type-filter', 'value',allow_duplicate=True),
+     Output('dashboard-hf-filter', 'value',allow_duplicate=True),
+     Output('dashboard-age-filter', 'value',allow_duplicate=True)],
+    [Input('dashboard-btn-reset', 'n_clicks')],
+    prevent_initial_call=True
+)
+def reset_filters(n_clicks):
+    # Returns values to their defaults
+    today = datetime.now().date()
+    return today, today, None, None, None
+
+@callback(
+    [Output('dashboard-date-range-picker', 'style'),
+     Output('dashboard-period-type-filter', 'style'),
+     Output('dashboard-hf-filter', 'style'),
+     Output('dashboard-age-filter', 'style')],
+    [Input('dashboard-btn-reset', 'n_clicks'),
+     Input('dashboard-btn-generate', 'n_clicks')],
+    prevent_initial_call=True
+)
+def change_style(generate, reset):
+    # Returns bold items on generate to indicate active filters
+    ctx = callback_context
+    triggered_id = ctx.triggered[0]['prop_id'] if ctx.triggered else None
+    if triggered_id == "dashboard-btn-generate.n_clicks":
+        style_active = {"display": "flex",
+                    "alignItems": "center",
+                    "gap": "5px",
+                    "border": "3px solid green",
+                    "borderRadius": "8px"}
+        return style_active, style_active, style_active, style_active
+    else:
+        style_default = {}
+        return style_default,style_default,style_default,style_default

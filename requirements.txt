@@ -12,3 +12,4 @@ gunicorn
 pyarrow
 dash-bootstrap-components
 typing_extensions
+reportlab

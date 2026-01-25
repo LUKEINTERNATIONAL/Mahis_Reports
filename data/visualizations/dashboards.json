@@ -178,7 +178,23 @@
                 }
               },
               {
-                "id": "chart_opd_4",
+                "id": "chart_summary_6",
+                "name": "Encounters",
+                "type": "Bar",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "label_col": "Encounter",
+                  "value_col": "encounter_id",
+                  "title": "All patient encounters",
+                  "x_title": "Number of encounters",
+                  "y_title": "Encounter Name",
+                  "top_n": 10
+                }
+              },
+              {
+                "id": "chart_summary_7",
                 "name": "Active Users (All encounters)",
                 "type": "Bar",
                 "filters": {
@@ -465,7 +481,9 @@
                   "filter_val2": "DIAGNOSIS",
                   "filter_col3": "concept_name",
                   "filter_val3": "Primary diagnosis",
-                  "rename": {"obs_value_coded":"Diagnosis"},
+                  "rename": {
+                    "obs_value_coded": "Diagnosis"
+                  },
                   "replace": {}
                 }
               }
@@ -575,9 +593,15 @@
             "variable1": "Program",
             "value1": "NCD PROGRAM",
             "variable2": "Encounter",
-            "value2": ["OUTPATIENT DIAGNOSIS","DIAGNOSIS"],
+            "value2": [
+              "OUTPATIENT DIAGNOSIS",
+              "DIAGNOSIS"
+            ],
             "variable3": "obs_value_coded",
-            "value3": ["Type 1 diabetes","Type 2 diabetes"]
+            "value3": [
+              "Type 1 diabetes",
+              "Type 2 diabetes"
+            ]
           }
         },
         {
@@ -589,7 +613,10 @@
             "variable1": "Program",
             "value1": "NCD PROGRAM",
             "variable2": "Encounter",
-            "value2": ["OUTPATIENT DIAGNOSIS","DIAGNOSIS"],
+            "value2": [
+              "OUTPATIENT DIAGNOSIS",
+              "DIAGNOSIS"
+            ],
             "variable3": "obs_value_coded",
             "value3": "Type 1 diabetes"
           }
@@ -603,7 +630,10 @@
             "variable1": "Program",
             "value1": "NCD PROGRAM",
             "variable2": "Encounter",
-            "value2": ["OUTPATIENT DIAGNOSIS","DIAGNOSIS"],
+            "value2": [
+              "OUTPATIENT DIAGNOSIS",
+              "DIAGNOSIS"
+            ],
             "variable3": "obs_value_coded",
             "value3": "Type 2 diabetes"
           }
@@ -617,7 +647,10 @@
             "variable1": "Program",
             "value1": "NCD PROGRAM",
             "variable2": "Encounter",
-            "value2": ["OUTPATIENT DIAGNOSIS","DIAGNOSIS"],
+            "value2": [
+              "OUTPATIENT DIAGNOSIS",
+              "DIAGNOSIS"
+            ],
             "variable3": "obs_value_coded",
             "value3": "Hypertension"
           }
@@ -770,7 +803,10 @@
                   "filter_col1": "Program",
                   "filter_val1": "NCD PROGRAM",
                   "filter_col2": "Encounter",
-                  "filter_val2": ["OUTPATIENT DIAGNOSIS","DIAGNOSIS"],
+                  "filter_val2": [
+                    "OUTPATIENT DIAGNOSIS",
+                    "DIAGNOSIS"
+                  ],
                   "filter_col3": "new_revisit",
                   "filter_val3": "New"
                 }
@@ -794,7 +830,10 @@
                   "filter_col1": "Program",
                   "filter_val1": "NCD PROGRAM",
                   "filter_col2": "Encounter",
-                  "filter_val2": ["OUTPATIENT DIAGNOSIS","DIAGNOSIS"],
+                  "filter_val2": [
+                    "OUTPATIENT DIAGNOSIS",
+                    "DIAGNOSIS"
+                  ],
                   "filter_col3": "",
                   "filter_val3": ""
                 }
@@ -1111,27 +1150,32 @@
                   }
                 }
               },
-              {   "id":"chart_imm_4",
-                  "name":"Doses Age and Gender Disaggregation",
-                  "type":"CrossTab",
-                  "filters":
-                      {
-                      "measure": "chart",
-                      "unique": "any",
-                      "duration_default": "any",
-                      "index_col1": "Value",
-                      "columns": ["Gender", "Age_Group"],
-                      "values_col": "encounter_id",
-                      "title": "Doses Age and Gender Disaggregation",
-                      "unique_column": "person_id",
-                      "aggfunc": "count",
-                      "filter_col1": "Program",
-                      "filter_val1": "IMMUNIZATION PROGRAM",
-                      "filter_col2": "concept_name",
-                      "filter_val2": "Medications dispensed",
-                      "rename": {"obs_value_coded":"DIAGNOSIS"},
-                      "replace": ""
-                  } 
+              {
+                "id": "chart_imm_4",
+                "name": "Doses Age and Gender Disaggregation",
+                "type": "CrossTab",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "index_col1": "Value",
+                  "columns": [
+                    "Gender",
+                    "Age_Group"
+                  ],
+                  "values_col": "encounter_id",
+                  "title": "Doses Age and Gender Disaggregation",
+                  "unique_column": "person_id",
+                  "aggfunc": "count",
+                  "filter_col1": "Program",
+                  "filter_val1": "IMMUNIZATION PROGRAM",
+                  "filter_col2": "concept_name",
+                  "filter_val2": "Medications dispensed",
+                  "rename": {
+                    "obs_value_coded": "DIAGNOSIS"
+                  },
+                  "replace": ""
+                }
               }
             ]
           }
@@ -1157,9 +1201,7 @@
     "visualization_types": {
       "counts": [],
       "charts": {
-        "sections": [
-          
-        ]
+        "sections": []
       }
     }
   },
@@ -1170,7 +1212,8 @@
     "visualization_types": {
       "counts": [],
       "charts": {
-        "sections": [{
+        "sections": [
+          {
             "section_name": "!! Dashboard under construction",
             "items": [
               {
@@ -1291,28 +1334,44 @@
                   "filter_val2": "Presenting complaint"
                 }
               },
-              {   "id":"chart_ahd_6",
-                  "name":"AHD Treatment by Gender",
-                  "type":"CrossTab",
-                  "filters":
-                      {
-                      "measure": "chart",
-                      "unique": "any",
-                      "duration_default": "any",
-                      "index_col1": "obs_value_coded",
-                      "columns": ["Gender"],
-                      "values_col": "encounter_id",
-                      "title": "AHD Treatment by Gender",
-                      "unique_column": "person_id",
-                      "aggfunc": "count",
-                      "filter_col1": "concept_name",
-                      "filter_val1": "Primary diagnosis",
-                      "rename": {"obs_value_coded":"DIAGNOSIS"},
-                      "replace": ""
-                  } 
+              {
+                "id": "chart_ahd_6",
+                "name": "AHD Treatment by Gender",
+                "type": "CrossTab",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "index_col1": "obs_value_coded",
+                  "columns": [
+                    "Gender"
+                  ],
+                  "values_col": "encounter_id",
+                  "title": "AHD Treatment by Gender",
+                  "unique_column": "person_id",
+                  "aggfunc": "count",
+                  "filter_col1": "concept_name",
+                  "filter_val1": "Primary diagnosis",
+                  "rename": {
+                    "obs_value_coded": "DIAGNOSIS"
+                  },
+                  "replace": ""
+                }
               }
             ]
-          }]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "report_id": "report_3dcf5d7f",
+    "report_name": "Neonatal Program",
+    "date_created": "2026-01-23",
+    "visualization_types": {
+      "counts": [],
+      "charts": {
+        "sections": []
       }
     }
   }
