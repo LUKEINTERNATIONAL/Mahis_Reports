@@ -231,6 +231,8 @@ def update_dashboard(gen_clicks, menu_clicks, interval, urlparams, start_date, e
     data_opd["DateValue"] = pd.to_datetime(data_opd[DATE_]).dt.date
     today = dt.today().date()
     data_opd["months"] = data_opd["DateValue"].apply(lambda d: (today - d).days // 30)
+    
+    data_opd = data_opd.dropna(subset = ['obs_value_coded','concept_name', 'Value','ValueN', 'DrugName', 'Value_name'], how='all')
     # data_opd.to_excel("data/archive/hmis.xlsx", index=False)
     
     # Filter by URL params (e.g. Facility Code)
