@@ -315,12 +315,12 @@ def update_table(clicks,
     data_opd["months"] = data_opd["DateValue"].apply(lambda d: (today - d).days // 30)
     # data_opd.to_csv('data/archive/hmis.csv')
 
-    original_data = data_opd #for cohort analysis this has to be moved forward to the return function
-
     if urlparams:
         search_url = data_opd[data_opd[FACILITY_CODE_].str.lower() == urlparams.lower()]
     else:
         return html.Div("No facility selected")
+    
+    original_data = search_url #for cohort analysis this has to be moved forward to the return function
     
     try:
         if period_type == 'Weekly': 
