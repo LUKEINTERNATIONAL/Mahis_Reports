@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Union, Callable
 import json
 
+from config import PERSON_ID_, ENCOUNTER_ID_, DATE_
+
 """
 MAIN USE CASE OF THIS FILE IS TO PROVIDE VISUALIZATION FUNCTIONS FOR PATIENT DATA
 
@@ -82,7 +84,9 @@ def _apply_filter(data, filter_col, filter_value):
                 if operator == "=":
                     return df[df[filter_col] == value]
                 elif operator == "!=":
-                    return df[df[filter_col] != value]
+                    # should also filter out corresponding persons
+                    persons = df[df[filter_col] == value][PERSON_ID_].to_list()
+                    return df[~df[PERSON_ID_].isin(persons)]
                 elif operator == "<":
                     return df[df[filter_col] < value]
                 elif operator == "<=":
@@ -96,7 +100,7 @@ def _apply_filter(data, filter_col, filter_value):
     return df[df[filter_col] == filter_value]
 
 def create_column_chart(df, x_col, y_col, title, x_title, y_title,
-                        unique_column='person_id', legend_title=None,
+                        unique_column=PERSON_ID_, legend_title=None,
                         color=None, filter_col1=None, filter_value1=None,
                         filter_col2=None, filter_value2=None,
                         filter_col3=None, filter_value3=None):
@@ -112,7 +116,7 @@ def create_column_chart(df, x_col, y_col, title, x_title, y_title,
     data = _apply_filter(data, filter_col3, filter_value3)
 
     
-    data = data.drop_duplicates(subset=[unique_column, 'Date'])
+    data = data.drop_duplicates(subset=[unique_column, DATE_])
 
     if color:
         # Group by both x_col and color column
@@ -155,7 +159,7 @@ def create_column_chart(df, x_col, y_col, title, x_title, y_title,
     
     return fig
 
-def create_line_chart(df, date_col, y_col, title, x_title, y_title, unique_column='person_id', legend_title=None, color=None, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, filter_col3=None, filter_value3=None):
+def create_line_chart(df, date_col, y_col, title, x_title, y_title, unique_column=PERSON_ID_, legend_title=None, color=None, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, filter_col3=None, filter_value3=None):
     """
     Create a time series chart using Plotly Express.
     """
@@ -166,7 +170,7 @@ def create_line_chart(df, date_col, y_col, title, x_title, y_title, unique_colum
     data = _apply_filter(data, filter_col2, filter_value2)
     data = _apply_filter(data, filter_col3, filter_value3)
 
-    data = data.drop_duplicates(subset=[unique_column, 'Date'])
+    data = data.drop_duplicates(subset=[unique_column, DATE_])
 
     # Ensure date column is in datetime format
     if not pd.api.types.is_datetime64_any_dtype(data[date_col]):
@@ -219,7 +223,7 @@ def create_line_chart(df, date_col, y_col, title, x_title, y_title, unique_colum
     
     return fig
 
-def create_pie_chart(df, names_col, values_col, title, unique_column='person_id', filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, filter_col3=None, filter_value3=None, colormap=None):
+def create_pie_chart(df, names_col, values_col, title, unique_column=PERSON_ID_, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, filter_col3=None, filter_value3=None, colormap=None):
     """
     Create a pie chart using Plotly Express.
     """
@@ -230,7 +234,7 @@ def create_pie_chart(df, names_col, values_col, title, unique_column='person_id'
     data = _apply_filter(data, filter_col2, filter_value2)
     data = _apply_filter(data, filter_col3, filter_value3)
     
-    data = data.drop_duplicates(subset=[unique_column, 'Date'])
+    data = data.drop_duplicates(subset=[unique_column, DATE_])
     
     df_summary = data.groupby(names_col)[values_col].nunique().reset_index()
     df_summary.columns = [names_col, values_col]
@@ -258,7 +262,7 @@ def create_pie_chart(df, names_col, values_col, title, unique_column='person_id'
     return fig 
 
 
-def create_pivot_table(df, index_col, columns_col, values_col, title, unique_column='person_id', aggfunc='sum',
+def create_pivot_table(df, index_col, columns_col, values_col, title, unique_column=PERSON_ID_, aggfunc='sum',
                      filter_col1=None, filter_value1=None, 
                      filter_col2=None, filter_value2=None,
                      filter_col3=None, filter_value3=None,
@@ -274,7 +278,7 @@ def create_pivot_table(df, index_col, columns_col, values_col, title, unique_col
     data = _apply_filter(data, filter_col2, filter_value2)
     data = _apply_filter(data, filter_col3, filter_value3)
 
-    data = data.drop_duplicates(subset=[unique_column, 'Date'])
+    data = data.drop_duplicates(subset=[unique_column, DATE_])
 
     # Build pivot
     if aggfunc == 'concat':
@@ -352,7 +356,7 @@ def create_crosstab_table(
     values_col=None,
     aggfunc='count',
     normalize=None,
-    unique_column='person_id',
+    unique_column=PERSON_ID_,
     filter_col1=None, filter_value1=None,
     filter_col2=None, filter_value2=None,
     filter_col3=None, filter_value3=None,
@@ -370,8 +374,8 @@ def create_crosstab_table(
     data = _apply_filter(data, filter_col3, filter_value3)
 
     # Deduplicate by person + date
-    if 'Date' in data.columns:
-        data = data.drop_duplicates(subset=[unique_column, 'Date'])
+    if DATE_ in data.columns:
+        data = data.drop_duplicates(subset=[unique_column, DATE_])
 
     # Helper: support multi-axis for crosstab
     def _axis_arg(arg):
@@ -484,7 +488,7 @@ AGG_MAP: Dict[str, Union[str, Callable]] = {
 def create_line_list(
     title: str,
     df: pd.DataFrame,
-    unique_col: Union[str, List[str]] = 'person_id',
+    unique_col: Union[str, List[str]] = PERSON_ID_,
     rename: Optional[dict] = None,
     cols_order: Optional[List[str]] = None,
     merge_methods: Optional[List[str]] = None,
@@ -680,7 +684,7 @@ def create_age_gender_histogram(
     data = _apply_filter(data, filter_col2, filter_value2)
     data = _apply_filter(data, filter_col3, filter_value3)
 
-    df_unique = data.drop_duplicates(subset=["person_id", "Date"])
+    df_unique = data.drop_duplicates(subset=[PERSON_ID_, DATE_])
 
     if df_unique.empty:
         return go.Figure()
@@ -739,7 +743,7 @@ def create_horizontal_bar_chart(df, label_col, value_col, title, x_title, y_titl
     data = _apply_filter(data, filter_col2, filter_value2)
     data = _apply_filter(data, filter_col3, filter_value3)
 
-    df_unique = data.drop_duplicates(subset=['person_id', 'Date'])
+    df_unique = data.drop_duplicates(subset=[PERSON_ID_, DATE_])
 
     df_grouped = df_unique.groupby(label_col)[value_col].nunique().reset_index()
     df_top = df_grouped.sort_values(by=value_col, ascending=False).head(int(top_n))
@@ -764,7 +768,7 @@ def create_horizontal_bar_chart(df, label_col, value_col, title, x_title, y_titl
 
     return fig
 
-def create_count(df, unique_column='encounter_id', filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, 
+def create_count(df, unique_column=ENCOUNTER_ID_, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, 
                  filter_col3=None, filter_value3=None, filter_col4=None, filter_value4=None,
                  filter_col5=None, filter_value5=None, filter_col6=None, filter_value6=None, 
                  filter_col7=None, filter_value7=None, filter_col8=None, filter_value8=None,
@@ -783,13 +787,13 @@ def create_count(df, unique_column='encounter_id', filter_col1=None, filter_valu
     data = _apply_filter(data, filter_col9, filter_value9)
     data = _apply_filter(data, filter_col10, filter_value10)
     
-    unique_visits = data.drop_duplicates(subset=[unique_column, 'Date'])
+    unique_visits = data.drop_duplicates(subset=[unique_column, DATE_])
 
     return str(len(unique_visits))
 
 def create_count_sets(
     df,
-    unique_column='person_id',
+    unique_column=PERSON_ID_,
     filter_col1=None, filter_value1=None,
     filter_col2=None, filter_value2=None,
     filter_col3=None, filter_value3=None,
@@ -852,7 +856,7 @@ def create_count_sets(
         for col, val in zip(cols, vals):
             df_f = _apply_filter(df_f, col, val)
 
-        df_f = df_f[[unique_column] + cols + ['Date']].drop_duplicates()
+        df_f = df_f[[unique_column] + cols + [DATE_]].drop_duplicates()
 
         filtered_dfs.append(df_f)
     if not filtered_dfs:
@@ -860,13 +864,13 @@ def create_count_sets(
 
     final_df = filtered_dfs[0]
     for temp_df in filtered_dfs[1:]:
-        final_df = pd.merge(final_df, temp_df, on=[unique_column]+ ['Date'], how="inner")
+        final_df = pd.merge(final_df, temp_df, on=[unique_column]+ [DATE_], how="inner")
 
-    unique_visits = final_df.drop_duplicates(subset=[unique_column, 'Date'])
+    unique_visits = final_df.drop_duplicates(subset=[unique_column, DATE_])
 
     return str(len(unique_visits))
 
-def create_count_unique(df, unique_column='person_id', filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, 
+def create_count_unique(df, unique_column=PERSON_ID_, filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None, 
                  filter_col3=None, filter_value3=None, filter_col4=None, filter_value4=None,
                  filter_col5=None, filter_value5=None, filter_col6=None, filter_value6=None):
     data = df
@@ -897,7 +901,7 @@ def create_sum(df, num_field='ValueN', filter_col1=None, filter_value1=None, fil
     return data[num_field].sum()
 
 def create_sum_sets(df, filter_col1, filter_value1, filter_col2, filter_value2, num_field='ValueN',
-                      unique_column='encounter_id', **extra_filters):
+                      unique_column=ENCOUNTER_ID_, **extra_filters):
     """
     Sum values for unique IDs that satisfy a paired condition.
     """

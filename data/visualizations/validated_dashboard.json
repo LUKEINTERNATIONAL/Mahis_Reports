@@ -1330,5 +1330,300 @@
         ]
       }
     }
+  },
+  {
+    "report_id": "report_a9f70d4c",
+    "report_name": "HIV Testing (PITC)",
+    "date_created": "2026-01-25",
+    "visualization_types": {
+      "counts": [
+        {
+          "id": "count_4ad87d16",
+          "name": "Total Attendance",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "variable2": "Encounter",
+            "variable3": "concept_name",
+            "variable4": "obs_value_coded",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "variable8": "Age_Group"
+          }
+        },
+        {
+          "id": "count_bcdcbca3",
+          "name": "Screened for HIV",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "variable2": "Encounter",
+            "value2": [
+              "HIV STATUS AT ENROLLMENT"
+            ],
+            "variable3": "concept_name",
+            "value3": [
+              "HIV status"
+            ],
+            "variable4": "obs_value_coded",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "variable8": "Age_Group"
+          }
+        },
+        {
+          "id": "count_faf63ca3",
+          "name": "Screened - Status Known",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "variable2": "Encounter",
+            "value2": [
+              "HIV STATUS AT ENROLLMENT"
+            ],
+            "variable3": "concept_name",
+            "value3": [
+              "HIV status"
+            ],
+            "variable4": "obs_value_coded",
+            "value4": "Non-reactive | Reactive",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "variable8": "Age_Group"
+          }
+        },
+        {
+          "id": "count_0283a090",
+          "name": "Screened - Status Not Known",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "variable2": "Encounter",
+            "value2": [
+              "HIV STATUS AT ENROLLMENT"
+            ],
+            "variable3": "concept_name",
+            "value3": [
+              "HIV status"
+            ],
+            "variable4": "obs_value_coded",
+            "value4": "Unknown",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "variable8": "Age_Group"
+          }
+        },
+        {
+          "id": "count_0de77f74",
+          "name": "Not Screened",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "variable2": "Encounter",
+            "variable3": "concept_name",
+            "variable4": "obs_value_coded",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "variable8": "Age_Group"
+          }
+        },
+        {
+          "id": "count_5562d5cb",
+          "name": "PITC Orders",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": [
+              "HTS PROGRAM"
+            ],
+            "variable2": "Encounter",
+            "value2": [
+              "LAB ORDERS"
+            ],
+            "variable3": "concept_name",
+            "variable4": "obs_value_coded",
+            "value4": "HIV test",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "variable8": "Age_Group"
+          }
+        },
+        {
+          "id": "count_0e431b2d",
+          "name": "PITC Results",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": [
+              "HTS PROGRAM"
+            ],
+            "variable2": "Encounter",
+            "value2": [
+              "LAB RESULTS"
+            ],
+            "variable3": "concept_name",
+            "value3": [
+              "HIV test"
+            ],
+            "variable4": "obs_value_coded",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "variable8": "Age_Group"
+          }
+        },
+        {
+          "id": "count_eb37080f",
+          "name": "PITC Result New Positive",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": [
+              "HTS PROGRAM"
+            ],
+            "variable2": "Encounter",
+            "value2": [
+              "PATIENT OUTCOME"
+            ],
+            "variable3": "concept_name",
+            "value3": [
+              "New Positive"
+            ],
+            "variable4": "obs_value_coded",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "variable8": "Age_Group"
+          }
+        },
+        {
+          "id": "count_064c9d4e",
+          "name": "PITC Result New Negative",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": [
+              "HTS PROGRAM"
+            ],
+            "variable2": "Encounter",
+            "value2": [
+              "PATIENT OUTCOME"
+            ],
+            "variable3": "concept_name",
+            "variable4": "obs_value_coded",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "variable8": "Age_Group"
+          }
+        },
+        {
+          "id": "count_24042ce3",
+          "name": "PITC Result Referred For ART",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": [
+              "HTS PROGRAM"
+            ],
+            "variable2": "Encounter",
+            "value2": [
+              "PATIENT OUTCOME"
+            ],
+            "variable3": "concept_name",
+            "value3": [
+              "ART referral"
+            ],
+            "variable4": "obs_value_coded",
+            "value4": "Yes",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "variable8": "Age_Group"
+          }
+        }
+      ],
+      "charts": {
+        "sections": [
+          {
+            "section_name": " Detailed Charts",
+            "items": [
+              {
+                "id": "chart_561d6d95",
+                "name": "Attendance By Program",
+                "type": "Column",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "title": "Attendance By Program",
+                  "x_col": "Program",
+                  "y_col": "encounter_id",
+                  "x_title": "Program",
+                  "y_title": "Number of Patients",
+                  "unique_column": "person_id",
+                  "legend_title": "Legend",
+                  "color": "",
+                  "filter_col1": "",
+                  "filter_val1": "",
+                  "filter_col2": "",
+                  "filter_val2": "",
+                  "filter_col3": "",
+                  "filter_val3": "",
+                  "filter_col4": "",
+                  "filter_val4": "",
+                  "filter_col5": "",
+                  "filter_val5": ""
+                }
+              },
+              {
+                "id": "chart_8fc760d6",
+                "name": "Screening by Program",
+                "type": "Column",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "title": "Number of Patients Screened by Program",
+                  "x_col": "Program",
+                  "y_col": "encounter_id",
+                  "x_title": "Program",
+                  "y_title": "Number of Patients Screened",
+                  "unique_column": "person_id",
+                  "legend_title": "Legend",
+                  "color": "",
+                  "filter_col1": "Encounter",
+                  "filter_val1": "HIV STATUS AT ENROLLMENT",
+                  "filter_col2": "",
+                  "filter_val2": "",
+                  "filter_col3": "Encounter",
+                  "filter_val3": "HIV STATUS AT ENROLLMENT",
+                  "filter_col4": "",
+                  "filter_val4": "",
+                  "filter_col5": "Encounter",
+                  "filter_val5": "HIV STATUS AT ENROLLMENT"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
   }
 ]
