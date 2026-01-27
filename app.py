@@ -126,6 +126,54 @@ def get_quarter_start_end(quarter, year):
         end_date = datetime.date(int(year), end_month + 1, 1) - datetime.timedelta(days=1)
     return start_date, end_date
 
+@server.route(f'/api/', methods=['GET'])
+# this /api/route should return the following in json: /api/datasets, /api/reports, /api/indicators
+def api_root():
+    uuid_param = request.args.get('uuid')
+    # allow certain uuids only
+    allowed_uuids = ["m3his@dhd"]  # Example list of allowed UUIDs
+    if uuid_param not in allowed_uuids:
+        return jsonify({"error": "Unauthorized, Please supply id"}), 403
+    else:
+        return jsonify({
+            "endpoints": {
+                "datasets": "/api/datasets",
+                "reports": "/api/reports",
+                "indicators": "/api/indicators",
+                "data_elements": "/api/dataElements"
+            }
+        })
+    
+@server.route(f'/api/reports', methods=['GET'])
+def get_reports_list():
+    uuid_param = request.args.get('uuid')
+    # allow certain uuids only
+    allowed_uuids = ["m3his@dhd"]  # Example list of allowed UUIDs
+    if uuid_param not in allowed_uuids:
+        return jsonify({"error": "Unauthorized, Please supply id"}), 403
+
+    try:
+        path = os.getcwd()
+        reports_json = os.path.join(path, 'data', 'hmis_reports.json')
+        with open(reports_json, "r") as f:
+            json_data = json.load(f)
+
+        reports = [
+            {
+                "report_id": r["page_name"],
+                "report_name": r["report_name"],
+                "date_updated": r["date_updated"]
+            }
+            for r in json_data.get("reports", []) 
+            if r.get("archived", "").lower() == "false"
+        ]
+
+        return jsonify({"reports": reports})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @server.route(f'/api/datasets', methods=['GET'])
 # example: http://localhost:8050/api/datasets?uuid=1&period=Monthly:January:2025&hf_code=SA091312&report_name=idsr_monthly
 def get_report_dataset():
@@ -154,6 +202,11 @@ def get_report_dataset():
             start_date, end_date = get_quarter_start_end(period_value, period_year)
         else:
             return jsonify({"error": f"Invalid period type: {period_type}"}), 400
+        
+        # allow certain uuids only
+        allowed_uuids = ["m3his@dhd"]  # Example list of allowed UUIDs
+        if uuid_param not in allowed_uuids:
+            return jsonify({"error": "Unauthorized, Please supply id"}), 403
 
         # Load Report Specs
         path = os.getcwd()
