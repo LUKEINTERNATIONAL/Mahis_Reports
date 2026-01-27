@@ -284,7 +284,7 @@ def update_table(clicks,
         raise PreventUpdate
     # Handle missing inputs to prevent errors
     if not urlparams or not period_type or not year_filter or not month_filter or not report_filter:
-        return html.Div("Please fill all required filters")
+        return html.Div("Missing Report Parameters"), 0, None
     
     path = os.getcwd()
     parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
@@ -318,7 +318,7 @@ def update_table(clicks,
     if urlparams:
         search_url = data_opd[data_opd[FACILITY_CODE_].str.lower() == urlparams.lower()]
     else:
-        return html.Div("No facility selected")
+        return html.Div("Missing Parameters"), 0, None
     
     original_data = search_url #for cohort analysis this has to be moved forward to the return function
     

@@ -239,7 +239,7 @@ def update_dashboard(gen_clicks, menu_clicks, interval, urlparams, start_date, e
     if urlparams:
         search_url = data_opd[data_opd[FACILITY_CODE_].str.lower() == urlparams.lower()]
     else:
-        search_url = data_opd
+        return html.Div("Missing Parameters"), no_update, clicked_name
 
     # Apply Dropdown Filters
     mask = pd.Series(True, index=search_url.index)
@@ -279,8 +279,8 @@ def update_date_range(n):
     return start, end
 
 @callback(
-    [Output('dashboard-date-range-picker', 'start_date',allow_duplicate=True),
-     Output('dashboard-date-range-picker', 'end_date',allow_duplicate=True),
+    [Output('dashboard-date-range-picker', 'start_date'),
+     Output('dashboard-date-range-picker', 'end_date'),
      Output('dashboard-period-type-filter', 'value',allow_duplicate=True),
      Output('dashboard-hf-filter', 'value',allow_duplicate=True),
      Output('dashboard-age-filter', 'value',allow_duplicate=True)],

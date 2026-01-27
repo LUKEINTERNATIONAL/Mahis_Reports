@@ -1625,5 +1625,76 @@
         ]
       }
     }
+  },
+  {
+    "report_id": "report_96a9f88e",
+    "report_name": "Neonatal Program",
+    "date_created": "2026-01-27",
+    "visualization_types": {
+      "counts": [
+        {
+          "id": "count_f3d40be9",
+          "name": "Total Neonates Seen",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": [
+              "NEONATAL PROGRAM"
+            ],
+            "variable2": "Encounter",
+            "variable3": "concept_name",
+            "variable4": "obs_value_coded",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "variable8": "Age_Group"
+          }
+        },
+        {
+          "id": "count_1c32fed6",
+          "name": "Total Neonates Male",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": [
+              "NEONATAL PROGRAM"
+            ],
+            "variable2": "Encounter",
+            "variable3": "concept_name",
+            "variable4": "obs_value_coded",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "value7": "Male",
+            "variable8": "Age_Group"
+          }
+        },
+        {
+          "id": "count_1f41f4fb",
+          "name": "Total Neonates Female",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": [
+              "NEONATAL PROGRAM"
+            ],
+            "variable2": "Encounter",
+            "variable3": "concept_name",
+            "variable4": "obs_value_coded",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "value7": "Female",
+            "variable8": "Age_Group"
+          }
+        }
+      ],
+      "charts": {
+        "sections": []
+      }
+    }
   }
 ]

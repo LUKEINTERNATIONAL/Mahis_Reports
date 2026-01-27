@@ -191,6 +191,8 @@ def generate_chart(urlparams, n_clicks, report_name, start_date, end_date, hf):
 
         if urlparams:
             data = data[data['Facility_CODE'].str.lower() == urlparams.lower()]
+        else:
+            return html.Div("Missing Parameters"),facilities_options, all_programs
 
         facilities = sorted(data['Facility'].dropna().unique().tolist())
         all_facility_item = "*All health facilities" if len(facilities) > 1 else None
@@ -332,5 +334,5 @@ def generate_chart(urlparams, n_clicks, report_name, start_date, end_date, hf):
 def update_date_range(n):
     today = datetime.now()
     start = today.replace(hour=0, minute=0, second=0, microsecond=0) - pd.Timedelta(days=30)
-    end = today.replace(hour=23, minute=59, second=59, microsecond=0)  - pd.Timedelta(days=1)
+    end = today.replace(hour=23, minute=59, second=59, microsecond=0)  - pd.Timedelta(days=0)
     return start, end
