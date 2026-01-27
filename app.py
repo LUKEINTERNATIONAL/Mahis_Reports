@@ -126,7 +126,7 @@ def get_quarter_start_end(quarter, year):
         end_date = datetime.date(int(year), end_month + 1, 1) - datetime.timedelta(days=1)
     return start_date, end_date
 
-@server.route(f'{pathname_prefix}api/datasets', methods=['GET'])
+@server.route(f'/api/datasets', methods=['GET'])
 # example: http://localhost:8050/api/datasets?uuid=1&period=Monthly:January:2025&hf_code=SA091312&report_name=idsr_monthly
 def get_report_dataset():
     # Parameters: UUID, Period (Format: "Type:Value:Year"), Health Facility ID, Report Name

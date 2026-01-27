@@ -23,3 +23,5 @@ config.wowa.py
 models.py
 pages/reports_config
 nav_drawer.py
+data/TimeStamp.csv
+data/dcc_dropdown_json/dropdowns.json
