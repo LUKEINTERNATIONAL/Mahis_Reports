@@ -313,6 +313,7 @@ def update_table(clicks,
     data_opd["DateValue"] = pd.to_datetime(data_opd[DATE_]).dt.date
     today = dt.today().date()
     data_opd["months"] = data_opd["DateValue"].apply(lambda d: (today - d).days // 30)
+    data_opd = data_opd.dropna(subset = ['obs_value_coded','concept_name', 'Value','ValueN', 'DrugName', 'Value_name'], how='all')
     # data_opd.to_csv('data/archive/hmis.csv')
 
     if urlparams:
@@ -374,7 +375,7 @@ def update_table(clicks,
                 (pd.to_datetime(search_url[DATE_]) <= pd.to_datetime(end_date))
             ]
             original_data = original_data[original_data[DATE_]<=pd.to_datetime(end_date)]
-            original_data["days_before"] = original_data["DateValue"].apply(lambda d: (start_date - d).days)
+            original_data["days_before"] = original_data["DateValue"].copy().apply(lambda d: (start_date - d).days)
             
             spec_path = f"data/uploads/{report['page_name']}.xlsx"
             if not os.path.exists(spec_path):

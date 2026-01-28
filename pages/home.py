@@ -293,8 +293,7 @@ def reset_filters(n_clicks):
     return today, today, None, None, None
 
 @callback(
-    [Output('dashboard-date-range-picker', 'style'),
-     Output('dashboard-period-type-filter', 'style'),
+    [Output('dashboard-period-type-filter', 'style'),
      Output('dashboard-hf-filter', 'style'),
      Output('dashboard-age-filter', 'style')],
     [Input('dashboard-btn-reset', 'n_clicks'),
@@ -311,7 +310,7 @@ def change_style(generate, reset):
                     "gap": "5px",
                     "border": "3px solid green",
                     "borderRadius": "8px"}
-        return style_active, style_active, style_active, style_active
+        return style_active, style_active, style_active
     else:
         style_default = {}
-        return style_default,style_default,style_default,style_default
+        return style_default,style_default,style_default

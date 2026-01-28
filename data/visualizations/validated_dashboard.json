@@ -1648,7 +1648,8 @@
             "variable5": "ValueN",
             "variable6": "Value",
             "variable7": "Gender",
-            "variable8": "Age_Group"
+            "variable8": "Age_Group",
+            "value8": "Under 5"
           }
         },
         {
@@ -1668,7 +1669,8 @@
             "variable6": "Value",
             "variable7": "Gender",
             "value7": "Male",
-            "variable8": "Age_Group"
+            "variable8": "Age_Group",
+            "value8": "Under 5"
           }
         },
         {
@@ -1688,7 +1690,8 @@
             "variable6": "Value",
             "variable7": "Gender",
             "value7": "Female",
-            "variable8": "Age_Group"
+            "variable8": "Age_Group",
+            "value8": "Under 5"
           }
         }
       ],
