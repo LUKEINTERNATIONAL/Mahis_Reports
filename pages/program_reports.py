@@ -181,6 +181,24 @@ def update_filters(selected_program):
 )
 def generate_chart(urlparams, n_clicks, report_name, start_date, end_date, hf):
     parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
+
+    # get user
+    user_data_path = os.path.join(path, 'data', 'users_data.csv')
+    if not os.path.exists(user_data_path):
+        user_data = pd.DataFrame(columns=['user_id', 'role'])
+    else:
+        user_data = pd.read_csv(os.path.join(path, 'data', 'users_data.csv'))
+    test_admin = pd.DataFrame(columns=['user_id', 'role'], data=[['m3his@dhd', 'reports_admin']])
+    user_data = pd.concat([user_data, test_admin], ignore_index=True)
+
+    if urlparams.get('uuid', [None])[0]:
+        print("User UUID from URL:", urlparams.get('uuid', [None])[0])
+    else:
+        return html.Div("Missing Dashboard Parameters. Reports wont load"), no_update, no_update
+    user_info = user_data[user_data['user_id'] == urlparams.get('uuid', [None])[0]]
+    if user_info.empty:
+        return html.Div("Unauthorized User. Please contact system administrator."), no_update, no_update
+    
     try:
         data = pd.read_parquet(parquet_path)
         with open(path_program_reports) as x:
@@ -189,8 +207,8 @@ def generate_chart(urlparams, n_clicks, report_name, start_date, end_date, hf):
         data['Date'] = pd.to_datetime(data['Date'], errors='coerce')
         data['Gender'] = data['Gender'].replace({"M": "Male", "F": "Female"})
 
-        if urlparams:
-            data = data[data['Facility_CODE'].str.lower() == urlparams.lower()]
+        if urlparams.get('Location', [None])[0]:
+            data = data[data['Facility_CODE'].str.lower() == urlparams.get('Location', [None])[0].lower()]
         else:
             return html.Div("Missing Parameters"),facilities_options, all_programs
 

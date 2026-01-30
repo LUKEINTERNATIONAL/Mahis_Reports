@@ -15,23 +15,6 @@ from modal_functions import (validate_excel_file, load_reports_data, save_report
 
 dash.register_page(__name__, path="/reports_config", title="Admin Dashboard")
 
-DASHBOARD_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "report_id": {"type": "string"},
-        "report_name": {"type": "string"},
-        "date_created": {"type": "string"},
-        "visualization_types": {
-            "type": "object",
-            "properties": {
-                "counts": {"type": "array"},
-                "charts": {"type": "object"}
-            },
-            "required": ["charts"]
-        }
-    },
-    "required": ["report_id", "report_name", "date_created", "visualization_types"]
-}
 
 # Load existing dashboards
 path = os.getcwd()
@@ -778,7 +761,7 @@ layout = html.Div(
     style={"display": "flex", "height": "100vh"},
     children=[
         # ---------- LEFT SIDEBAR ----------
-        html.Div(
+        html.Div(id="sidebar",
             style={"width": "300px","background": "#FFFFFF","padding": "20px",
                    "color": "white","display": "flex","flexDirection": "column",
                    "gap": "10px","marginTop":"5px","boxShadow": "8px 0 16px -8px rgba(0,0,0,0.5)","overflow": "visible"},
@@ -793,7 +776,7 @@ layout = html.Div(
                     html.Button("Add dashboard (GUI)",id="add-dashboard",n_clicks=0,className="nav-btn"),
                     html.Button("Download XLSX Template",id="download-sample",n_clicks=0,className="nav-btn"),
                     html.Button("Preview Data",id="preview-data",n_clicks=0,className="nav-btn"),
-                    html.Button("Logout",id="logout-button",n_clicks=0,className="nav-btn"),
+                    # html.Button("Logout",id="logout-button",n_clicks=0,className="nav-btn"),
                 ])
             ],
         ),
@@ -838,6 +821,31 @@ layout = html.Div(
         ),
     ],
 )
+
+# validate admins
+@callback(
+        [Output('sidebar', 'children'),
+         Output('main-content', 'children')],
+        [Input('url-params-store', 'data')])
+def validate_admin_access(urlparams):
+    user_data_path = os.path.join(path, 'data', 'users_data.csv')
+    if not os.path.exists(user_data_path):
+        user_data = pd.DataFrame(columns=['user_id', 'role'])
+    else:
+        user_data = pd.read_csv(os.path.join(path, 'data', 'users_data.csv'))
+        authorized_users = user_data[user_data['role'] == 'Superuser,Superuser']
+    test_admin = pd.DataFrame(columns=['user_id', 'role'], data=[['m3his@dhd', 'reports_admin']])
+    user_data = pd.concat([authorized_users, test_admin], ignore_index=True)
+
+    user_info = user_data[user_data['user_id'] == urlparams.get('uuid', [None])[0]]
+    if user_info.empty:
+        return dash.no_update, html.Div([
+            html.H2("Access Denied"),
+            html.P("You do not have permission to access this page. Please log in as an administrator.")], 
+            style={'textAlign': 'center', 'marginTop': '100px'})
+    else:
+        return dash.no_update, dash.no_update
+
 
 @callback(
     Output('download-template', 'data'),

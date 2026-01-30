@@ -122,7 +122,8 @@ def create_column_chart(df, x_col, y_col, title, x_title, y_title,
         # Group by both x_col and color column
         summary = data.groupby([x_col, color])[y_col].nunique().reset_index()
         total = summary[y_col].sum()
-        summary["label"] = summary[y_col].astype(str) + "(" + (summary[y_col]/total*100).round(1).astype(str) + "%)"
+        # summary["label"] = summary[y_col].astype(str) + "(" + (summary[y_col]/total*100).round(1).astype(str) + "%)"
+        summary['label'] = summary[y_col].astype(str)
         
         fig = px.bar(
             summary, 
@@ -139,8 +140,8 @@ def create_column_chart(df, x_col, y_col, title, x_title, y_title,
         summary = data.groupby(x_col)[y_col].agg(aggregation).reset_index()
         summary = summary.sort_values(by=y_col, ascending=False)
         total = summary[y_col].sum()
-        summary["label"] = summary[y_col].astype(str) + "(" + (summary[y_col]/total*100).round(1).astype(str) + "%)"
-        
+        # summary["label"] = summary[y_col].astype(str) + "(" + (summary[y_col]/total*100).round(1).astype(str) + "%)"
+        summary['label'] = summary[y_col].astype(str)
         fig = px.bar(summary, x=x_col, y=y_col, title=title, text="label")
         fig.update_traces(marker_color="#006401")
 
@@ -152,7 +153,7 @@ def create_column_chart(df, x_col, y_col, title, x_title, y_title,
     )
 
     fig.update_traces(
-        textposition='inside',
+        textposition='auto',
         hovertemplate="<b>X-Axis:</b> %{x}<br>" +
                       "<b>Count:</b> %{y}<br>" 
     )

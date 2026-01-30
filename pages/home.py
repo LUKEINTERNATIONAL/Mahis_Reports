@@ -7,6 +7,7 @@ import json
 import numpy as np
 from dash.exceptions import PreventUpdate
 import os
+from flask import request
 from helpers import build_charts_section, build_metrics_section
 from datetime import datetime
 from datetime import datetime as dt
@@ -231,13 +232,28 @@ def update_dashboard(gen_clicks, menu_clicks, interval, urlparams, start_date, e
     data_opd["DateValue"] = pd.to_datetime(data_opd[DATE_]).dt.date
     today = dt.today().date()
     data_opd["months"] = data_opd["DateValue"].apply(lambda d: (today - d).days // 30)
+
+    # get user
+    user_data_path = os.path.join(path, 'data', 'users_data.csv')
+    if not os.path.exists(user_data_path):
+        user_data = pd.DataFrame(columns=['user_id', 'role'])
+    else:
+        user_data = pd.read_csv(os.path.join(path, 'data', 'users_data.csv'))
+    test_admin = pd.DataFrame(columns=['user_id', 'role'], data=[['m3his@dhd', 'reports_admin']])
+    user_data = pd.concat([user_data, test_admin], ignore_index=True)
+
+    user_info = user_data[user_data['user_id'] == urlparams.get('uuid', [None])[0]]
+    if user_info.empty:
+        return html.Div("Unauthorized User. Please contact system administrator."), no_update, clicked_name
+    # Assuming urlparams contains 'user_id' to filter by
+    
     
     # data_opd = data_opd.dropna(subset = ['obs_value_coded','concept_name', 'Value','ValueN', 'DrugName', 'Value_name'], how='all')
     # data_opd.to_excel("data/archive/hmis.xlsx", index=False)
     
     # Filter by URL params (e.g. Facility Code)
-    if urlparams:
-        search_url = data_opd[data_opd[FACILITY_CODE_].str.lower() == urlparams.lower()]
+    if urlparams.get('Location', [None])[0]:
+        search_url = data_opd[data_opd[FACILITY_CODE_].str.lower() == urlparams.get('Location', [None])[0].lower()]
     else:
         return html.Div("Missing Parameters"), no_update, clicked_name
 

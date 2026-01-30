@@ -316,8 +316,25 @@ def update_table(clicks,
     data_opd = data_opd.dropna(subset = ['obs_value_coded','concept_name', 'Value','ValueN', 'DrugName', 'Value_name'], how='all')
     # data_opd.to_csv('data/archive/hmis.csv')
 
-    if urlparams:
-        search_url = data_opd[data_opd[FACILITY_CODE_].str.lower() == urlparams.lower()]
+    # validate user
+    user_data_path = os.path.join(path, 'data', 'users_data.csv')
+    if not os.path.exists(user_data_path):
+        user_data = pd.DataFrame(columns=['user_id', 'role'])
+    else:
+        user_data = pd.read_csv(os.path.join(path, 'data', 'users_data.csv'))
+    test_admin = pd.DataFrame(columns=['user_id', 'role'], data=[['m3his@dhd', 'reports_admin']])
+    user_data = pd.concat([user_data, test_admin], ignore_index=True)
+
+    if urlparams.get('uuid', [None])[0]:
+        print("User UUID from URL:", urlparams.get('uuid', [None])[0])
+    else:
+        return html.Div("Missing Dashboard Parameters. Reports wont load"), dash.no_update, dash.no_update
+    user_info = user_data[user_data['user_id'] == urlparams.get('uuid', [None])[0]]
+    if user_info.empty:
+        return html.Div("Unauthorized User. Please contact system administrator."), dash.no_update, dash.no_update
+
+    if urlparams.get('Location', [None])[0]:
+        search_url = data_opd[data_opd[FACILITY_CODE_].str.lower() == urlparams.get('Location', [None])[0].lower()]
     else:
         return html.Div("Missing Parameters"), 0, None
     

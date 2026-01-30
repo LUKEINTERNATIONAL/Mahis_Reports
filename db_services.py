@@ -336,7 +336,69 @@ class DataFetcher:
             logger.error(f"Data fetch failed: {e}")
             logger.info("Recovery data preserved. Will resume from last batch.")
             raise
+    def fetch_single_table(self, single_table_name, single_table_query):
+        """
+        Robust incremental data fetcher with auto-rebuild capability
+        
+        Args:
+            query_template: SQL query with {date_filter} placeholder
+            filename: Relative path to output CSV file
+            date_column: Date column for incremental loading
+            batch_size: Number of records per batch
+            force_rebuild: If True, will rebuild the file from scratch with default start date 2025-01-01
+        """
+        
+        try:
+            
+            if self.use_localhost:
+                conn = self._get_db_connection()
+                try:
+                    table_df = pd.read_sql(single_table_query, conn)
+                    table_df.to_csv(os.path.join(self.path, single_table_name))
+                finally:
+                    conn.close()
+            elif "ssh_password" in self.ssh_route:
+                print("Using password for SSH")
+                # Remote connection with SSH tunnel using password
+                with SSHTunnelForwarder(
+                    (self.ssh_route['ssh_host'], 22),
+                    ssh_username=self.ssh_route['ssh_user'],
+                    ssh_password=self.ssh_route['ssh_password'],
+                    remote_bind_address=self.ssh_route['remote_bind_address']
+                ) as tunnel:
+                    logger.info(f"SSH tunnel established on port {tunnel.local_bind_port}")
+                    conn = self._get_db_connection(tunnel)
+                    try:
+                        table_df = pd.read_sql(single_table_query, conn)
+                        table_df.to_csv(os.path.join(self.path, single_table_name))
+                    finally:
+                        conn.close()
+            else:
+                print("Using private key for SSH")
 
+                print(f"ssh/{self.ssh_route['ssh_pkey']}")
+                # Remote connection with SSH tunnel
+                with SSHTunnelForwarder(
+                    (self.ssh_route['ssh_host'], 22),
+                    ssh_username=self.ssh_route['ssh_user'],
+                    ssh_private_key=f"ssh/{self.ssh_route['ssh_pkey']}",
+                    # ssh_password=self.ssh_route['ssh_password'],
+                    remote_bind_address=self.ssh_route['remote_bind_address']
+                ) as tunnel:
+                    logger.info(f"SSH tunnel established on port {tunnel.local_bind_port}")
+                    conn = self._get_db_connection(tunnel)
+                    try:
+                        table_df = pd.read_sql(single_table_query, conn)
+                        table_df.to_csv(os.path.join(self.path, single_table_name))
+                    finally:
+                        conn.close()
+            
+            return table_df
+            
+        except Exception as e:
+            logger.error(f"Data fetch failed: {e}")
+            raise
+        
     def _process_daily_batches(self, conn, query_template, filename, date_column, batch_size, start_date):
         """Process data day by day with batch processing within each day"""
         recovery_state = self._load_recovery_state()

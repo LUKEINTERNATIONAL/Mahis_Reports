@@ -62,9 +62,25 @@ class DataStorage:
         print(df[col_index].tail(tail))
         print(f"Total records: {len(df)}")
         return df
+    def fetch_and_save_single_table(self):
+        """Fetch fresh data from DB and save to CSV."""
+        fetcher = DataFetcher(use_localhost=USE_LOCALHOST)
+        df = fetcher.fetch_single_table(
+            single_table_query=self.query,
+            single_table_name=self.filepath
+        )
+        if df is not None and not df.empty:
+            df.to_csv(self.filepath, index=False)
+            logging.info(f"Data saved to {self.filepath} (csv format)")
+        else:
+            logging.warning("No data fetched from database.")
 
 if __name__ == "__main__":
     storage = DataStorage(query=QERY)
     storage.fetch_and_save()
     storage.preview_data()
     storage.save_dcc_dropdown_json()
+
+    users = DataStorage(query="SELECT u.uuid as user_id, ur.role as role FROM users u JOIN user_role ur ON u.user_id = ur.user_id", 
+                        filename="users_data.csv")
+    users.fetch_and_save_single_table()

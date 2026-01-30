@@ -57,10 +57,8 @@ def store_url_params(href):
     parsed_url = urllib.parse.urlparse(href)
     params = urllib.parse.parse_qs(parsed_url.query)
     
-    # Fix: Use lowercase 'location' instead of 'Location'
-    location_param = params.get('Location', [None])[0]
-    
-    return location_param
+    # location = location_param.get('Location', [None])[0]
+    return params
 
 @app.callback(
     Output('url', 'pathname'),
@@ -81,8 +79,10 @@ def redirect_to_home(pathname):
     ],
     Input('url-params-store', 'data')
 )
-def update_nav_links(location):
-    query = f"?Location={location}" if location else ""
+def update_nav_links(url_params):
+    location = url_params.get('Location', [None])[0] if url_params else None
+    uuid = url_params.get('uuid', [None])[0] if url_params else None
+    query = f"?Location={location}&uuid={uuid}" if location and uuid else f"?Location={location}" if location else f"?uuid={uuid}" if uuid else ""
     path = os.getcwd()
     json_path = os.path.join(path, 'data','TimeStamp.csv')
     last_updated = pd.read_csv(json_path)['saving_time'].to_list()[0]
@@ -94,6 +94,7 @@ def update_nav_links(location):
         f"{pathname_prefix}reports_config{query}",
         f"Last updated on: {last_updated}"
     )
+
 
 # Helper functions for date ranges (replicated from pages/reports.py)
 relative_month = ['January', 'February', 'March', 'April', 'May', 'June','July', 'August', 'September', 'October', 'November', 'December']
