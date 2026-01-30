@@ -103,11 +103,11 @@
                   "measure": "chart",
                   "unique": "any",
                   "duration_default": "any",
-                  "title": "Daily OPD Attendance - Last 7 Days",
+                  "title": "Program Enrollments",
                   "x_col": "Program",
                   "y_col": "encounter_id",
                   "x_title": "Program",
-                  "y_title": "encounter_id",
+                  "y_title": "Number of patients",
                   "unique_column": "person_id",
                   "legend_title": "Legend",
                   "color": "",
@@ -170,7 +170,7 @@
                   "age_col": "Age",
                   "gender_col": "Gender",
                   "x_title": "Program",
-                  "y_title": "encounter_id",
+                  "y_title": "Number of patients",
                   "unique_column": "person_id",
                   "bin_size": "10",
                   "color": "",
@@ -211,7 +211,7 @@
                   "label_col": "User",
                   "value_col": "encounter_id",
                   "x_title": 5,
-                  "y_title": "encounter_id",
+                  "y_title": "Number of patients",
                   "unique_column": "person_id",
                   "top_n": "10",
                   "filter_col1": "",
@@ -1633,8 +1633,8 @@
     "visualization_types": {
       "counts": [
         {
-          "id": "count_f3d40be9",
-          "name": "Total Neonates Seen",
+          "id": "count_f3d40bex",
+          "name": "Total Neonatal Program Enrolments",
           "filters": {
             "measure": "count",
             "unique": "person_id",
@@ -1643,6 +1643,33 @@
               "NEONATAL PROGRAM"
             ],
             "variable2": "Encounter",
+            "value2": [
+              "NEONATAL ENROLMENT",
+              "NEONATAL TRIAGE"
+            ],
+            "variable3": "concept_name",
+            "variable4": "obs_value_coded",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "variable8": "Age_Group"
+          }
+        },
+        {
+          "id": "count_f3d40be9",
+          "name": "Neonatal Enrolled in Nursery Care",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": [
+              "NEONATAL PROGRAM"
+            ],
+            "variable2": "Encounter",
+            "value2": [
+              "NEONATAL ENROLMENT",
+              "NEONATAL TRIAGE"
+            ],
             "variable3": "concept_name",
             "variable4": "obs_value_coded",
             "variable5": "ValueN",
@@ -1654,7 +1681,7 @@
         },
         {
           "id": "count_1c32fed6",
-          "name": "Total Neonates Male",
+          "name": "Emergency Triage Conducted",
           "filters": {
             "measure": "count",
             "unique": "person_id",
@@ -1663,19 +1690,21 @@
               "NEONATAL PROGRAM"
             ],
             "variable2": "Encounter",
+            "value2": [
+              "NEONATAL TRIAGE"
+            ],
             "variable3": "concept_name",
             "variable4": "obs_value_coded",
             "variable5": "ValueN",
             "variable6": "Value",
             "variable7": "Gender",
-            "value7": "Male",
             "variable8": "Age_Group",
             "value8": "Under 5"
           }
         },
         {
           "id": "count_1f41f4fb",
-          "name": "Total Neonates Female",
+          "name": "Systematic Examination Done",
           "filters": {
             "measure": "count",
             "unique": "person_id",
@@ -1684,19 +1713,235 @@
               "NEONATAL PROGRAM"
             ],
             "variable2": "Encounter",
+            "value2": [
+              "NEONATAL SYSTEMIC EXAMINATION"
+            ],
             "variable3": "concept_name",
             "variable4": "obs_value_coded",
             "variable5": "ValueN",
             "variable6": "Value",
             "variable7": "Gender",
-            "value7": "Female",
+            "variable8": "Age_Group",
+            "value8": "Under 5"
+          }
+        },
+        {
+          "id": "count_1f41f4fx",
+          "name": "Review of Systems Done",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": [
+              "NEONATAL PROGRAM"
+            ],
+            "variable2": "Encounter",
+            "value2": [
+              "NEONATAL REVIEW OF SYSTEMS"
+            ],
+            "variable3": "concept_name",
+            "variable4": "obs_value_coded",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "variable8": "Age_Group",
+            "value8": "Under 5"
+          }
+        },
+        {
+          "id": "count_b616b468",
+          "name": "Outcome Discharged Home",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": [
+              "NEONATAL PROGRAM"
+            ],
+            "variable2": "Encounter",
+            "value2": [
+              "NEONATAL ADMISSION OUTCOMES"
+            ],
+            "variable3": "concept_name",
+            "value3": [
+              "Admission outcome"
+            ],
+            "variable4": "obs_value_coded",
+            "value4": "Discharged home (Well Baby)",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "variable8": "Age_Group",
+            "value8": "Under 5"
+          }
+        },
+        {
+          "id": "count_77f7fc8d",
+          "name": "Outcome Referred",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": [
+              "NEONATAL PROGRAM"
+            ],
+            "variable2": "Encounter",
+            "value2": [
+              "NEONATAL ADMISSION OUTCOMES"
+            ],
+            "variable3": "concept_name",
+            "value3": [
+              "Admission outcome"
+            ],
+            "variable4": "obs_value_coded",
+            "value4": "Referrer to main hospital",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "variable8": "Age_Group",
+            "value8": "Under 5"
+          }
+        },
+        {
+          "id": "count_06f2a808",
+          "name": "Absconded",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": [
+              "NEONATAL PROGRAM"
+            ],
+            "variable2": "Encounter",
+            "value2": [
+              "NEONATAL ADMISSION OUTCOMES"
+            ],
+            "variable3": "concept_name",
+            "value3": [
+              "Admission outcome"
+            ],
+            "variable4": "obs_value_coded",
+            "value4": "Absconded",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "variable8": "Age_Group",
+            "value8": "Under 5"
+          }
+        },
+        {
+          "id": "count_1af94e5f",
+          "name": "Outcome Died",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": [
+              "NEONATAL PROGRAM"
+            ],
+            "variable2": "Encounter",
+            "value2": [
+              "NEONATAL ADMISSION OUTCOMES"
+            ],
+            "variable3": "concept_name",
+            "value3": [
+              "Admission outcome"
+            ],
+            "variable4": "obs_value_coded",
+            "value4": "Died",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
+            "variable8": "Age_Group",
+            "value8": "Under 5"
+          }
+        },
+        {
+          "id": "count_d399565b",
+          "name": "Outcome Neonatal Dealth",
+          "filters": {
+            "measure": "count",
+            "unique": "person_id",
+            "variable1": "Program",
+            "value1": [
+              "NEONATAL PROGRAM"
+            ],
+            "variable2": "Encounter",
+            "value2": [
+              "NEONATAL ADMISSION OUTCOMES"
+            ],
+            "variable3": "concept_name",
+            "value3": [
+              "Admission outcome"
+            ],
+            "variable4": "obs_value_coded",
+            "value4": "Neonatal Death",
+            "variable5": "ValueN",
+            "variable6": "Value",
+            "variable7": "Gender",
             "variable8": "Age_Group",
             "value8": "Under 5"
           }
         }
       ],
       "charts": {
-        "sections": []
+        "sections": [
+          {
+            "section_name": " Detailed",
+            "items": [
+              {
+                "id": "chart_fc8d72a1",
+                "name": "Daily Neonatal Program Enrolments - Last 7 Days",
+                "type": "Line",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "title": "Daily Neonatal Program Enrolments - Last 7 Days",
+                  "date_col": "Date",
+                  "y_col": "encounter_id",
+                  "x_title": "Date",
+                  "y_title": "Number of Neonates",
+                  "unique_column": "encounter_id",
+                  "legend_title": "Legend",
+                  "color": "",
+                  "filter_col1": "Program",
+                  "filter_val1": ["NEONATAL PROGRAM","NEONATAL TRIAGE"],
+                  "filter_col2": "Encounter",
+                  "filter_val2": ["NEONATAL PROGRAM","NEONATAL TRIAGE"],
+                  "filter_col3": "Program",
+                  "filter_val3": ["NEONATAL PROGRAM","NEONATAL TRIAGE"],
+                  "filter_col4": "Encounter",
+                  "filter_val4": ["NEONATAL PROGRAM","NEONATAL TRIAGE"],
+                  "filter_col5": "Program",
+                  "filter_val5": ["NEONATAL PROGRAM","NEONATAL TRIAGE"]
+                }
+              },
+              {
+                "id": "chart_ac65ef42",
+                "name": "Neonatal Encounters",
+                "type": "Column",
+                "filters": {
+                  "measure": "chart",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "title": "Neonatal Encounters",
+                  "x_col": "Encounter",
+                  "y_col": "encounter_id",
+                  "x_title": "Patient Encounter Name",
+                  "y_title": "Number of Neonates",
+                  "unique_column": "encounter_id",
+                  "legend_title": "Legend",
+                  "color": "",
+                  "filter_col1": "Program",
+                  "filter_val1": "NEONATAL PROGRAM",
+                  "filter_col2": "Age_Group",
+                  "filter_val2": "Under 5"
+                }
+              }
+            ]
+          }
+        ]
       }
     }
   }

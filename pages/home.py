@@ -267,8 +267,8 @@ def update_dashboard(gen_clicks, menu_clicks, interval, urlparams, start_date, e
     return build_charts_from_json(filtered_data_date, filtered_data, delta_days, dashboard_json), hf_options, clicked_name
 
 @callback(
-    [Output('dashboard-date-range-picker', 'start_date',allow_duplicate=True),
-     Output('dashboard-date-range-picker', 'end_date',allow_duplicate=True)],
+    [Output('dashboard-date-range-picker', 'start_date'),
+     Output('dashboard-date-range-picker', 'end_date')],
     Input('dashboard-interval-update-today', 'n_intervals'),
     prevent_initial_call=True
 )
@@ -279,9 +279,7 @@ def update_date_range(n):
     return start, end
 
 @callback(
-    [Output('dashboard-date-range-picker', 'start_date'),
-     Output('dashboard-date-range-picker', 'end_date'),
-     Output('dashboard-period-type-filter', 'value',allow_duplicate=True),
+    [Output('dashboard-period-type-filter', 'value',allow_duplicate=True),
      Output('dashboard-hf-filter', 'value',allow_duplicate=True),
      Output('dashboard-age-filter', 'value',allow_duplicate=True)],
     [Input('dashboard-btn-reset', 'n_clicks')],
