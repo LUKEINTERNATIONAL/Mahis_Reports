@@ -100,7 +100,7 @@
                 "name": "Enrollment by Program",
                 "type": "Column",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Program Enrollments",
@@ -122,7 +122,7 @@
                 "name": "Daily OPD Attendance - Last 7 Days",
                 "type": "Line",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Daily OPD Attendance - Last 7 Days",
@@ -144,7 +144,7 @@
                 "name": "Patient Visit Type",
                 "type": "Pie",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Patient Visit Type",
@@ -163,7 +163,7 @@
                 "name": "Age Gender Disaggregation",
                 "type": "Histogram",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Age Gender Disaggregation",
@@ -185,7 +185,7 @@
                 "name": "Gender Disaggregation",
                 "type": "Pie",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Gender Disaggregation",
@@ -204,7 +204,7 @@
                 "name": "Active Users (All encounters)",
                 "type": "Bar",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "All patient encounters",
@@ -461,11 +461,33 @@
             "section_name": " OPD Attendance",
             "items": [
               {
+                "id": "chart_10b2901xcs",
+                "name": "Patient Encounters in OPD",
+                "type": "Column",
+                "filters": {
+                  "measure": "sum",
+                  "unique": "any",
+                  "duration_default": "any",
+                  "title": "OPD Patient Encounters at the Facility",
+                  "x_col": "Encounter",
+                  "y_col": "encounter_id",
+                  "x_title": "Encounter Name",
+                  "y_title": "Number of patients",
+                  "unique_column": "encounter_id",
+                  "legend_title": "Legend",
+                  "color": "",
+                  "filter_col1": "",
+                  "filter_val1": "",
+                  "filter_col2": "",
+                  "filter_val2": ""
+                }
+              },
+              {
                 "id": "chart_63150edf",
                 "name": "Daily OPD Attendance - Last 7 days",
                 "type": "Line",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Daily OPD Attendance - Last 7 Days",
@@ -493,7 +515,7 @@
                 "name": "Top Patient Complaints",
                 "type": "Bar",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Top Patient Complaints",
@@ -520,7 +542,7 @@
                 "name": "Common Patient Diagnoses",
                 "type": "Bar",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Common Patient Diagnoses",
@@ -547,7 +569,7 @@
                 "name": "Investigations",
                 "type": "Column",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Investigations",
@@ -575,7 +597,7 @@
                 "name": "Patients with Family Medical History",
                 "type": "Bar",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Patients with Family Medical History",
@@ -599,15 +621,15 @@
               },
               {
                 "id": "chart_ef45ae8f",
-                "name": "Most dispensed drugs by Patients",
+                "name": "Most dispensed drugs at the Pharmacy",
                 "type": "Bar",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "sum",
                   "unique": "any",
                   "duration_default": "any",
-                  "title": "Most dispensed drugs (by number of patients)",
+                  "title": "Most dispensed drugs",
                   "label_col": "DrugName",
-                  "value_col": "encounter_id",
+                  "value_col": "ValueN",
                   "x_title": "Number of Patients",
                   "y_title": "Drug",
                   "unique_column": "person_id",
@@ -634,7 +656,7 @@
                 "name": "Malaria Cases Over the Last 7 days",
                 "type": "Line",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Malaria Cases Over the Last 7 days",
@@ -662,7 +684,7 @@
                 "name": "Malaria Drugs Prescribed by Clinician",
                 "type": "Bar",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Malaria Drugs Prescribed by Clinician",
@@ -689,12 +711,12 @@
                 "name": "Malaria Drugs Dispensed (Quantities)",
                 "type": "Bar",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "sum",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Malaria Drugs Dispensed (Quantities)",
                   "label_col": "DrugName",
-                  "value_col": "encounter_id",
+                  "value_col": "ValueN",
                   "x_title": "Quantity Dispensed",
                   "y_title": "Drug",
                   "unique_column": "person_id",
@@ -860,7 +882,7 @@
                 "name": "Daily NCD Attendance - Last 7 Days",
                 "type": "Line",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "7days",
                   "date_col": "Date",
@@ -884,7 +906,7 @@
                 "name": "Age Distribution of NCD Patients",
                 "type": "Histogram",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "age_col": "Age",
@@ -906,7 +928,7 @@
                 "name": "Alcohol Risk Factor",
                 "type": "Pie",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "names_col": "obs_value_coded",
@@ -930,7 +952,7 @@
                 "name": "Smoking Risk Factor",
                 "type": "Pie",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "names_col": "obs_value_coded",
@@ -954,7 +976,7 @@
                 "name": "Locations",
                 "type": "PivotTable",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "index_col1": "Village",
@@ -983,7 +1005,7 @@
                 "name": "NCD Type for New Patients",
                 "type": "Column",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "x_col": "obs_value_coded",
@@ -1007,7 +1029,7 @@
                 "name": "NCD Type for All Patients",
                 "type": "Column",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "x_col": "obs_value_coded",
@@ -1031,7 +1053,7 @@
                 "name": "NCD Complications Foot",
                 "type": "Pie",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "names_col": "obs_value_coded",
@@ -1055,7 +1077,7 @@
                 "name": "Aggregate NCD Drugs Dispensed",
                 "type": "PivotTable",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "index_col1": "DrugName",
@@ -1235,7 +1257,7 @@
                 "name": "Daily vaccinated clients - Last 7 days",
                 "type": "Line",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Daily vaccinated clients - Last 7 days",
@@ -1257,7 +1279,7 @@
                 "name": "Vaccines administered",
                 "type": "Column",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Vaccines administered",
@@ -1279,7 +1301,7 @@
                 "name": "Clients Disaggregation by Gender",
                 "type": "Pie",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "names_col": "Gender",
@@ -1303,7 +1325,7 @@
                 "name": "Doses Age and Gender Disaggregation",
                 "type": "CrossTab",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "index_col1": "Value",
@@ -1569,7 +1591,7 @@
                 "name": "Attendance By Program",
                 "type": "Column",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Attendance By Program",
@@ -1597,7 +1619,7 @@
                 "name": "Screening by Program",
                 "type": "Column",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Number of Patients Screened by Program",
@@ -1894,7 +1916,7 @@
                 "name": "Daily Neonatal Program Enrolments - Last 7 Days",
                 "type": "Line",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Daily Neonatal Program Enrolments - Last 7 Days",
@@ -1922,7 +1944,7 @@
                 "name": "Neonatal Encounters",
                 "type": "Column",
                 "filters": {
-                  "measure": "chart",
+                  "measure": "count",
                   "unique": "any",
                   "duration_default": "any",
                   "title": "Neonatal Encounters",

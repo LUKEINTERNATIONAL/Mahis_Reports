@@ -103,7 +103,7 @@ def create_column_chart(df, x_col, y_col, title, x_title, y_title,
                         unique_column=PERSON_ID_, legend_title=None,
                         color=None, filter_col1=None, filter_value1=None,
                         filter_col2=None, filter_value2=None,
-                        filter_col3=None, filter_value3=None):
+                        filter_col3=None, filter_value3=None,aggregation='count'):
     """
     Create a column chart using Plotly Express with legend support.
     Labels will display both count and percentage, e.g. "10 (25.1%)".
@@ -136,7 +136,7 @@ def create_column_chart(df, x_col, y_col, title, x_title, y_title,
         )
     else:
         # Group only by x_col
-        summary = data.groupby(x_col)[y_col].nunique().reset_index()
+        summary = data.groupby(x_col)[y_col].agg(aggregation).reset_index()
         summary = summary.sort_values(by=y_col, ascending=False)
         total = summary[y_col].sum()
         summary["label"] = summary[y_col].astype(str) + "(" + (summary[y_col]/total*100).round(1).astype(str) + "%)"
@@ -732,7 +732,7 @@ def create_age_gender_histogram(
 
 def create_horizontal_bar_chart(df, label_col, value_col, title, x_title, y_title, top_n=10,
                                  filter_col1=None, filter_value1=None, filter_col2=None, filter_value2=None,
-                                 filter_col3=None, filter_value3=None):
+                                 filter_col3=None, filter_value3=None, aggregation='count'):
     """
     Create a horizontal bar chart showing the top N items by value.
     """
@@ -745,7 +745,7 @@ def create_horizontal_bar_chart(df, label_col, value_col, title, x_title, y_titl
 
     df_unique = data.drop_duplicates(subset=[PERSON_ID_, DATE_])
 
-    df_grouped = df_unique.groupby(label_col)[value_col].nunique().reset_index()
+    df_grouped = df_unique.groupby(label_col)[value_col].agg(aggregation).reset_index()
     df_top = df_grouped.sort_values(by=value_col, ascending=False).head(int(top_n))
 
     fig = px.bar(df_top,

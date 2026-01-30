@@ -273,8 +273,9 @@ def create_column_chart_from_config(filtered, filters):
     filter_val2    = parse_filter_value(filters.get('filter_val2'))
     filter_col3    = filters.get('filter_col3') or None
     filter_val3    = parse_filter_value(filters.get('filter_val3'))
+    aggregation   = filters.get('measure') or 'count'
 
-    return create_column_chart(filtered, x_col, y_col, title, x_title, y_title, unique_column, legend_title, color, filter_col1, filter_val1, filter_col2, filter_val2, filter_col3, filter_val3)
+    return create_column_chart(filtered, x_col, y_col, title, x_title, y_title, unique_column, legend_title, color, filter_col1, filter_val1, filter_col2, filter_val2, filter_col3, filter_val3, aggregation)
 
 def create_bar_chart_from_config(filtered, filters):
     """
@@ -308,10 +309,11 @@ def create_bar_chart_from_config(filtered, filters):
     filter_val2    = parse_filter_value(filters.get('filter_val2'))
     filter_col3    = filters.get('filter_col3') or None
     filter_val3    = parse_filter_value(filters.get('filter_val3'))
+    aggregation   = filters.get('measure') or 'count'
 
     return create_horizontal_bar_chart(
         filtered, label_col, value_col, title, x_title, y_title, top_n,
-        filter_col1, filter_val1, filter_col2, filter_val2, filter_col3, filter_val3
+        filter_col1, filter_val1, filter_col2, filter_val2, filter_col3, filter_val3, aggregation
     )
 
 def create_histogram_from_config(filtered, filters):
