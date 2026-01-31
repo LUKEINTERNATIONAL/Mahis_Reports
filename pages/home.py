@@ -104,7 +104,7 @@ layout = html.Div(className="container", children=[
                         {'label': item, 'value': item}
                         for item in ['Today', 'Yesterday', 'Last 7 Days', 'Last 30 Days','This Week','Last Week', 'This Month', 'Last Month']
                     ],
-                    value=None,
+                    value="Today",
                     clearable=True
                 )
             ], className="filter-input"),
@@ -189,6 +189,7 @@ def update_menu(interval, color):
 @callback(
     [Output('dashboard-container', 'children'),
      Output('dashboard-hf-filter', 'options'),
+     Output('dashboard-hf-filter', 'value'),
      Output('active-button-store', 'data')],
     [
         Input('dashboard-btn-generate', 'n_clicks'),
@@ -244,7 +245,7 @@ def update_dashboard(gen_clicks, menu_clicks, interval, urlparams, start_date, e
 
     user_info = user_data[user_data['user_id'] == urlparams.get('uuid', [None])[0]]
     if user_info.empty:
-        return html.Div("Unauthorized User. Please contact system administrator."), no_update, clicked_name
+        return html.Div("Unauthorized User. Please contact system administrator."), no_update,no_update, clicked_name
     # Assuming urlparams contains 'user_id' to filter by
     
     
@@ -255,7 +256,7 @@ def update_dashboard(gen_clicks, menu_clicks, interval, urlparams, start_date, e
     if urlparams.get('Location', [None])[0]:
         search_url = data_opd[data_opd[FACILITY_CODE_].str.lower() == urlparams.get('Location', [None])[0].lower()]
     else:
-        return html.Div("Missing Parameters"), no_update, clicked_name
+        return html.Div("Missing Parameters"), no_update, no_update, clicked_name
 
     # Apply Dropdown Filters
     mask = pd.Series(True, index=search_url.index)
@@ -280,31 +281,33 @@ def update_dashboard(gen_clicks, menu_clicks, interval, urlparams, start_date, e
     delta_days = (end_dt - start_dt).days
     hf_options = filtered_data[FACILITY_].sort_values().unique().tolist()
 
-    return build_charts_from_json(filtered_data_date, filtered_data, delta_days, dashboard_json), hf_options, clicked_name
+    return build_charts_from_json(filtered_data_date, filtered_data, delta_days, dashboard_json), hf_options,hf_options[0],  clicked_name
 
 @callback(
-    [Output('dashboard-date-range-picker', 'start_date'),
-     Output('dashboard-date-range-picker', 'end_date')],
+    Output('dashboard-date-range-picker', 'start_date'),
+    Output('dashboard-date-range-picker', 'end_date'),
     Input('dashboard-interval-update-today', 'n_intervals'),
+    State('dashboard-period-type-filter', 'value'),
     prevent_initial_call=True
 )
-def update_date_range(n):
+def update_date_range(n, period_type):
+    if period_type != "Today":
+        raise PreventUpdate
+
     today = datetime.now()
     start = today.replace(hour=0, minute=0, second=0, microsecond=0)
     end = today.replace(hour=23, minute=59, second=59, microsecond=0)
     return start, end
 
 @callback(
-    [Output('dashboard-period-type-filter', 'value',allow_duplicate=True),
-     Output('dashboard-hf-filter', 'value',allow_duplicate=True),
-     Output('dashboard-age-filter', 'value',allow_duplicate=True)],
-    [Input('dashboard-btn-reset', 'n_clicks')],
+    Output('dashboard-period-type-filter', 'value', allow_duplicate=True),
+    Output('dashboard-hf-filter', 'value', allow_duplicate=True),
+    Output('dashboard-age-filter', 'value', allow_duplicate=True),
+    Input('dashboard-btn-reset', 'n_clicks'),
     prevent_initial_call=True
 )
 def reset_filters(n_clicks):
-    # Returns values to their defaults
-    today = datetime.now().date()
-    return today, today, None, None, None
+    return "Today", None, None
 
 @callback(
     [Output('dashboard-period-type-filter', 'style'),
