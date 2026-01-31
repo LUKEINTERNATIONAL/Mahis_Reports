@@ -25,6 +25,5 @@ pages/reports_config
 nav_drawer.py
 data/TimeStamp.csv
 data/dcc_dropdown_json/dropdowns.json
-start_prod.sh
-start_dev.sh
-start_prod copy.sh
+# start_prod.sh
+# start_dev.sh

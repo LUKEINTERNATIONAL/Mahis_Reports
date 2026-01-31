@@ -25,4 +25,3 @@ exec python -m gunicorn \
     --access-logfile "$BASE_DIR/gunicorn_access.log" \
     --error-logfile "$BASE_DIR/gunicorn_error.log" \
     wsgi:server
-
