@@ -1,15 +1,17 @@
 import os
 import pandas as pd
-from config import QERY,USE_LOCALHOST
+from config import QERY,USE_LOCALHOST, DATA_FILE_NAME_
 from db_services import DataFetcher
 from datetime import datetime
 import logging
 import json
+import duckdb
+from functools import lru_cache
 
 logging.basicConfig(level=logging.DEBUG)
 
 class DataStorage:
-    def __init__(self, query=QERY, data_dir="data", filename="latest_data_opd.parquet"):
+    def __init__(self, query=QERY, data_dir="data", filename=DATA_FILE_NAME_):
         self.query = query
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
         os.chdir(self.script_dir)
@@ -33,6 +35,16 @@ class DataStorage:
             logging.info(f"Data saved to {self.filepath} (Parquet format)")
         else:
             logging.warning("No data fetched from database.")
+
+    @staticmethod
+    @lru_cache(maxsize=32)
+    def query_duckdb(sql: str) -> pd.DataFrame:
+        """
+        Cached DuckDB query.
+        Cache key is the SQL string itself.
+        """
+        logging.debug("DuckDB cache miss")
+        return duckdb.query(sql).df()
 
     def load_data(self):
         """Load data from Parquet and clean it."""

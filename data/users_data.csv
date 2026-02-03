@@ -1681,6 +1681,7 @@ a89fd623-f16e-445d-a183-bddfade51e38,Clinician
 6a17ccb7-fbbf-4310-98cf-9ee4dee73bb0,"Superuser,Superuser,"
 2f9e1bb2-1554-44b4-8036-361822acdf1d,Clinician
 6776eb99-1380-4b87-a7f0-1b6b44f71202,Lab
+6776eb99-1380-4b87-a7f0-1b6b44f71202,Registration Clerk
 bc7692bf-26f5-4515-b495-b5b773dc8d5d,Registration Clerk
 ee4a42ce-3e38-48f6-8bb6-84910abd78db,Lab
 eab27735-44c9-49d6-a27c-83bd492a2afe,Pharmacist
@@ -1708,3 +1709,10 @@ ff51ec87-7e44-4e89-92de-5771a75a40f4,Pharmacist
 3c030f01-733b-4fab-9f52-224a24b35ae8,Registration Clerk
 3db3c260-b296-4544-9389-7cf1664c6e72,Lab
 804aa256-9b9d-4f8c-bd47-31dae49fc9f8,Lab
+161c8d0b-f202-4cfa-b563-a80c5eaceacb,Nurse
+1f4e3f96-6676-4596-b4e5-9dd729ee6782,Superuser
+1de2e9bf-56fb-4b64-8256-7d3f3f4cc2c4,Lab
+41300894-5f17-4989-a180-167fb160118f,Lab
+015aca6f-bb0c-4f69-ad3d-aff005d00fde,Lab
+6a192e23-cd04-4cb3-87da-27c25d8e331f,Lab
+2dffa933-19a5-4c23-9fc8-6c4a00f4c37b,Pharmacist

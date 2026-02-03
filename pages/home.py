@@ -11,6 +11,8 @@ from flask import request
 from helpers import build_charts_section, build_metrics_section
 from datetime import datetime
 from datetime import datetime as dt
+from data_storage import DataStorage
+from config import DATA_FILE_NAME_
 
 # Importing parquet file path and from config
 
@@ -104,7 +106,7 @@ layout = html.Div(className="container", children=[
                         {'label': item, 'value': item}
                         for item in ['Today', 'Yesterday', 'Last 7 Days', 'Last 30 Days','This Week','Last Week', 'This Month', 'Last Month']
                     ],
-                    value="Today",
+                    value=None,
                     clearable=True
                 )
             ], className="filter-input"),
@@ -193,6 +195,7 @@ def update_menu(interval, color):
      Output('active-button-store', 'data')],
     [
         Input('dashboard-btn-generate', 'n_clicks'),
+        Input('dashboard-btn-reset', 'n_clicks'),
         Input({"type": "menu-button", "name": ALL}, "n_clicks"),
         Input('dashboard-interval-update-today', 'n_intervals') # For auto-refresh
     ],
@@ -207,7 +210,7 @@ def update_menu(interval, color):
         State('active-button-store', 'data')
     ]
 )
-def update_dashboard(gen_clicks, menu_clicks, interval, urlparams, start_date, end_date, period_type, hf, age, id_list, current_active):
+def update_dashboard(gen_clicks,reset_clicks, menu_clicks, interval, urlparams, start_date, end_date, period_type, hf, age, id_list, current_active):
     ctx = callback_context
     triggered_id = ctx.triggered[0]['prop_id'] if ctx.triggered else None
 
@@ -217,9 +220,17 @@ def update_dashboard(gen_clicks, menu_clicks, interval, urlparams, start_date, e
         prop_dict = json.loads(triggered_id.split('.')[0])
         clicked_name = prop_dict['name']
 
+    if triggered_id == "dashboard-btn-reset.n_clicks":
+        start_date = datetime.now()
+        end_date = datetime.now()
+        period_type = "Today"
+        age = None
+
     # Date Logic
     start_dt = pd.to_datetime(start_date).replace(hour=0, minute=0, second=0)
     end_dt = pd.to_datetime(end_date).replace(hour=23, minute=59, second=59)
+    last_7_days = end_dt - pd.Timedelta(days=7)
+
 
     if period_type:
         s, e = get_relative_date_range(period_type)
@@ -227,12 +238,19 @@ def update_dashboard(gen_clicks, menu_clicks, interval, urlparams, start_date, e
             start_dt, end_dt = pd.to_datetime(s), pd.to_datetime(e)
 
     # Load Data
-    data_opd = pd.read_parquet(os.path.join(path, 'data', 'latest_data_opd.parquet'))
-    data_opd[DATE_] = pd.to_datetime(data_opd[DATE_], format='mixed')
-    data_opd[GENDER_] = data_opd[GENDER_].replace({"M":"Male","F":"Female"})
-    data_opd["DateValue"] = pd.to_datetime(data_opd[DATE_]).dt.date
+    SQL = f"""
+        SELECT *
+        FROM 'data/{DATA_FILE_NAME_}'
+        WHERE Date BETWEEN
+        TIMESTAMP '{last_7_days}'
+        AND TIMESTAMP '{end_dt.strftime('%Y-%m-%d %H:%M:%S')}'
+        """
+    data = DataStorage.query_duckdb(SQL)
+    data[DATE_] = pd.to_datetime(data[DATE_], format='mixed')
+    data[GENDER_] = data[GENDER_].replace({"M":"Male","F":"Female"})
+    data["DateValue"] = pd.to_datetime(data[DATE_]).dt.date
     today = dt.today().date()
-    data_opd["months"] = data_opd["DateValue"].apply(lambda d: (today - d).days // 30)
+    data["months"] = data["DateValue"].apply(lambda d: (today - d).days // 30)
 
     # get user
     user_data_path = os.path.join(path, 'data', 'users_data.csv')
@@ -246,15 +264,12 @@ def update_dashboard(gen_clicks, menu_clicks, interval, urlparams, start_date, e
     user_info = user_data[user_data['user_id'] == urlparams.get('uuid', [None])[0]]
     if user_info.empty:
         return html.Div("Unauthorized User. Please contact system administrator."), no_update,no_update, clicked_name
-    # Assuming urlparams contains 'user_id' to filter by
-    
-    
     # data_opd = data_opd.dropna(subset = ['obs_value_coded','concept_name', 'Value','ValueN', 'DrugName', 'Value_name'], how='all')
     # data_opd.to_excel("data/archive/hmis.xlsx", index=False)
     
     # Filter by URL params (e.g. Facility Code)
     if urlparams.get('Location', [None])[0]:
-        search_url = data_opd[data_opd[FACILITY_CODE_].str.lower() == urlparams.get('Location', [None])[0].lower()]
+        search_url = data[data[FACILITY_CODE_].str.lower() == urlparams.get('Location', [None])[0].lower()]
     else:
         return html.Div("Missing Parameters"), no_update, no_update, clicked_name
 
@@ -288,7 +303,6 @@ def update_dashboard(gen_clicks, menu_clicks, interval, urlparams, start_date, e
     Output('dashboard-date-range-picker', 'end_date'),
     Input('dashboard-interval-update-today', 'n_intervals'),
     State('dashboard-period-type-filter', 'value'),
-    prevent_initial_call=True
 )
 def update_date_range(n, period_type):
     if period_type != "Today":
@@ -299,18 +313,19 @@ def update_date_range(n, period_type):
     end = today.replace(hour=23, minute=59, second=59, microsecond=0)
     return start, end
 
-@callback(
-    Output('dashboard-period-type-filter', 'value', allow_duplicate=True),
-    Output('dashboard-hf-filter', 'value', allow_duplicate=True),
-    Output('dashboard-age-filter', 'value', allow_duplicate=True),
-    Input('dashboard-btn-reset', 'n_clicks'),
-    prevent_initial_call=True
-)
-def reset_filters(n_clicks):
-    return "Today", None, None
+# @callback(
+#     Output('dashboard-period-type-filter', 'value', allow_duplicate=True),
+#     Output('dashboard-hf-filter', 'value', allow_duplicate=True),
+#     Output('dashboard-age-filter', 'value', allow_duplicate=True),
+#     Input('dashboard-btn-reset', 'n_clicks'),
+#     prevent_initial_call=True
+# )
+# def reset_filters(n_clicks):
+#     return None, None, None
 
 @callback(
     [Output('dashboard-period-type-filter', 'style'),
+     Output('dashboard-date-range-picker', 'style', allow_duplicate=True),
      Output('dashboard-hf-filter', 'style'),
      Output('dashboard-age-filter', 'style')],
     [Input('dashboard-btn-reset', 'n_clicks'),
@@ -322,12 +337,14 @@ def change_style(generate, reset):
     ctx = callback_context
     triggered_id = ctx.triggered[0]['prop_id'] if ctx.triggered else None
     if triggered_id == "dashboard-btn-generate.n_clicks":
-        style_active = {"display": "flex",
+        style_active = {
+                    # "display": "flex",
                     "alignItems": "center",
                     "gap": "5px",
                     "border": "3px solid green",
-                    "borderRadius": "8px"}
-        return style_active, style_active, style_active
+                    "borderRadius": "8px"
+                    }
+        return style_active, style_active, style_active, style_active
     else:
         style_default = {}
-        return style_default,style_default,style_default
+        return style_default,style_default,style_default, style_default,

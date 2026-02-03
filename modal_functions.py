@@ -4,11 +4,27 @@ import json
 import os
 import pandas as pd
 from datetime import datetime
+import datetime as dt
 import base64
 import io
 import uuid
-
-from config import actual_keys_in_data
+from data_storage import DataStorage
+from config import (actual_keys_in_data, 
+                    DATA_FILE_NAME_, 
+                    DATE_, PERSON_ID_, ENCOUNTER_ID_,
+                    FACILITY_, AGE_GROUP_, AGE_,
+                    GENDER_, ENCOUNTER_, PROGRAM_,
+                    NEW_REVISIT_, 
+                    HOME_DISTRICT_, 
+                    TA_, 
+                    VILLAGE_, 
+                    FACILITY_CODE_,
+                    OBS_VALUE_CODED_,
+                    CONCEPT_NAME_,
+                    VALUE_,
+                    VALUE_NUMERIC_,
+                    DRUG_NAME_,
+                    VALUE_NAME_)
 
 path = os.getcwd()
 path_dcc_json = os.path.join(path, 'data', 'dcc_dropdown_json','dropdowns.json')
@@ -382,21 +398,31 @@ def archive_report(report_id):
 # Preview Data
 def load_preview_data():
     """Load preview data from parquet file"""
-    path = os.getcwd()
-    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')    
-        # Validate file exists
-    if not os.path.exists(parquet_path):
-        raise FileNotFoundError(f"PARQUET file not found at {parquet_path}")
+    today = datetime.now()
+    start = today.replace(hour=0, minute=0, second=0, microsecond=0)
+    end = today.replace(hour=23, minute=59, second=59, microsecond=0)
     
     try:
         # Load first 1000 records
-        df = pd.read_parquet(parquet_path).sort_values(by='Date', ascending=False).iloc[:]
-        df['Date'] = pd.to_datetime(df['Date'], format='mixed')
-        df['Gender'] = df['Gender'].replace({"M":"Male","F":"Female"})
-        columns = ['person_id', 'encounter_id', 'Gender', 'Age', 'Age_Group', 'Date',
-                                'Program', 'Facility','Encounter',
-                                'obs_value_coded','concept_name','Value','ValueN','DrugName']
+        SQL = f"""
+            SELECT *
+            FROM 'data/{DATA_FILE_NAME_}'
+            WHERE Date BETWEEN
+            TIMESTAMP '{end - pd.Timedelta(days=7)}'
+            AND TIMESTAMP '{end.strftime('%Y-%m-%d %H:%M:%S')}'
+            """
+    
+        df = DataStorage.query_duckdb(SQL)
+        df[DATE_] = pd.to_datetime(df[DATE_], format='mixed')
+        df[GENDER_] = df[GENDER_].replace({"M":"Male","F":"Female"})
+        df = df.drop_duplicates(subset=[CONCEPT_NAME_])
+        columns = [PERSON_ID_, ENCOUNTER_ID_, GENDER_, AGE_GROUP_, DATE_,
+                                PROGRAM_, ENCOUNTER_,
+                                OBS_VALUE_CODED_,CONCEPT_NAME_,VALUE_,VALUE_NAME_,DRUG_NAME_]
         df = df[columns]
+        df[PERSON_ID_] = 'person_xxx'
+        df[ENCOUNTER_ID_] = 'enc_xxx'
+        df[DATE_] = '1970-01-01'
         return df, None
     except Exception as e:
         return None, f"Error loading data: {str(e)}"

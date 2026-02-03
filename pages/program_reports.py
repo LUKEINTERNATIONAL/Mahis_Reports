@@ -9,6 +9,8 @@ from dash.exceptions import PreventUpdate
 import os
 from helpers import build_single_chart
 from datetime import datetime, timedelta
+from data_storage import DataStorage
+from config import DATA_FILE_NAME_
 
 dash.register_page(__name__, path="/program_reports")
 data = pd.read_parquet('data/latest_data_opd.parquet')
@@ -180,6 +182,9 @@ def update_filters(selected_program):
      ]
 )
 def generate_chart(urlparams, n_clicks, report_name, start_date, end_date, hf):
+    start_date = pd.to_datetime(start_date).replace(hour=0, minute=0, second=0)
+    end_date = pd.to_datetime(end_date).replace(hour=23, minute=59, second=59)
+
     parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
 
     # get user
@@ -200,12 +205,19 @@ def generate_chart(urlparams, n_clicks, report_name, start_date, end_date, hf):
         return html.Div("Unauthorized User. Please contact system administrator."), no_update, no_update
     
     try:
-        data = pd.read_parquet(parquet_path)
+        
         with open(path_program_reports) as x:
             program_reports_data = json.load(x)
         
-        data['Date'] = pd.to_datetime(data['Date'], errors='coerce')
-        data['Gender'] = data['Gender'].replace({"M": "Male", "F": "Female"})
+        SQL = f"""
+                SELECT *
+                FROM 'data/{DATA_FILE_NAME_}'
+                WHERE Date BETWEEN
+                TIMESTAMP '{start_date.strftime('%Y-%m-%d %H:%M:%S')}'
+                AND TIMESTAMP '{end_date.strftime('%Y-%m-%d %H:%M:%S')}'
+                """
+            
+        data = DataStorage.query_duckdb(SQL)
 
         if urlparams.get('Location', [None])[0]:
             data = data[data['Facility_CODE'].str.lower() == urlparams.get('Location', [None])[0].lower()]

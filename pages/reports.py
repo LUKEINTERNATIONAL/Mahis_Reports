@@ -17,8 +17,9 @@ from reportlab.lib import colors
 from reportlab.lib.units import inch
 import io
 import base64
+from data_storage import DataStorage
 
-from config import DATE_, FACILITY_, AGE_GROUP_, GENDER_, NEW_REVISIT_, HOME_DISTRICT_, TA_, VILLAGE_, FACILITY_CODE_
+from config import DATE_, FACILITY_, AGE_GROUP_, GENDER_, NEW_REVISIT_, HOME_DISTRICT_, TA_, VILLAGE_, FACILITY_CODE_, DATA_FILE_NAME_
 
 
 dash.register_page(__name__, path="/hmis_reports")
@@ -26,7 +27,7 @@ dash.register_page(__name__, path="/hmis_reports")
 relative_week = [str(week) for week in range(1, 53)]  # Can extend to 53 if needed
 relative_month = ['January', 'February', 'March', 'April', 'May', 'June','July', 'August', 'September', 'October', 'November', 'December',]
 relative_quarter = ["Q1 Jan-Mar", "Q2 Apr-June", "Q3 Jul-Sep", "Q4 Oct-Dec"]
-relative_year = [str(year) for year in range(2025, 2051)]
+relative_year = [str(year) for year in range(2024, 2051)]
 
 def get_week_start_end(week_num, year):
     """Returns (start_date, end_date) for a given week number and year"""
@@ -304,16 +305,27 @@ def update_table(clicks,
         return html.Div("Report Not Found")
     # Validate file exists
     if not os.path.exists(parquet_path):
-        error_msg = f"PARQUET file not found at {parquet_path}"
+        error_msg = f""
         return html.Div(error_msg)
     
-    data_opd = pd.read_parquet(parquet_path)
-    data_opd[DATE_] = pd.to_datetime(data_opd[DATE_], format='mixed')
-    data_opd[GENDER_] = data_opd[GENDER_].replace({"M":"Male","F":"Female"})
-    data_opd["DateValue"] = pd.to_datetime(data_opd[DATE_]).dt.date
+    if urlparams.get('Location', [None])[0]:
+        location = urlparams.get('Location', [None])[0]
+    else:
+        location = None
+    
+    SQL = f"""
+        SELECT *
+        FROM 'data/{DATA_FILE_NAME_}'
+        WHERE {FACILITY_CODE_} = '{location}'
+        """
+    
+    data = DataStorage.query_duckdb(SQL)
+    data[DATE_] = pd.to_datetime(data[DATE_], format='mixed')
+    data[GENDER_] = data[GENDER_].replace({"M":"Male","F":"Female"})
+    data["DateValue"] = pd.to_datetime(data[DATE_]).dt.date
     today = dt.today().date()
-    data_opd["months"] = data_opd["DateValue"].apply(lambda d: (today - d).days // 30)
-    data_opd = data_opd.dropna(subset = ['obs_value_coded','concept_name', 'Value','ValueN', 'DrugName', 'Value_name'], how='all')
+    data["months"] = data["DateValue"].apply(lambda d: (today - d).days // 30)
+    # data_opd = data_opd.dropna(subset = ['obs_value_coded','concept_name', 'Value','ValueN', 'DrugName', 'Value_name'], how='all')
     # data_opd.to_csv('data/archive/hmis.csv')
 
     # validate user
@@ -334,7 +346,7 @@ def update_table(clicks,
         return html.Div("Unauthorized User. Please contact system administrator."), dash.no_update, dash.no_update
 
     if urlparams.get('Location', [None])[0]:
-        search_url = data_opd[data_opd[FACILITY_CODE_].str.lower() == urlparams.get('Location', [None])[0].lower()]
+        search_url = data[data[FACILITY_CODE_].str.lower() == urlparams.get('Location', [None])[0].lower()]
     else:
         return html.Div("Missing Parameters"), 0, None
     
