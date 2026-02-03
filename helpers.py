@@ -9,6 +9,23 @@ from visualizations import (create_column_chart,
                           create_horizontal_bar_chart,
                           create_pivot_table,create_crosstab_table, create_line_list)
 from datetime import datetime
+from config import (actual_keys_in_data, 
+                    FIRST_NAME_, LAST_NAME_,
+                    DATA_FILE_NAME_, 
+                    DATE_, PERSON_ID_, ENCOUNTER_ID_,
+                    FACILITY_, AGE_GROUP_, AGE_,
+                    GENDER_, ENCOUNTER_, PROGRAM_,
+                    NEW_REVISIT_, 
+                    HOME_DISTRICT_, 
+                    TA_, 
+                    VILLAGE_, 
+                    FACILITY_CODE_,
+                    OBS_VALUE_CODED_,
+                    CONCEPT_NAME_,
+                    VALUE_,
+                    VALUE_NUMERIC_,
+                    DRUG_NAME_,
+                    VALUE_NAME_)
 
 def build_metrics_section(filtered, counts_config):
     """Build metric cards from counts configuration"""
@@ -121,7 +138,7 @@ def build_section_items(filtered, data_opd, delta_days, items_config):
     
     return html.Div(items)
 
-def build_single_chart(filtered, data_opd, delta_days, item_config, style = "card-2"):
+def build_single_chart(filtered, data_opd, delta_days, item_config,user_role=None, style = "card-2"):
     """Build a single chart based on configuration"""
     chart_type = item_config["type"]
     filters = item_config["filters"]
@@ -141,7 +158,7 @@ def build_single_chart(filtered, data_opd, delta_days, item_config, style = "car
     elif chart_type == "CrossTab":
         figure = create_crosstab_from_config(filtered, filters)
     elif chart_type == "LineList":
-        figure = create_linelist_from_config(filtered, item_config)
+        figure = create_linelist_from_config(filtered, item_config, user_role)
     else:
         # Default empty figure for unknown chart types
         figure = create_empty_figure()
@@ -389,10 +406,12 @@ def create_pivot_table_from_config(filtered, filters):
     filter_val2    = parse_filter_value(filters.get('filter_val2'))
     filter_col3    = filters.get('filter_col3') or None
     filter_val3    = parse_filter_value(filters.get('filter_val3'))
+    rename        = filters.get("rename") or {}
+    replace       = filters.get("replace") or {}
 
     return create_pivot_table(
         filtered, index_col, columns, values_co, title, unique_column, aggfunc,
-        filter_col1, filter_val1, filter_col2, filter_val2, filter_col3, filter_val3
+        filter_col1, filter_val1, filter_col2, filter_val2, filter_col3, filter_val3, rename, replace
     )
 
 
@@ -462,7 +481,7 @@ def create_crosstab_from_config(filtered, filters):
         rename=rename, replace=replace
     )
 
-def create_linelist_from_config(filtered, filters, **kwargs):
+def create_linelist_from_config(filtered, filters,user_role=None, **kwargs):
     """
     Convert JSON config into arguments for create_line_list().
     Accepts dynamic group_cols, group_filters, group_aggr, merge methods, rename, cols_order etc.
@@ -478,6 +497,25 @@ def create_linelist_from_config(filtered, filters, **kwargs):
     merge_methods  = _as_list_or_str(filters.get("merge_methods") or [])
     rename         = filters.get("rename") or {}
     title          = filters.get("report_name")
+    authorized_user= filters.get("authorized_user") or "Any"
+    message= filters.get("message") or None
+
+    if message:
+        message = message + str(authorized_user)
+
+    if authorized_user != "Any":
+        if isinstance(authorized_user, list):
+            if user_role not in authorized_user:
+                if FIRST_NAME_ in filtered.columns:
+                    filtered[FIRST_NAME_] = 'fname_xxxx'
+                if LAST_NAME_ in filtered.columns:
+                    filtered[LAST_NAME_] = 'lname_xxxx'
+        elif isinstance(authorized_user, str):
+            if user_role != authorized_user:
+                if FIRST_NAME_ in filtered.columns:
+                    filtered[FIRST_NAME_] = 'fname_xxxx'
+                if LAST_NAME_ in filtered.columns:
+                    filtered[LAST_NAME_] = 'lname_xxxx'
 
     group_kwargs = {}
 
@@ -502,6 +540,7 @@ def create_linelist_from_config(filtered, filters, **kwargs):
         unique_col=unique_col,
         cols_order=cols_order,
         title=title,
+        message = message,
         merge_methods=merge_methods,
         rename=rename,
         **group_kwargs

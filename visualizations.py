@@ -335,14 +335,12 @@ def create_pivot_table(df, index_col, columns_col, values_col, title, unique_col
     layout_updates = {
         'title': dict(
             text='<b>' + title + '</b>',
-            y=0.95,
             x=0.5,
             xanchor='center',
-            yanchor='top',
             font=dict(size=18, color='black'),
         ),
-        'margin': dict(l=20, r=20, b=20, t=50),
-        'height': dynamic_height
+        'margin': dict(l=20, r=20, b=20, t=90),
+        'height': dynamic_height + 40
     }
     
     fig.update_layout(**layout_updates)
@@ -445,29 +443,52 @@ def create_crosstab_table(
     data_records = ct_flat.to_dict("records")
 
 
-    table = html.Div([
-        html.H4(title, style={"textAlign":"center"}),
-        dash_table.DataTable(
-            id="crosstab-table",
-            columns=dash_columns,
-            data=data_records,
-            merge_duplicate_headers=False,
-            style_header={
-                "backgroundColor": "rgb(70,70,70)",
-                "color": "white",
-                "fontWeight": "bold",
-                "textAlign": "center",
-                "fontSize": "13px",
-            },
-            style_cell={
-                "padding": "6px",
-                "textAlign": "center",
-                "fontSize": "12px",
-            },
-            style_table={"overflowX": "scroll"},
-            page_size=50,
-        )
-    ])
+    table = html.Div(
+        [
+            html.H4(
+                title,
+                style={
+                    "textAlign": "center",
+                    "marginBottom": "15px",
+                    "marginTop": "10px",
+                },
+            ),
+            html.Div(
+                dash_table.DataTable(
+                    id="crosstab-table",
+                    columns=dash_columns,
+                    data=data_records,
+                    merge_duplicate_headers=True,
+
+                    style_header={
+                        "backgroundColor": "rgb(120,120,120)",
+                        "color": "white",
+                        "fontWeight": "bold",
+                        "textAlign": "center",
+                        "fontSize": "16px",
+                        "height": "40px",
+                        "lineHeight": "40px",
+                        "whiteSpace": "normal",
+                    },
+
+                    style_cell={
+                        "padding": "6px",
+                        "textAlign": "center",
+                        "fontSize": "14px",
+                        "whiteSpace": "normal",
+                    },
+
+                    style_table={
+                        "overflowX": "auto",
+                        "marginTop": "10px",
+                    },
+
+                    page_size=20,
+                )
+            ),
+        ],
+        style={"width": "100%"},
+    )
 
     return table
 
@@ -493,6 +514,7 @@ def create_line_list(
     rename: Optional[dict] = None,
     cols_order: Optional[List[str]] = None,
     merge_methods: Optional[List[str]] = None,
+    message = None,
     **kwargs
 ) -> pd.DataFrame:
     """
@@ -513,8 +535,8 @@ def create_line_list(
     unique_col_list = [unique_col] if isinstance(unique_col, str) else unique_col
     if not unique_col_list:
         raise ValueError("unique_col must specify at least one column.")
-    
-    df_base = df.copy().fillna("")
+
+    df_base = df.copy()
 
     group_dfs = []
 
@@ -601,6 +623,7 @@ def create_line_list(
             .agg(agg_dict)
             .reset_index(drop=True)
         )
+        # print(df_group)
         group_dfs.append(df_group)
 
     if not group_dfs:
@@ -640,9 +663,10 @@ def create_line_list(
     final_df = final_df.sort_values(by=final_df.columns[0])
 
     table = html.Div([
-        html.H4(title, style={"textAlign":"center"}),
+        html.H3(title, style={"textAlign":"center"}),
+        html.P(message, style={"textAlign":"center", "color":"red"}),
         dash_table.DataTable(
-            id="crosstab-table",
+            id="linelist-table",
             columns=[{"name": col, "id": col} for col in final_df.columns],
             data=final_df.to_dict('records'),
             merge_duplicate_headers=False,

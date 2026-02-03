@@ -7,10 +7,26 @@ import json
 import numpy as np
 from dash.exceptions import PreventUpdate
 import os
+import traceback
 from helpers import build_single_chart
 from datetime import datetime, timedelta
 from data_storage import DataStorage
-from config import DATA_FILE_NAME_
+from config import (actual_keys_in_data, 
+                    DATA_FILE_NAME_, 
+                    DATE_, PERSON_ID_, ENCOUNTER_ID_,
+                    FACILITY_, AGE_GROUP_, AGE_,
+                    GENDER_, ENCOUNTER_, PROGRAM_,
+                    NEW_REVISIT_, 
+                    HOME_DISTRICT_, 
+                    TA_, 
+                    VILLAGE_, 
+                    FACILITY_CODE_,
+                    OBS_VALUE_CODED_,
+                    CONCEPT_NAME_,
+                    VALUE_,
+                    VALUE_NUMERIC_,
+                    DRUG_NAME_,
+                    VALUE_NAME_)
 
 dash.register_page(__name__, path="/program_reports")
 data = pd.read_parquet('data/latest_data_opd.parquet')
@@ -21,21 +37,12 @@ from dash import html, dcc
 path = os.getcwd()
 path_program_reports = os.path.join(path, 'data','visualizations','validated_prog_reports.json') 
 
-# Helper for today's bounds
-_today = datetime.now()
-_start_of_today = _today.replace(hour=0, minute=0, second=0, microsecond=0)
-_end_of_today = _today.replace(hour=23, minute=59, second=59, microsecond=0)
 
 report_config_panel = html.Div(
     children=[
         dcc.Store(id="report-config-store"),
         html.Div(
             children=[
-                html.Div(className="card-header", children=[
-                    html.Div(
-                        children="Choose program, report, and filters, then generate below", style={"color":"#006401","textAlign":"center"})
-                ]),
-
                 # Grid of controls
                 html.Div(className="filter-container", children=[
                     # Program
@@ -66,16 +73,16 @@ report_config_panel = html.Div(
 
                     # Date Range
                     html.Div(className="card-col", children=[
-                        html.Label("Date Range (Default 30 days ago)", className="form-label"),
+                        html.Label("Date Range", className="form-label"),
                         dcc.DatePickerRange(
                             id="prog-date-range-picker",
                             # Adjust to your data’s earliest date if you have it
-                            min_date_allowed=datetime(2023, 1, 1),
-                            max_date_allowed=_end_of_today,
-                            initial_visible_month=_today,
-                            start_date=_start_of_today,
-                            end_date=_end_of_today - pd.Timedelta(days=1),
-                            display_format="YYYY-MM-DD",
+                            min_date_allowed="2023-01-01",
+                            max_date_allowed=datetime.now(),
+                            initial_visible_month=datetime.now(),
+                            start_date=datetime.now().replace(hour=0, minute=0, second=0, microsecond=0),
+                            end_date=datetime.now().replace(hour=23, minute=59, second=59, microsecond=0),
+                            display_format='YYYY-MM-DD',
                             minimum_nights=0,
                         ),
                     ]),
@@ -133,13 +140,13 @@ report_config_panel = html.Div(
     style={"marginTop": "0px"}
 )
 
-def programs_report(data, programs_report_list):
+def programs_report(data, programs_report_list, user_role):
     if len(programs_report_list) == 0:
         return html.Div('')
     else:
         json_data = programs_report_list[0]
         return html.Div(
-                    build_single_chart(data, data, 10, json_data, style="")
+                    build_single_chart(data, data, 10, json_data, user_role, style="")
             )
 
 
@@ -170,24 +177,17 @@ def update_filters(selected_program):
     return program_reports 
 
 @callback(
-    [Output('program-reports-container','children'),
+    [Output('program-reports-container', 'children'),
      Output('prog-hf-filter', 'options'),
-     Output("program-selector","options")],
-    [Input('url-params-store', 'data'),
-     Input("btn-generate-report", "n_clicks"),
-     Input("report-selector", "value"),
-     Input('prog-date-range-picker', 'start_date'),
-     Input('prog-date-range-picker', 'end_date'),
-     Input('prog-hf-filter', 'value'),
-     ]
+     Output("program-selector", "options")],
+    [Input("btn-generate-report", "n_clicks"),
+     Input('url-params-store', 'data')], # Only these trigger the update
+    [State("report-selector", "value"),
+     State('prog-date-range-picker', 'start_date'),
+     State('prog-date-range-picker', 'end_date'),
+     State('prog-hf-filter', 'value')] # These are read only when Input triggers
 )
-def generate_chart(urlparams, n_clicks, report_name, start_date, end_date, hf):
-    start_date = pd.to_datetime(start_date).replace(hour=0, minute=0, second=0)
-    end_date = pd.to_datetime(end_date).replace(hour=23, minute=59, second=59)
-
-    parquet_path = os.path.join(path, 'data', 'latest_data_opd.parquet')
-
-    # get user
+def generate_chart(n_clicks, urlparams, report_name, start_date, end_date, hf):
     user_data_path = os.path.join(path, 'data', 'users_data.csv')
     if not os.path.exists(user_data_path):
         user_data = pd.DataFrame(columns=['user_id', 'role'])
@@ -196,165 +196,72 @@ def generate_chart(urlparams, n_clicks, report_name, start_date, end_date, hf):
     test_admin = pd.DataFrame(columns=['user_id', 'role'], data=[['m3his@dhd', 'reports_admin']])
     user_data = pd.concat([user_data, test_admin], ignore_index=True)
 
-    if urlparams.get('uuid', [None])[0]:
-        print("User UUID from URL:", urlparams.get('uuid', [None])[0])
-    else:
-        return html.Div("Missing Dashboard Parameters. Reports wont load"), no_update, no_update
     user_info = user_data[user_data['user_id'] == urlparams.get('uuid', [None])[0]]
     if user_info.empty:
-        return html.Div("Unauthorized User. Please contact system administrator."), no_update, no_update
-    
+        return html.Div("Unauthorized User. Please contact system administrator."), no_update,no_update
+    user_role = user_info['role'].to_list()
+    if user_role:
+        role = user_role[0]
+    else:
+        role = None
+
+    ctx = callback_context
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
+
+    if triggered_id == "btn-generate-report.n_clicks" and n_clicks is None:
+        return no_update, no_update, no_update
+
     try:
-        
-        with open(path_program_reports) as x:
-            program_reports_data = json.load(x)
-        
+        start_dt = pd.to_datetime(start_date).replace(hour=0, minute=0, second=0)
+        end_dt = pd.to_datetime(end_date).replace(hour=23, minute=59, second=59)
+
         SQL = f"""
-                SELECT *
-                FROM 'data/{DATA_FILE_NAME_}'
-                WHERE Date BETWEEN
-                TIMESTAMP '{start_date.strftime('%Y-%m-%d %H:%M:%S')}'
-                AND TIMESTAMP '{end_date.strftime('%Y-%m-%d %H:%M:%S')}'
-                """
-            
+                SELECT * FROM 'data/{DATA_FILE_NAME_}'
+                WHERE Date BETWEEN '{start_dt}' AND '{end_dt}'
+               """
         data = DataStorage.query_duckdb(SQL)
+        data = DataStorage.query_duckdb(SQL)
+        data[DATE_] = pd.to_datetime(data[DATE_], format='mixed').dt.strftime('%Y-%m-%d')
+        data[GENDER_] = data[GENDER_].replace({"M":"Male","F":"Female"})
+        data["DateValue"] = pd.to_datetime(data[DATE_]).dt.date
 
-        if urlparams.get('Location', [None])[0]:
-            data = data[data['Facility_CODE'].str.lower() == urlparams.get('Location', [None])[0].lower()]
+        if data.empty:
+            return html.Div("No data found for these dates."), [], []
+
+        #Parameter Validation
+        location_param = urlparams.get('Location', [None])[0]
+        if location_param:
+            data = data[data[FACILITY_CODE_].str.lower() == location_param.lower()]
         else:
-            return html.Div("Missing Parameters"),facilities_options, all_programs
+            return html.Div("Missing Location Parameter"), no_update, no_update
 
-        facilities = sorted(data['Facility'].dropna().unique().tolist())
-        all_facility_item = "*All health facilities" if len(facilities) > 1 else None
-        facilities_options = facilities + ([all_facility_item] if all_facility_item else [])
+        #Dropdown Logic (Calculate once)
+        facilities = sorted(data[FACILITY_].dropna().unique().tolist())
+        hf_options = facilities + (["*All health facilities"] if len(facilities) > 1 else [])
+        prog_options = data[PROGRAM_].dropna().unique().tolist() + ["+ Create a Report"]
 
-        all_programs = data['Program'].dropna().value_counts().index.tolist() + ["+ Create a Report"]
+        #Chart Generation Logic (Only if Button clicked or specific report selected)
+        if not report_name:
+             return html.Div("Please select a report name and click Generate."), hf_options, prog_options
 
-        # Check if we should show the error message or generate the chart
-        # Only show error when button is clicked (n_clicks > 0) but required fields are missing
-        if n_clicks and n_clicks > 0 and (not report_name or not hf):
-            return (
-                html.Div([
-                    html.H4("Action Required", style={'color': '#e74c3c'}),
-                    html.P("Please select a report and health facility, then click the generate button.",
-                          style={'font-size': '16px', 'margin-top': '10px'})
-                ], style={
-                    'text-align': 'center',
-                    'padding': '20px',
-                    'background-color': '#f8f9fa',
-                    'border': '1px solid #dee2e6',
-                    'border-radius': '5px',
-                    'margin': '20px 0'
-                }),
-                facilities_options,
-                all_programs
-            )
-        
-        # If no report selected or no button clicked yet, just return empty chart with options
-        if not report_name or n_clicks == 0:
-            return (
-                programs_report(pd.DataFrame(), {}),
-                facilities_options,
-                all_programs
-            )
+        #Filter by Facility Selection
+        if hf and hf != "*All health facilities":
+            hf_list = hf if isinstance(hf, list) else [hf]
+            data = data[data['Facility'].isin(hf_list)]
 
-        # Get the report configuration
-        filtered_report_list = [
-            r for r in program_reports_data.get("reports", [])
-            if r.get("report_name") == report_name
-        ]
+        if data.empty:
+            return html.Div("No data for selected facility."), hf_options, prog_options
 
-        # Initialize base_df from the loaded data
-        base_df = data.copy()
-        
-        # Handle hf parameter - check if it's valid
-        hf_list = []
-        if isinstance(hf, (list, tuple)):
-            hf_list = [h for h in hf if h and h != "*All health facilities"]
-        elif hf and hf != "*All health facilities":
-            hf_list = [hf]
-        
-        # Filter base_df based on selected facilities
-        if hf_list:
-            base_df = base_df[base_df['Facility'].isin(hf_list)]
-        else:
-            # If no facility selected or "*All health facilities" is selected, use all data
-            base_df = data.copy()
-        
-        # Check if filtering resulted in empty data
-        if base_df.empty:
-            return (
-                html.Div([
-                    html.H4("No Data Available", style={'color': '#e67e22'}),
-                    html.P(f"No data found for the selected health facility(ies): {', '.join(hf_list)}",
-                          style={'font-size': '16px', 'margin-top': '10px'})
-                ], style={
-                    'text-align': 'center',
-                    'padding': '20px',
-                    'background-color': '#fff3cd',
-                    'border': '1px solid #ffeaa7',
-                    'border-radius': '5px',
-                    'margin': '20px 0'
-                }),
-                facilities_options,
-                all_programs
-            )
+        #Get Config and Render
+        with open(path_program_reports) as x:
+            config = json.load(x)
+        report_cfg = [r for r in config.get("reports", []) if r.get("report_name") == report_name]
 
-        filtered_data = base_df.copy()
-        
-        if start_date and end_date:
-            try:
-                start = pd.to_datetime(start_date)
-                end = pd.to_datetime(end_date)
-                filtered_data_date = filtered_data[
-                    (filtered_data['Date'] >= start) & (filtered_data['Date'] <= end)
-                ]
-            except Exception as e:
-                filtered_data_date = filtered_data
-        else:
-            filtered_data_date = filtered_data
+        return programs_report(data, report_cfg, role), hf_options, prog_options
 
-        # Generate the report
-        return (
-            programs_report(filtered_data_date, filtered_report_list),
-            facilities_options,
-            all_programs
-        )
-    
-    except FileNotFoundError as e:
-        return (
-            html.Div([
-                html.H4("Report error", style={'color': '#c0392b'}),
-                html.P(f"Unable to find the report: Please ensure the report configuration file exists.",
-                      style={'font-size': '16px', 'margin-top': '10px'})
-            ], style={
-                'text-align': 'center',
-                'padding': '20px',
-                'background-color': '#fddede',
-                'border': '1px solid #f5c6cb',
-                'border-radius': '5px',
-                'margin': '20px 0'
-            }),
-            [],
-            []
-        )
     except Exception as e:
-        return (
-            html.Div([
-                html.H4("Error Generating Chart", style={'color': '#c0392b'}),
-                html.P(f"An unexpected error occurred: {str(e)}",
-                      style={'font-size': '16px', 'margin-top': '10px'})
-            ], style={
-                'text-align': 'center',
-                'padding': '20px',
-                'background-color': '#fddede',
-                'border': '1px solid #f5c6cb',
-                'border-radius': '5px',
-                'margin': '20px 0'
-            }),
-            [],
-            []
-        )
+        traceback.print_exc()
+        return html.Div(f"Error: {str(e)}"), hf_options, prog_options
     
 @callback(
     [Output('prog-date-range-picker', 'start_date'),
@@ -363,6 +270,6 @@ def generate_chart(urlparams, n_clicks, report_name, start_date, end_date, hf):
 )
 def update_date_range(n):
     today = datetime.now()
-    start = today.replace(hour=0, minute=0, second=0, microsecond=0) - pd.Timedelta(days=30)
-    end = today.replace(hour=23, minute=59, second=59, microsecond=0)  - pd.Timedelta(days=0)
+    start = today.replace(hour=0, minute=0, second=0, microsecond=0)
+    end = today.replace(hour=23, minute=59, second=59, microsecond=0)
     return start, end

@@ -17,7 +17,22 @@ from config import DATA_FILE_NAME_
 # Importing parquet file path and from config
 
 # importing referential columns from config
-from config import DATE_, FACILITY_, AGE_GROUP_, GENDER_, NEW_REVISIT_, HOME_DISTRICT_, TA_, VILLAGE_, FACILITY_CODE_
+from config import (actual_keys_in_data, 
+                    DATA_FILE_NAME_, 
+                    DATE_, PERSON_ID_, ENCOUNTER_ID_,
+                    FACILITY_, AGE_GROUP_, AGE_,
+                    GENDER_, ENCOUNTER_, PROGRAM_,
+                    NEW_REVISIT_, 
+                    HOME_DISTRICT_, 
+                    TA_, 
+                    VILLAGE_, 
+                    FACILITY_CODE_,
+                    OBS_VALUE_CODED_,
+                    CONCEPT_NAME_,
+                    VALUE_,
+                    VALUE_NUMERIC_,
+                    DRUG_NAME_,
+                    VALUE_NAME_)
 
 dash.register_page(__name__, path="/home")
 
@@ -313,15 +328,20 @@ def update_date_range(n, period_type):
     end = today.replace(hour=23, minute=59, second=59, microsecond=0)
     return start, end
 
-# @callback(
-#     Output('dashboard-period-type-filter', 'value', allow_duplicate=True),
-#     Output('dashboard-hf-filter', 'value', allow_duplicate=True),
-#     Output('dashboard-age-filter', 'value', allow_duplicate=True),
-#     Input('dashboard-btn-reset', 'n_clicks'),
-#     prevent_initial_call=True
-# )
-# def reset_filters(n_clicks):
-#     return None, None, None
+@callback(
+     Output('dashboard-date-range-picker', 'start_date', allow_duplicate=True),
+     Output('dashboard-date-range-picker', 'end_date', allow_duplicate=True),
+    Output('dashboard-period-type-filter', 'value', allow_duplicate=True),
+    Output('dashboard-hf-filter', 'value', allow_duplicate=True),
+    Output('dashboard-age-filter', 'value', allow_duplicate=True),
+    Input('dashboard-btn-reset', 'n_clicks'),
+    prevent_initial_call=True
+)
+def reset_filters(n_clicks):
+    today = datetime.now()
+    start = today.replace(hour=0, minute=0, second=0, microsecond=0)
+    end = today.replace(hour=23, minute=59, second=59, microsecond=0)
+    return start, end, None, None, None
 
 @callback(
     [Output('dashboard-period-type-filter', 'style'),
