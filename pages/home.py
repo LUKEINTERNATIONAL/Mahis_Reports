@@ -235,12 +235,6 @@ def update_dashboard(gen_clicks,reset_clicks, menu_clicks, interval, urlparams, 
         prop_dict = json.loads(triggered_id.split('.')[0])
         clicked_name = prop_dict['name']
 
-    if triggered_id == "dashboard-btn-reset.n_clicks":
-        start_date = datetime.now()
-        end_date = datetime.now()
-        period_type = "Today"
-        age = None
-
     # Date Logic
     start_dt = pd.to_datetime(start_date).replace(hour=0, minute=0, second=0)
     end_dt = pd.to_datetime(end_date).replace(hour=23, minute=59, second=59)
@@ -290,6 +284,7 @@ def update_dashboard(gen_clicks,reset_clicks, menu_clicks, interval, urlparams, 
         mask &= (search_url[AGE_GROUP_] == age)
         
     filtered_data = search_url[mask].copy()
+    # print(len(filtered_data)) 
 
     # Apply Date Mask
     filtered_data_date = filtered_data[
