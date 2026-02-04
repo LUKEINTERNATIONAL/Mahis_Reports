@@ -180,12 +180,56 @@ class ReportTableBuilder:
                 continue
 
             out = {"Data Element": name}
+            # outx = {"Data Element": name}
             for vc in value_cols:
                 filter_ref = str(row.get(vc, "")).strip()
                 out[current_headers.get(vc, vc)] = (
                     self._compute_value_from_filter(filter_ref) if filter_ref else ""
                 )
             buffer.append(out)
+
+        if buffer:
+            df = pd.DataFrame(buffer)
+            df = df.loc[:, (df != "").any(axis=0)]
+            sections.append((current_section_name, df))
+        return sections
+    
+    # Note this method is done to bring out IDs instead of calculated data so that the json can has the IDs
+    def build_section_tables_with_ids(self) -> List[Tuple[str, pd.DataFrame]]:
+        value_cols = self._collect_value_columns()
+        sections: List[Tuple[str, pd.DataFrame]] = []
+        current_section_name = ""
+        current_headers: Dict[str, str] = {}
+        buffer: List[Dict[str, Any]] = []
+
+        for _, row in self.vars_df.iterrows():
+            row_type = str(row.get("type", "")).strip().lower()
+            name = str(row.get("name", "")).strip()
+            if not name:
+                continue
+
+            if row_type == "section":
+                if buffer:
+                    df = pd.DataFrame(buffer)
+                    df = df.loc[:, (df != "").any(axis=0)]
+                    sections.append((current_section_name, df))
+                    buffer = []
+                current_section_name = name
+                current_headers = {}
+                for vc in value_cols:
+                    header_val = str(row.get(vc, "")).strip()
+                    if header_val:
+                        current_headers[vc] = header_val
+                continue
+
+            out = {"Data Element": name}
+            for vc in value_cols:
+                filter_ref = str(row.get(vc, "")).strip()
+                out[current_headers.get(vc, vc)] = (
+                    filter_ref if filter_ref else ""
+                )
+            buffer.append(out)
+
 
         if buffer:
             df = pd.DataFrame(buffer)

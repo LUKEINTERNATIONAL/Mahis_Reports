@@ -12,6 +12,23 @@ import pandas as pd
 from flask import request, jsonify
 from dash.exceptions import PreventUpdate
 from config import PREFIX_NAME
+from config import (actual_keys_in_data, 
+                    DATA_FILE_NAME_, 
+                    DATE_, PERSON_ID_, ENCOUNTER_ID_,
+                    FACILITY_, AGE_GROUP_, AGE_,
+                    GENDER_, ENCOUNTER_, PROGRAM_,
+                    NEW_REVISIT_, 
+                    HOME_DISTRICT_, 
+                    TA_, 
+                    VILLAGE_, 
+                    FACILITY_CODE_,
+                    OBS_VALUE_CODED_,
+                    CONCEPT_NAME_,
+                    VALUE_,
+                    VALUE_NUMERIC_,
+                    DRUG_NAME_,
+                    VALUE_NAME_)
+from data_storage import DataStorage
 import os
 
 external_stylesheets = ['https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css']
@@ -225,22 +242,24 @@ def get_report_dataset():
         if not os.path.exists(parquet_path):
             return jsonify({"error": "Data file not found"}), 500
         
-        data_opd = pd.read_parquet(parquet_path)
-        data_opd['Date'] = pd.to_datetime(data_opd['Date'], format='mixed')
-        data_opd['Gender'] = data_opd['Gender'].replace({"M":"Male","F":"Female"})
-        data_opd["DateValue"] = pd.to_datetime(data_opd["Date"]).dt.date
+        SQL = f"""
+            SELECT *
+            FROM 'data/{DATA_FILE_NAME_}'
+            WHERE {FACILITY_CODE_} = '{facility_id}'
+            """
+        data = DataStorage.query_duckdb(SQL)
+        data[DATE_] = pd.to_datetime(data[DATE_], format='mixed')
+        data[GENDER_] = data[GENDER_].replace({"M":"Male","F":"Female"})
+        data["DateValue"] = pd.to_datetime(data[DATE_]).dt.date
         today = dt.today().date()
-        data_opd["months"] = data_opd["DateValue"].apply(lambda d: (today - d).days // 30)
+        data["months"] = data["DateValue"].apply(lambda d: (today - d).days // 30)
 
-        # Filter by Facility
-        search_url = data_opd[data_opd['Facility_CODE'].str.lower() == facility_id.lower()]
-        # Filter by Date
-        filtered = search_url[
-            (pd.to_datetime(search_url['Date']) >= pd.to_datetime(start_date)) &
-            (pd.to_datetime(search_url['Date']) <= pd.to_datetime(end_date))
+        filtered = data[
+            (pd.to_datetime(data['Date']) >= pd.to_datetime(start_date)) &
+            (pd.to_datetime(data['Date']) <= pd.to_datetime(end_date))
         ]
         
-        original_data = data_opd[data_opd['Date'] <= pd.to_datetime(end_date)].copy()
+        original_data = data[data['Date'] <= pd.to_datetime(end_date)].copy()
         original_data["days_before"] = original_data["DateValue"].apply(lambda d: (start_date - d).days)
         # Build Report
         spec_path = os.path.join(path, "data", "uploads", f"{report['page_name']}.xlsx")
@@ -250,13 +269,44 @@ def get_report_dataset():
         builder = ReportTableBuilder(spec_path, filtered, original_data)
         builder.load_spec()
         sections = builder.build_section_tables()
+        section_ids = builder.build_section_tables_with_ids()
 
         # Prepare Response
+        test_data = []
         response_data = []
-        for section_name, df in sections:
+        for (section1_name, df1), (section2_name,df2) in zip(sections, section_ids):
+            # Melt dataframes to ensure linear json
+
+            # group 1df
+            id1_col = 'Data Element'
+            value1_cols = [col for col in df1.columns if col != id1_col and col != 'Section']
+            df1_long = df1.melt(
+                id_vars=[col for col in df1.columns if col in ['Section', id1_col]], 
+                value_vars=value1_cols,
+                var_name='Category', 
+                value_name='Value'
+            )
+            df1_long[id1_col] = df1_long[id1_col].astype(str) + ' ' + df1_long['Category'].astype(str)
+            result1 = df1_long.drop(columns=['Category'])
+
+            # group 2df
+            id2_col = 'Data Element'
+            value2_cols = [col for col in df2.columns if col != id2_col and col != 'Section']
+            df2_long = df2.melt(
+                id_vars=[col for col in df2.columns if col in ['Section', id2_col]], 
+                value_vars=value2_cols,
+                var_name='Category', 
+                value_name='Value'
+            )
+            df2_long[id2_col] = df2_long[id2_col].astype(str) + ' ' + df2_long['Category'].astype(str)
+            result2 = df2_long.drop(columns=['Category']).rename(columns={"Value":"Code"})
+            combined_df = pd.merge(result1, result2,on="Data Element", how='inner')
+            # Ensure code is always available
+            final_df = combined_df[combined_df['Code'] !=""]
+            
             response_data.append({
-                "section_name": section_name,
-                "data": df.to_dict(orient='records')
+                "section_name": section1_name,
+                "data": final_df.to_dict(orient='records')
             })
 
         return jsonify({
