@@ -30,3 +30,5 @@ data/dcc_dropdown_json/dropdowns.json
 data/users_data.csv
 data/TimeStamp.csv
 data
+data/visualizations
+.gitignore
