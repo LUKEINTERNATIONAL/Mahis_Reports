@@ -723,7 +723,7 @@ def create_age_gender_histogram(
         f"({bins[i]}–{bins[i+1]})"
         for i in range(len(bins) - 1)
     ]
-
+    df_unique = df_unique.copy()
     df_unique["age_bin"] = pd.cut(
         df_unique[age_col],
         bins=bins,

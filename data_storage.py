@@ -37,7 +37,6 @@ class DataStorage:
             logging.warning("No data fetched from database.")
 
     @staticmethod
-    @lru_cache(maxsize=32)
     def query_duckdb(sql: str) -> pd.DataFrame:
         """
         Cached DuckDB query.

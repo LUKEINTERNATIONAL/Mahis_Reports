@@ -178,7 +178,7 @@ layout = html.Div(className="container", children=[
     html.Div(id='dashboard-container'),   
     dcc.Interval(
         id='dashboard-interval-update-today',
-        interval=60*60*1000,  # in milliseconds
+        interval=10*60*1000,  # in milliseconds
         n_intervals=0
     ),     
 ])
@@ -210,104 +210,100 @@ def update_menu(interval, color):
      Output('active-button-store', 'data')],
     [
         Input('dashboard-btn-generate', 'n_clicks'),
-        Input('dashboard-btn-reset', 'n_clicks'),
+        Input('dashboard-interval-update-today', 'n_intervals'),
+        Input('dashboard-date-range-picker', 'start_date'), # New: Update when dates settle
+        Input('dashboard-date-range-picker', 'end_date'),   # New: Update when dates settle
         Input({"type": "menu-button", "name": ALL}, "n_clicks"),
-        Input('dashboard-interval-update-today', 'n_intervals') # For auto-refresh
     ],
     [
         State('url-params-store', 'data'),
-        State('dashboard-date-range-picker', 'start_date'),
-        State('dashboard-date-range-picker', 'end_date'),
-        State('dashboard-period-type-filter', 'value'),
         State('dashboard-hf-filter', 'value'),
         State('dashboard-age-filter', 'value'),
-        State({"type": "menu-button", "name": ALL}, "id"),
         State('active-button-store', 'data')
     ]
 )
-def update_dashboard(gen_clicks,reset_clicks, menu_clicks, interval, urlparams, start_date, end_date, period_type, hf, age, id_list, current_active):
-    ctx = callback_context
-    triggered_id = ctx.triggered[0]['prop_id'] if ctx.triggered else None
+def update_dashboard(gen, interval, start_date, end_date, menu_clicks, urlparams, hf, age, current_active):
+    try:
+        ctx = callback_context
+        triggered_id = ctx.triggered[0]['prop_id'] if ctx.triggered else None
 
-    # Determine which report to show
-    clicked_name = current_active
-    if triggered_id and "menu-button" in triggered_id:
-        prop_dict = json.loads(triggered_id.split('.')[0])
-        clicked_name = prop_dict['name']
 
-    # Date Logic
-    start_dt = pd.to_datetime(start_date).replace(hour=0, minute=0, second=0)
-    end_dt = pd.to_datetime(end_date).replace(hour=23, minute=59, second=59)
-    last_7_days = end_dt - pd.Timedelta(days=7)
+        # Determine which report to show
+        clicked_name = current_active
+        if triggered_id and "menu-button" in triggered_id:
+            prop_dict = json.loads(triggered_id.split('.')[0])
+            clicked_name = prop_dict['name']
 
-    # Load Data
-    SQL = f"""
-        SELECT *
-        FROM 'data/{DATA_FILE_NAME_}'
-        WHERE Date BETWEEN
-        TIMESTAMP '{last_7_days}'
-        AND TIMESTAMP '{end_dt.strftime('%Y-%m-%d %H:%M:%S')}'
-        """
-    data = DataStorage.query_duckdb(SQL)
-    data[DATE_] = pd.to_datetime(data[DATE_], format='mixed')
-    data[GENDER_] = data[GENDER_].replace({"M":"Male","F":"Female"})
-    data["DateValue"] = pd.to_datetime(data[DATE_]).dt.date
-    today = dt.today().date()
-    data["months"] = data["DateValue"].apply(lambda d: (today - d).days // 30)
+        # Date Logic
+        start_dt = pd.to_datetime(start_date).replace(hour=0, minute=0, second=0)
+        end_dt = pd.to_datetime(end_date).replace(hour=23, minute=59, second=59)
+        last_7_days = end_dt - pd.Timedelta(days=7)
 
-    # get user
-    user_data_path = os.path.join(path, 'data', 'users_data.csv')
-    if not os.path.exists(user_data_path):
-        user_data = pd.DataFrame(columns=['user_id', 'role'])
-    else:
-        user_data = pd.read_csv(os.path.join(path, 'data', 'users_data.csv'))
-    test_admin = pd.DataFrame(columns=['user_id', 'role'], data=[['m3his@dhd', 'reports_admin']])
-    user_data = pd.concat([user_data, test_admin], ignore_index=True)
+        if urlparams.get('Location', [None])[0]:
+            location = urlparams.get('Location', [None])[0]
+        else:
+            return html.Div("Missing Parameters"), no_update, no_update, clicked_name
 
-    user_info = user_data[user_data['user_id'] == urlparams.get('uuid', [None])[0]]
-    if user_info.empty:
-        return html.Div("Unauthorized User. Please contact system administrator."), no_update,no_update, clicked_name
-    # data_opd = data_opd.dropna(subset = ['obs_value_coded','concept_name', 'Value','ValueN', 'DrugName', 'Value_name'], how='all')
-    # data_opd.to_excel("data/archive/hmis.xlsx", index=False)
-    
-    # Filter by URL params (e.g. Facility Code)
-    if urlparams.get('Location', [None])[0]:
-        search_url = data[data[FACILITY_CODE_].str.lower() == urlparams.get('Location', [None])[0].lower()]
-    else:
-        return html.Div("Missing Parameters"), no_update, no_update, clicked_name
+        # Load Data
+        SQL = f"""
+            SELECT *
+            FROM 'data/{DATA_FILE_NAME_}'
+            WHERE Date >= TIMESTAMP '{last_7_days}'
+            AND {FACILITY_CODE_} = '{location}'
+            """
+        data = DataStorage.query_duckdb(SQL)
+        data[DATE_] = pd.to_datetime(data[DATE_], format='mixed')
+        data[GENDER_] = data[GENDER_].replace({"M":"Male","F":"Female"})
+        data["DateValue"] = pd.to_datetime(data[DATE_]).dt.date
+        today = dt.today().date()
+        data["months"] = data["DateValue"].apply(lambda d: (today - d).days // 30)
 
-    # Apply Dropdown Filters
-    mask = pd.Series(True, index=search_url.index)
-    if hf:
-        mask &= (search_url[FACILITY_] == hf)
-    if age:
-        mask &= (search_url[AGE_GROUP_] == age)
-        
-    filtered_data = search_url[mask].copy()
-    # print(len(filtered_data)) 
+        # get user
+        user_data_path = os.path.join(path, 'data', 'users_data.csv')
+        if not os.path.exists(user_data_path):
+            user_data = pd.DataFrame(columns=['user_id', 'role'])
+        else:
+            user_data = pd.read_csv(os.path.join(path, 'data', 'users_data.csv'))
+        test_admin = pd.DataFrame(columns=['user_id', 'role'], data=[['m3his@dhd', 'reports_admin']])
+        user_data = pd.concat([user_data, test_admin], ignore_index=True)
 
-    # Apply Date Mask
-    filtered_data_date = filtered_data[
-        (filtered_data[DATE_] >= start_dt) & 
-        (filtered_data[DATE_] <= end_dt)
-    ]
+        user_info = user_data[user_data['user_id'] == urlparams.get('uuid', [None])[0]]
+        if user_info.empty:
+            return html.Div("Unauthorized User. Please contact system administrator."), no_update,no_update, clicked_name
 
-    # Get JSON config for the report
-    with open(json_path, 'r') as f:
-        menu_json = json.load(f)
-    dashboard_json = next((d for d in menu_json if d['report_name'] == clicked_name), menu_json[0])
+        # Apply Dropdown Filters
+        mask = pd.Series(True, index=data.index)
+        # if hf:
+        #     mask &= (data[FACILITY_] == hf)
+        if age:
+            mask &= (data[AGE_GROUP_] == age)
+            
+        filtered_data = data[mask].copy()
+        # print(len(filtered_data)) 
 
-    delta_days = (end_dt - start_dt).days
-    hf_options = filtered_data[FACILITY_].sort_values().unique().tolist()
+        # Apply Date Mask
+        filtered_data_date = filtered_data[
+            (filtered_data[DATE_] >= start_dt) & 
+            (filtered_data[DATE_] <= end_dt)
+        ]
 
-    return build_charts_from_json(filtered_data_date, filtered_data, delta_days, dashboard_json), hf_options,hf_options[0],  clicked_name
+        # Get JSON config for the report
+        with open(json_path, 'r') as f:
+            menu_json = json.load(f)
+        dashboard_json = next((d for d in menu_json if d['report_name'] == clicked_name), menu_json[0])
+
+        delta_days = (end_dt - start_dt).days
+        hf_options = filtered_data[FACILITY_].sort_values().unique().tolist()
+
+        return build_charts_from_json(filtered_data_date, filtered_data, delta_days, dashboard_json), hf_options,hf_options[0],  clicked_name
+    except Exception as e:
+        return html.Div(html.P("No data found for the facility", style={"color":"grey"})), dash.no_update, dash.no_update,dash.no_update
 
 @callback(
     [Output('dashboard-date-range-picker', 'start_date'),
      Output('dashboard-date-range-picker', 'end_date')],
     [Input('dashboard-period-type-filter', 'value'),
      Input('dashboard-interval-update-today', 'n_intervals')],
-    prevent_initial_call=True
 )
 def sync_picker_with_logic(period_type, n):
     ctx = callback_context
