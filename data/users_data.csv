@@ -1378,7 +1378,7 @@ d27d88d3-25df-46a2-93ab-da8c70b1b7f8,Superuser
 d27d88d3-25df-46a2-93ab-da8c70b1b7f8,"Superuser,Superuser,"
 d27d88d3-25df-46a2-93ab-da8c70b1b7f8,Vitals Clerk
 ed28e11a-f2c0-4dd2-bdcd-3c451de1ac88,HSA
-228d4480-71e6-43ff-83d5-7747a74217dc,Clinician
+228d4480-71e6-43ff-83d5-7747a74217dc,"Superuser,Superuser,"
 4d1f72d1-dca8-41f2-bc59-2e9447984346,HSA
 fb1d62b4-ef80-42ed-9744-57b053995023,HSA
 0efd3d6a-d67d-44b0-8389-ccb222402c34,HSA
@@ -1661,7 +1661,6 @@ c2b14ff7-1ac7-4873-aa4f-0f1adddca4c5,Nurse
 d4b461ae-450b-49d2-ae2b-7c6c8ef61223,Nurse
 537052d2-f4b0-49de-8d17-9e237d594187,General Registration Clerk
 537052d2-f4b0-49de-8d17-9e237d594187,Registration Clerk
-537052d2-f4b0-49de-8d17-9e237d594187,Superuser
 61ba2948-2841-4ece-a71e-559b8f2eaa14,Clinician
 644ec1bb-9737-43dc-aec1-bb9a458aa01d,Nurse
 ce98e4df-0135-4c24-a53a-b87229660482,Superuser
@@ -1717,6 +1716,21 @@ ff51ec87-7e44-4e89-92de-5771a75a40f4,Pharmacist
 015aca6f-bb0c-4f69-ad3d-aff005d00fde,Lab
 6a192e23-cd04-4cb3-87da-27c25d8e331f,Lab
 2dffa933-19a5-4c23-9fc8-6c4a00f4c37b,Pharmacist
-dd988bf0-be72-4437-9108-38102b5f2d77,Clinician
+dd988bf0-be72-4437-9108-38102b5f2d77,Registration Clerk
 fc3fc504-a714-4d49-9a4b-85a9fc90775c,Superuser
 fc3fc504-a714-4d49-9a4b-85a9fc90775c,"Superuser,Superuser,"
+445dd425-7e9a-4a15-8f4e-ba9af6b9a8d6,Clinician
+d055cd41-e3cb-4222-8a1c-4403cd5da7da,Nurse
+2c56d96c-d667-44a3-b8e2-eb47bac62b76,Clinician
+806e6d31-39ce-4e38-95ef-c9a32b26bcfc,General Registration Clerk
+806e6d31-39ce-4e38-95ef-c9a32b26bcfc,Registration Clerk
+c876deff-07d0-4523-a85a-8dff1da4dc9f,Registration Clerk
+8dfd0d1b-3662-4f57-882d-fa071c6acd98,Clinician
+b2308a42-cafd-4e29-8a4c-10b2f75c3c7a,Nurse
+51e8cba4-bc3f-455e-bde0-4a630c2a610d,Lab
+7f669b50-955c-4b16-b354-a8f3c9db2169,Clinician
+d3f0f621-cab3-4eb4-8a85-2fa019aa9812,Counselor
+88632051-3b7d-457f-9d26-ecf9db1910f8,Lab
+65864efa-9ee9-4db8-ae39-b851a7ee7ba7,Pharmacist
+13657802-f308-4853-b501-61ab08042f3e,Data Manager
+bbdb021e-55d8-48ec-9841-b3a8859c3d23,Data Manager

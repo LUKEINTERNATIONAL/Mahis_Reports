@@ -131,7 +131,7 @@ layout = html.Div(className="container", children=[
                 dcc.DatePickerRange(
                     id='dashboard-date-range-picker',
                     min_date_allowed="2023-01-01",
-                    max_date_allowed=datetime.now(),
+                    max_date_allowed="2050-01-01",
                     initial_visible_month=datetime.now(),
                     start_date=datetime.now().replace(hour=0, minute=0, second=0, microsecond=0),
                     end_date=datetime.now().replace(hour=23, minute=59, second=59, microsecond=0),
@@ -237,7 +237,7 @@ def update_dashboard(gen, interval, start_date, end_date, menu_clicks, urlparams
         # Date Logic
         start_dt = pd.to_datetime(start_date).replace(hour=0, minute=0, second=0)
         end_dt = pd.to_datetime(end_date).replace(hour=23, minute=59, second=59)
-        last_7_days = end_dt - pd.Timedelta(days=7)
+        last_7_days = start_dt - pd.Timedelta(days=7)
 
         if urlparams.get('Location', [None])[0]:
             location = urlparams.get('Location', [None])[0]
@@ -252,6 +252,7 @@ def update_dashboard(gen, interval, start_date, end_date, menu_clicks, urlparams
             AND {FACILITY_CODE_} = '{location}'
             """
         data = DataStorage.query_duckdb(SQL)
+        print(SQL)
         data[DATE_] = pd.to_datetime(data[DATE_], format='mixed')
         data[GENDER_] = data[GENDER_].replace({"M":"Male","F":"Female"})
         data["DateValue"] = pd.to_datetime(data[DATE_]).dt.date
