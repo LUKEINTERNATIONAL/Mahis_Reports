@@ -252,7 +252,6 @@ def update_dashboard(gen, interval, start_date, end_date, menu_clicks, urlparams
             AND {FACILITY_CODE_} = '{location}'
             """
         data = DataStorage.query_duckdb(SQL)
-        print(SQL)
         data[DATE_] = pd.to_datetime(data[DATE_], format='mixed')
         data[GENDER_] = data[GENDER_].replace({"M":"Male","F":"Female"})
         data["DateValue"] = pd.to_datetime(data[DATE_]).dt.date
@@ -280,7 +279,6 @@ def update_dashboard(gen, interval, start_date, end_date, menu_clicks, urlparams
             mask &= (data[AGE_GROUP_] == age)
             
         filtered_data = data[mask].copy()
-        # print(len(filtered_data)) 
 
         # Apply Date Mask
         filtered_data_date = filtered_data[
@@ -294,10 +292,12 @@ def update_dashboard(gen, interval, start_date, end_date, menu_clicks, urlparams
         dashboard_json = next((d for d in menu_json if d['report_name'] == clicked_name), menu_json[0])
 
         delta_days = (end_dt - start_dt).days
-        hf_options = filtered_data[FACILITY_].sort_values().unique().tolist()
+        hf_options = filtered_data[FACILITY_].sort_values().unique().tolist() + ["This Facility"]
 
-        return build_charts_from_json(filtered_data_date, filtered_data, delta_days, dashboard_json), hf_options,hf_options[0],  clicked_name
+        return build_charts_from_json(filtered_data_date, filtered_data, delta_days, dashboard_json), hf_options, hf_options[0],  clicked_name
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return html.Div(html.P("No data found for the facility", style={"color":"grey"})), dash.no_update, dash.no_update,dash.no_update
 
 @callback(

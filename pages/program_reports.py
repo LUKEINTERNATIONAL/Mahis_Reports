@@ -35,7 +35,8 @@ from datetime import datetime, timedelta
 from dash import html, dcc
 
 path = os.getcwd()
-path_program_reports = os.path.join(path, 'data','visualizations','validated_prog_reports.json') 
+path_program_reports = os.path.join(path, 'data','visualizations','validated_prog_reports.json')
+dropdowns_json_path = os.path.join(path, 'data', 'dcc_dropdown_json', 'dropdowns.json') 
 
 
 report_config_panel = html.Div(
@@ -225,8 +226,8 @@ def generate_chart(n_clicks, urlparams, report_name, start_date, end_date, hf):
         data[GENDER_] = data[GENDER_].replace({"M":"Male","F":"Female"})
         data["DateValue"] = pd.to_datetime(data[DATE_]).dt.date
 
-        if data.empty:
-            return html.Div("No data found for these dates."), [], []
+        # if data.empty:
+        #     return html.Div("No data found for these dates."), [], []
 
         #Parameter Validation
         location_param = urlparams.get('Location', [None])[0]
@@ -238,7 +239,12 @@ def generate_chart(n_clicks, urlparams, report_name, start_date, end_date, hf):
         #Dropdown Logic (Calculate once)
         facilities = sorted(data[FACILITY_].dropna().unique().tolist())
         hf_options = facilities + (["*All health facilities"] if len(facilities) > 1 else [])
-        prog_options = data[PROGRAM_].dropna().unique().tolist() + ["+ Create a Report"]
+
+        # get list of programs for dropdowns.json
+        with open(dropdowns_json_path) as x:
+            dropdowns = json.load(x)
+
+        prog_options = dropdowns['programs'] + ["+ Create a Report"]
 
         #Chart Generation Logic (Only if Button clicked or specific report selected)
         if not report_name:
@@ -256,7 +262,6 @@ def generate_chart(n_clicks, urlparams, report_name, start_date, end_date, hf):
         with open(path_program_reports) as x:
             config = json.load(x)
         report_cfg = [r for r in config.get("reports", []) if r.get("report_name") == report_name]
-
         return programs_report(data, report_cfg, role), hf_options, prog_options
 
     except Exception as e:
