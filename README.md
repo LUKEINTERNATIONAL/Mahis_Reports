@@ -13,7 +13,7 @@
 2. Be sure to add data_storage.py to crontab or taskscheduler as per install.sh or
     ```text
     <!-- Example -->
-    */30 * * * * /path-to-directory/data_storage.py >> /path-to-monitor-logs/logfile.log 2>&1
+    */10 * * * * /home/$(whoami)/Mahis_Reports/venv/bin/python3 /home/$(whoami)/Mahis_Reports/data_storage.py >> /home/$(whoami)/Mahis_Reports/log.txt 2>&1
     ```
 3. update database settings in config.py
     ```text
