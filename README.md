@@ -10,7 +10,7 @@
     cp config.example.py config.py
     nano config.py
     ```
-    By default, config.py is set to pull data from the START_DATE and USE_LOCALHOST = True (will use DB_CONFIG and SSH_CONFIG).
+    By default, config.py is set to pull data from the START_DATE and USE_LOCALHOST = True (False will use DB_CONFIG and SSH_CONFIG).
 
 
 2. Execute install.sh. This will install ubuntu and python dependencies
