@@ -346,20 +346,14 @@ def update_table(clicks,
     user_info = user_data[user_data['user_id'] == urlparams.get('uuid', [None])[0]]
     if user_info.empty:
         return html.Div("Unauthorized User. Please contact system administrator."), dash.no_update, dash.no_update
-
-    if urlparams.get('Location', [None])[0]:
-        search_url = data[data[FACILITY_CODE_].str.lower() == urlparams.get('Location', [None])[0].lower()]
-    else:
-        return html.Div("Missing Parameters"), 0, None
-    
-    original_data = search_url #for cohort analysis this has to be moved forward to the return function
-    
+ #for cohort analysis this has to be moved forward to the return function
+    original_data = data.copy()
     try:
         if period_type == 'Weekly': 
             start_date, end_date = get_week_start_end(month_filter, year_filter)
-            filtered = search_url[
-                (pd.to_datetime(search_url[DATE_]) >= pd.to_datetime(start_date)) &
-                (pd.to_datetime(search_url[DATE_]) <= pd.to_datetime(end_date))
+            filtered = data[
+                (pd.to_datetime(data[DATE_]) >= pd.to_datetime(start_date)) &
+                (pd.to_datetime(data[DATE_]) <= pd.to_datetime(end_date))
             ]
             original_data = original_data[original_data[DATE_]<=pd.to_datetime(end_date)]
             original_data["days_before"] = original_data["DateValue"].apply(lambda d: (start_date - d).days) #filter for relative days before filter
@@ -375,9 +369,9 @@ def update_table(clicks,
             
         elif period_type == 'Monthly': 
             start_date, end_date = get_month_start_end(month_filter, year_filter)
-            filtered = search_url[
-                (pd.to_datetime(search_url[DATE_]) >= pd.to_datetime(start_date)) &
-                (pd.to_datetime(search_url[DATE_]) <= pd.to_datetime(end_date))
+            filtered = data[
+                (pd.to_datetime(data[DATE_]) >= pd.to_datetime(start_date)) &
+                (pd.to_datetime(data[DATE_]) <= pd.to_datetime(end_date))
             ]
             original_data = original_data[original_data[DATE_]<=pd.to_datetime(end_date)]
             original_data["days_before"] = original_data["DateValue"].apply(lambda d: (start_date - d).days)
@@ -401,9 +395,9 @@ def update_table(clicks,
             
         else:  # Quarterly
             start_date, end_date = get_quarter_start_end(month_filter, year_filter)
-            filtered = search_url[
-                (pd.to_datetime(search_url[DATE_]) >= pd.to_datetime(start_date)) &
-                (pd.to_datetime(search_url[DATE_]) <= pd.to_datetime(end_date))
+            filtered = data[
+                (pd.to_datetime(data[DATE_]) >= pd.to_datetime(start_date)) &
+                (pd.to_datetime(data[DATE_]) <= pd.to_datetime(end_date))
             ]
             original_data = original_data[original_data[DATE_]<=pd.to_datetime(end_date)]
             original_data["days_before"] = original_data["DateValue"].copy().apply(lambda d: (start_date - d).days)

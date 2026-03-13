@@ -216,9 +216,16 @@ def generate_chart(n_clicks, urlparams, report_name, start_date, end_date, hf):
         start_dt = pd.to_datetime(start_date).replace(hour=0, minute=0, second=0)
         end_dt = pd.to_datetime(end_date).replace(hour=23, minute=59, second=59)
 
+        if urlparams.get('Location', [None])[0]:
+            location = urlparams.get('Location', [None])[0]
+        else:
+            return html.Div("Missing Parameters"), no_update, no_update
+
+
         SQL = f"""
                 SELECT * FROM 'data/{DATA_FILE_NAME_}'
                 WHERE Date BETWEEN '{start_dt}' AND '{end_dt}'
+                AND {FACILITY_CODE_} = '{location}'
                """
         try:
             data = DataStorage.query_duckdb(SQL)
@@ -233,13 +240,6 @@ def generate_chart(n_clicks, urlparams, report_name, start_date, end_date, hf):
 
         # if data.empty:
         #     return html.Div("No data found for these dates."), [], []
-
-        #Parameter Validation
-        location_param = urlparams.get('Location', [None])[0]
-        if location_param:
-            data = data[data[FACILITY_CODE_].str.lower() == location_param.lower()]
-        else:
-            return html.Div("Missing Location Parameter"), no_update, no_update
 
         #Dropdown Logic (Calculate once)
         facilities = sorted(data[FACILITY_].dropna().unique().tolist())

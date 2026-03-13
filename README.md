@@ -12,6 +12,12 @@
     ```
     By default, config.py is set to pull data from the START_DATE and USE_LOCALHOST = True (will use DB_CONFIG and SSH_CONFIG).
 
+
+2. Execute install.sh. This will install ubuntu and python dependencies
+    ```bash
+    chmod +x install.sh
+    ./install.sh
+    ```
     Test pulling the data using below
     ```text
     <!-- Example -->
@@ -19,15 +25,10 @@
     python3 data_storage.py
     ```
 
-2. Execute install.sh. This will install ubuntu and python dependencies
-    ```bash
-    chmod +x install.sh
-    ./install.sh
-    ```
-
 3. Be sure to add data_storage.py to crontab or taskscheduler as per install.sh or
     ```text
     <!-- Example -->
+    crontab -e
     */10 * * * * /home/$(whoami)/Mahis_Reports/venv/bin/python3 /home/$(whoami)/Mahis_Reports/data_storage.py >> /home/$(whoami)/Mahis_Reports/log.txt 2>&1
     ```
 
