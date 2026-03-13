@@ -361,7 +361,7 @@ def update_table(clicks,
             spec_path = f"data/uploads/{report['page_name']}.xlsx"
             if not os.path.exists(spec_path):
                 error_msg = f"Report not found on Server. Request Admin to add report"
-                return html.Div(error_msg)
+                return html.Div(error_msg), 0, None
             builder = ReportTableBuilder(spec_path, filtered, original_data)
             builder.load_spec()
             components = builder.build_dash_components()
@@ -379,7 +379,7 @@ def update_table(clicks,
             spec_path = f"data/uploads/{report['page_name']}.xlsx"
             if not os.path.exists(spec_path):
                 error_msg = f"Report not found on Server. Request Admin to add report"
-                return html.Div(error_msg)
+                return html.Div(error_msg), 0, None
             builder = ReportTableBuilder(spec_path, filtered, original_data)
             builder.load_spec()
             components = builder.build_dash_components()
@@ -405,7 +405,7 @@ def update_table(clicks,
             spec_path = f"data/uploads/{report['page_name']}.xlsx"
             if not os.path.exists(spec_path):
                 error_msg = f"Report not found on Server. Request Admin to add report"
-                return html.Div(error_msg)
+                return html.Div(error_msg), 0, None
             builder = ReportTableBuilder(spec_path, filtered, original_data)
             builder.load_spec()
             components = builder.build_dash_components()
