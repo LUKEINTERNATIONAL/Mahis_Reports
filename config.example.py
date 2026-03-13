@@ -71,27 +71,22 @@ SSH_CONFIG = {
 # on production remove COLLATE utf8mb3_general_ci
 QERY = """
 SELECT 
-    main.*,
-    CASE 
-        WHEN visit_days = 1 THEN 'New'
-        ELSE 'Revisit'
-    END AS new_revisit
-FROM (
-    SELECT 
         p.person_id,
         e.encounter_id,
+        pn2.given_name,
+        pn2.family_name,
         gender AS Gender, 
-        FLOOR(DATEDIFF(CURRENT_DATE, birthdate) / 365) AS Age, 
+        FLOOR(DATEDIFF(e.encounter_datetime, birthdate) / 365) AS Age, 
         CASE 
-            WHEN FLOOR(DATEDIFF(CURRENT_DATE, birthdate) / 365) < 5 THEN 'Under 5'
+            WHEN FLOOR(DATEDIFF(e.encounter_datetime, birthdate) / 365) < 5 THEN 'Under 5'
             ELSE 'Over 5'
         END AS Age_Group,
         DATE(e.encounter_datetime) AS Date, 
         pr.name AS Program, 
         l.name AS Facility,
-        l.code AS Facility_CODE, 
+        l.location_id AS Facility_CODE, 
         u.username AS User, 
-        l.district AS District, 
+        l.city_village AS District, 
         et.name AS Encounter,
         pa.state_province AS Home_district,
         pa.township_division AS TA,
@@ -102,15 +97,17 @@ FROM (
         o.value_text as Value,
         o.value_numeric as ValueN,
         d.name as DrugName,
-        cnn.name as Value_name
+        cnn.name as Value_name,
+        d.name as Order_Name
     FROM person AS p
     JOIN patient AS pa2 ON p.person_id = pa2.patient_id
+    JOIN person_name pn2 ON p.person_id = pn2.person_id
     JOIN person_address AS pa ON p.person_id = pa.person_id
     JOIN encounter AS e ON p.person_id = e.patient_id
     JOIN encounter_type AS et ON e.encounter_type = et.encounter_type_id
     INNER JOIN program AS pr ON e.program_id = pr.program_id
-    INNER JOIN users AS u ON e.provider_id = u.user_id
-    INNER JOIN facilities AS l ON u.location_id = l.code COLLATE utf8mb3_general_ci
+    INNER JOIN users AS u ON e.creator = u.user_id
+    INNER JOIN location AS l ON u.location_id = l.location_id
     -- Join with precomputed visit days
     JOIN (
         SELECT patient_id, COUNT(DISTINCT DATE(encounter_datetime)) AS visit_days
